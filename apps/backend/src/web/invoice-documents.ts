@@ -15,8 +15,8 @@ import { boom } from "@/util/error";
 import { asyncHandler } from "./util";
 
 /**
- * Whether the user is an admin of an account billed on the customer, the
- * same rule the invoice list is read under.
+ * Whether the user manages the billing of an account billed on the customer,
+ * the same rule the invoice list is read under.
  */
 async function canReadInvoices(
   stripeCustomerId: string,
@@ -26,7 +26,7 @@ async function canReadInvoices(
   const permissions = await Promise.all(
     accounts.map((account) => account.$getPermissions(auth)),
   );
-  return permissions.some((granted) => granted.includes("admin"));
+  return permissions.some((granted) => granted.includes("billing"));
 }
 
 const ParamsSchema = z.object({

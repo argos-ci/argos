@@ -7,6 +7,7 @@ import {
 import { SLUG_REGEX } from "@argos/util/slug";
 import type { JSONSchema, RelationMappings } from "objection";
 
+import { AUTH_PROJECT_SOURCES, type AuthProjectSource } from "@/auth/payload";
 import { DEPLOYMENT_SLUG_MAX_LENGTH } from "@/deployment/slug";
 import { getDeploymentUrl } from "@/deployment/url";
 
@@ -46,6 +47,13 @@ export class Deployment extends Model {
           },
           githubPullRequestId: { type: ["string", "null"] },
           prHeadCommit: { type: ["string", "null"] },
+          authSource: {
+            anyOf: [
+              { type: "null" },
+              { type: "string", enum: [...AUTH_PROJECT_SOURCES] },
+            ],
+          },
+          githubDeploymentId: { type: ["string", "null"] },
         },
       },
     ],
@@ -98,6 +106,9 @@ export class Deployment extends Model {
   slug!: string;
   githubPullRequestId!: string | null;
   prHeadCommit!: string | null;
+  /** `null` for the deployments created before it was recorded. */
+  authSource!: AuthProjectSource | null;
+  githubDeploymentId!: string | null;
 
   project?: Project;
   aliases?: DeploymentAlias[];

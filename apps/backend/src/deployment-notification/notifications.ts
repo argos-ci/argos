@@ -4,6 +4,7 @@ import { DeploymentNotification, GithubRepository } from "@/database/models";
 import { getDeploymentPreferredUrl } from "@/deployment/url";
 import { postGitHubComment } from "@/git-platform/github";
 import { getInstallationOctokit } from "@/github";
+import { githubDeploymentJob } from "@/github-deployment/job";
 import { createGhCommitStatus } from "@/github/commit-status";
 import { UnretryableError } from "@/job-core";
 import parentLogger from "@/logger";
@@ -23,7 +24,10 @@ export async function pushDeploymentNotification({
     type,
     jobStatus: "pending",
   });
-  await deploymentNotificationJob.push(deploymentNotification.id);
+  await Promise.all([
+    deploymentNotificationJob.push(deploymentNotification.id),
+    githubDeploymentJob.push(deploymentId),
+  ]);
   return deploymentNotification;
 }
 

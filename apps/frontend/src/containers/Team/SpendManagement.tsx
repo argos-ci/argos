@@ -85,14 +85,14 @@ function SpendManagementForm(props: {
   invariant(account.subscription, "Subscription is required");
 
   const { permissions } = useAccountContext();
-  const hasAdminPermission = permissions.includes(AccountPermission.Admin);
+  const canManageBilling = permissions.includes(AccountPermission.Billing);
   const defaultValues: Inputs = {
     isSpendLimitEnabled: typeof account.meteredSpendLimitByPeriod === "number",
     meteredSpendLimitByPeriod: account.meteredSpendLimitByPeriod ?? null,
     blockWhenSpendLimitIsReached: account.blockWhenSpendLimitIsReached,
   };
   const form = useForm<Inputs>({
-    disabled: !hasAdminPermission,
+    disabled: !canManageBilling,
     defaultValues,
   });
 
@@ -144,8 +144,8 @@ function SpendManagementForm(props: {
         <CardBody>
           <CardTitle id="spend-management">Spend Management</CardTitle>
           <CardParagraph>
-            Set a spend amount towards additional screenshots cost. All account
-            owners will be notified when the spend amount reaches{" "}
+            Set a spend amount towards additional screenshots cost. Argos emails
+            owners and billing members when the spend amount reaches{" "}
             <strong>50%</strong>, <strong>75%</strong>, and{" "}
             <strong>100%</strong> of the set amount. You can choose to pause
             builds when the spend amount limit is reached.
@@ -196,7 +196,7 @@ function SpendManagementForm(props: {
               </div>
               <SwitchField control={form.control} name="isSpendLimitEnabled" />
             </div>
-            {isSpendLimitEnabled && hasAdminPermission ? (
+            {isSpendLimitEnabled && canManageBilling ? (
               <>
                 <Separator orientation="horizontal" />
                 <div className="bg-subtle grid grid-cols-2 p-4">
@@ -347,7 +347,7 @@ function ConfirmDialog(props: {
               </DialogText>
               <DialogText>
                 <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
-                Notifications are sent to all team owner members.
+                Argos emails owners and billing members.
               </DialogText>
               {data.blockWhenSpendLimitIsReached && (
                 <DialogText>
@@ -372,7 +372,7 @@ function ConfirmDialog(props: {
               </DialogText>
               <DialogText>
                 <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
-                Notifications will be sent to all team owner members.
+                Argos will email owners and billing members.
               </DialogText>
               {data.blockWhenSpendLimitIsReached && (
                 <DialogText>

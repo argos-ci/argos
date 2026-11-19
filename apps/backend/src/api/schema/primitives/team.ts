@@ -8,7 +8,7 @@ import { serializeUser, UserSchema } from "./user";
 
 export const TeamUserLevel = TeamUserLevelSchema.meta({
   description:
-    "Role of a user on a team. Owners administer the team, members see every project, contributors only the projects they are added to.",
+    "Role of a user on a team. Owners administer the team, members see every project, contributors only the projects they are added to. Billing members are members who also manage the plan, spend limit and invoices.",
   id: "TeamUserLevel",
 });
 

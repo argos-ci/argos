@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Subscription } from "@/database/models";
+import { Subscription, type TeamUser } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { stripe, type Stripe } from "@/stripe";
 import {
@@ -57,7 +57,7 @@ async function createUserAccount() {
  */
 async function createSubscribedTeam(options: {
   userId: string;
-  userLevel: "owner" | "member";
+  userLevel: TeamUser["userLevel"];
   /** Set to schedule the cancellation these tests then call off. */
   endDate?: string;
 }) {
@@ -107,59 +107,62 @@ describe("GraphQL cancelSubscription", () => {
     vi.restoreAllMocks();
   });
 
-  it("sends the reason to Stripe and schedules the end of the subscription", async () => {
-    const { account, user } = await createUserAccount();
-    invariant(user.id, "user has no id");
-    const teamAccount = await createSubscribedTeam({
-      userId: user.id,
-      userLevel: "owner",
-    });
-    const update = vi
-      .spyOn(stripe.subscriptions, "update")
-      .mockResolvedValue(
-        CANCEL_SCHEDULED_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,
+  it.each(["owner", "billing"] as const)(
+    "sends the reason to Stripe and schedules the end of the subscription (%s)",
+    async (userLevel) => {
+      const { account, user } = await createUserAccount();
+      invariant(user.id, "user has no id");
+      const teamAccount = await createSubscribedTeam({
+        userId: user.id,
+        userLevel,
+      });
+      const update = vi
+        .spyOn(stripe.subscriptions, "update")
+        .mockResolvedValue(
+          CANCEL_SCHEDULED_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,
+        );
+
+      const app = await createApolloServerApp(
+        apolloServer,
+        createApolloMiddleware,
+        { user, account },
       );
 
-    const app = await createApolloServerApp(
-      apolloServer,
-      createApolloMiddleware,
-      { user, account },
-    );
-
-    const res = await request(app)
-      .post("/graphql")
-      .send({
-        query: CANCEL_MUTATION,
-        variables: {
-          input: {
-            accountId: teamAccount.id,
-            reason: "too_expensive",
-            comment: "  We only run a few builds a month.  ",
+      const res = await request(app)
+        .post("/graphql")
+        .send({
+          query: CANCEL_MUTATION,
+          variables: {
+            input: {
+              accountId: teamAccount.id,
+              reason: "too_expensive",
+              comment: "  We only run a few builds a month.  ",
+            },
           },
+        });
+
+      expect(res.body.errors).toBeUndefined();
+      expect(update).toHaveBeenCalledWith(CANCEL_SCHEDULED_SUBSCRIPTION.id, {
+        cancel_at_period_end: true,
+        cancellation_details: {
+          feedback: "too_expensive",
+          comment: "We only run a few builds a month.",
         },
       });
 
-    expect(res.body.errors).toBeUndefined();
-    expect(update).toHaveBeenCalledWith(CANCEL_SCHEDULED_SUBSCRIPTION.id, {
-      cancel_at_period_end: true,
-      cancellation_details: {
-        feedback: "too_expensive",
-        comment: "We only run a few builds a month.",
-      },
-    });
+      // The row is written from Stripe's answer rather than left for the webhook,
+      // so the screen that made the call shows the end date right away.
+      const subscription = await Subscription.query()
+        .findOne({ stripeSubscriptionId: CANCEL_SCHEDULED_SUBSCRIPTION.id })
+        .throwIfNotFound();
+      expect(subscription.endDate).not.toBeNull();
+      expect(
+        res.body.data.cancelSubscription.subscription.endDate,
+      ).not.toBeNull();
+    },
+  );
 
-    // The row is written from Stripe's answer rather than left for the webhook,
-    // so the screen that made the call shows the end date right away.
-    const subscription = await Subscription.query()
-      .findOne({ stripeSubscriptionId: CANCEL_SCHEDULED_SUBSCRIPTION.id })
-      .throwIfNotFound();
-    expect(subscription.endDate).not.toBeNull();
-    expect(
-      res.body.data.cancelSubscription.subscription.endDate,
-    ).not.toBeNull();
-  });
-
-  it("refuses a member who is not an admin of the team", async () => {
+  it("refuses a member who does not manage billing", async () => {
     const { account, user } = await createUserAccount();
     invariant(user.id, "user has no id");
     const teamAccount = await createSubscribedTeam({
@@ -288,7 +291,7 @@ describe("GraphQL resumeSubscription", () => {
     },
   );
 
-  it("refuses a member who is not an admin of the team", async () => {
+  it("refuses a member who does not manage billing", async () => {
     const { account, user } = await createUserAccount();
     invariant(user.id, "user has no id");
     const teamAccount = await createSubscribedTeam({

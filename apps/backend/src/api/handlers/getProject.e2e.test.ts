@@ -79,6 +79,7 @@ describe("getProject", () => {
           githubActionsOidcEnabled: false,
           tokenlessAuthEnabled: false,
           deploymentEnabled: true,
+          githubDeploymentEnabled: true,
           deploymentAuth: "domain-private",
           defaultUserLevel: null,
           ignoreConfig: { enabled: true, autoIgnore: { changes: 3 } },

@@ -257,6 +257,8 @@ export const typeDefs = gql`
     deploymentEnabled: Boolean!
     "Deployment authentication policy"
     deploymentAuth: DeploymentAuth!
+    "Whether deployments are reported to GitHub as GitHub deployments"
+    githubDeploymentEnabled: Boolean!
     "Check if the project is public or not"
     public: Boolean!
     "Override repository's Github privacy"
@@ -398,6 +400,7 @@ export const typeDefs = gql`
     ignoreConfig: IgnoreConfigInput
     deploymentEnabled: Boolean
     deploymentAuth: DeploymentAuth
+    githubDeploymentEnabled: Boolean
     githubActionsOidcEnabled: Boolean
     tokenlessAuthEnabled: Boolean
   }
@@ -1269,6 +1272,8 @@ export const resolvers: IResolvers = {
             deploymentAuth: args.input.deploymentAuth
               ? fromGraphQLDeploymentAuth(args.input.deploymentAuth)
               : undefined,
+            githubDeploymentEnabled:
+              args.input.githubDeploymentEnabled ?? undefined,
             githubActionsOidcEnabled:
               args.input.githubActionsOidcEnabled ?? undefined,
             tokenlessAuthEnabled: args.input.tokenlessAuthEnabled ?? undefined,

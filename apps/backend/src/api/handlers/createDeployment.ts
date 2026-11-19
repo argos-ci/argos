@@ -279,6 +279,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
         projectName: project.name,
       }),
       githubPullRequestId: pullRequest?.id ?? null,
+      authSource: auth.source,
     });
 
     await Promise.all([
@@ -317,7 +318,6 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
           Bucket: bucketName,
           Key: `content/${file.hash}`,
           ContentType: file.contentType,
-          CacheControl: "public, max-age=31536000, immutable",
         });
         const uploadUrl = await getSignedUrl(s3, command, {
           expiresIn: 1800, // 30 minutes

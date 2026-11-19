@@ -78,9 +78,9 @@ export type ProjectVisibility =
  * public REST API (`GET /accounts/{accountSlug}/projects`):
  * - staff see every project
  * - on a user account, only the owner
- * - on a team, owners/members see all; contributors see projects they are a
- *   contributor on (or that expose a default user level); a member kept out
- *   by the team's SAML enforcement sees nothing
+ * - on a team, everyone but contributors sees all; contributors see projects
+ *   they are a contributor on (or that expose a default user level); a member
+ *   kept out by the team's SAML enforcement sees nothing
  */
 export async function getProjectVisibility(args: {
   account: Account;
@@ -310,6 +310,7 @@ export type UpdateProjectInput = {
   ignoreConfig?: ResolvedIgnoreConfig | null | undefined;
   deploymentEnabled?: boolean | undefined;
   deploymentAuth?: DeploymentAuth | undefined;
+  githubDeploymentEnabled?: boolean | undefined;
   githubActionsOidcEnabled?: boolean | undefined;
   tokenlessAuthEnabled?: boolean | undefined;
 };
@@ -379,6 +380,13 @@ export async function updateProject(args: {
     project.deploymentEnabled !== input.deploymentEnabled
   ) {
     data.deploymentEnabled = input.deploymentEnabled;
+  }
+
+  if (
+    typeof input.githubDeploymentEnabled === "boolean" &&
+    project.githubDeploymentEnabled !== input.githubDeploymentEnabled
+  ) {
+    data.githubDeploymentEnabled = input.githubDeploymentEnabled;
   }
 
   if (

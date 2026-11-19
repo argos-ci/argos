@@ -1,4 +1,5 @@
 import { createPublicKey } from "node:crypto";
+import { Agent, request } from "node:https";
 import type {
   CloudFrontHeaders,
   CloudFrontRequestEvent,
@@ -19,6 +20,16 @@ const ACCESS_TOKEN_PUBLIC_KEY = createPublicKey(
 );
 const COOKIE_MAX_AGE_SECONDS = 60 * 60;
 const AUTH_CALLBACK_PATH = "/__argos/auth";
+
+/**
+ * A container handles one request at a time but many in a row, so this spares
+ * every file of a page the round trip to the API. Kept short because a deploy
+ * that moves an alias reaches a warm container only once its entry expires,
+ * whatever Cloudflare has purged.
+ */
+const RESOLVE_CACHE_TTL_MS = 10_000;
+// Bounds memory when a container sees a stream of unknown hosts.
+const RESOLVE_CACHE_MAX_ENTRIES = 500;
 
 type ResolvedDeployment = {
   deploymentId: string;
@@ -136,6 +147,55 @@ function normalizePath(filePath: string): string {
   return filePath;
 }
 
+/**
+ * Not `fetch`: its first call loads undici and compiles its WebAssembly HTTP
+ * parser, which cost a cold container over 2 seconds of its 128 MB CPU share.
+ * The socket outlives the invocation, so a warm container whose cache entry
+ * has expired skips the TLS handshake.
+ */
+const apiAgent = new Agent({ keepAlive: true });
+
+function getApi(
+  url: string,
+  isRetry = false,
+): Promise<{ status: number; body: string }> {
+  return new Promise((resolve, reject) => {
+    const req = request(
+      url,
+      { agent: apiAgent, headers: { "user-agent": "argos-deployment-edge" } },
+      (res) => {
+        const status = res.statusCode;
+        if (status === undefined) {
+          reject(new Error(`No status code from ${url}`));
+          return;
+        }
+        let body = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk: string) => {
+          body += chunk;
+        });
+        res.on("end", () => resolve({ status, body }));
+        res.on("error", reject);
+      },
+    );
+    req.on("error", (error) => {
+      // The server may have closed a kept socket while the container was
+      // frozen, and Node only notices when it writes to it.
+      if (
+        !isRetry &&
+        req.reusedSocket &&
+        "code" in error &&
+        error.code === "ECONNRESET"
+      ) {
+        resolve(getApi(url, true));
+        return;
+      }
+      reject(error);
+    });
+    req.end();
+  });
+}
+
 async function resolveAlias(
   domain: string,
 ): Promise<ResolvedDeployment | null> {
@@ -143,20 +203,20 @@ async function resolveAlias(
     throw new Error("API_BASEURL is not configured");
   }
 
-  const response = await fetch(
+  const response = await getApi(
     `${API_BASEURL}/v2/deployments/resolve/${encodeURIComponent(domain)}`,
   );
 
   if (response.status === 404) {
     return null;
   }
-  if (!response.ok) {
+  if (response.status < 200 || response.status >= 300) {
     throw new Error(
       `Failed to resolve deployment domain "${domain}" (${response.status})`,
     );
   }
 
-  const body = (await response.json()) as Partial<ResolvedDeployment>;
+  const body: Partial<ResolvedDeployment> = JSON.parse(response.body);
   if (
     typeof body.deploymentId !== "string" ||
     !body.deploymentId ||
@@ -173,6 +233,38 @@ async function resolveAlias(
     environment: body.environment,
     visibility: body.visibility,
   };
+}
+
+const resolveCache = new Map<
+  string,
+  { deployment: ResolvedDeployment | null; expiresAt: number }
+>();
+
+async function resolveAliasCached(
+  domain: string,
+): Promise<ResolvedDeployment | null> {
+  const now = Date.now();
+  const cached = resolveCache.get(domain);
+  if (cached && cached.expiresAt > now) {
+    return cached.deployment;
+  }
+
+  console.log(`[resolve] host=${domain}`);
+  const deployment = await resolveAlias(domain);
+
+  // Re-inserting keeps the Map in expiry order, so the first key is the oldest.
+  resolveCache.delete(domain);
+  if (resolveCache.size >= RESOLVE_CACHE_MAX_ENTRIES) {
+    for (const oldest of resolveCache.keys()) {
+      resolveCache.delete(oldest);
+      break;
+    }
+  }
+  resolveCache.set(domain, {
+    deployment,
+    expiresAt: now + RESOLVE_CACHE_TTL_MS,
+  });
+  return deployment;
 }
 
 function isSafeReturnTo(value: string): boolean {
@@ -249,7 +341,7 @@ export const handler = async (
 
   console.log(`[request] host=${host} path=${request.uri}`);
 
-  const deployment = await resolveAlias(host);
+  const deployment = await resolveAliasCached(host);
   if (!deployment) {
     console.log(`[404] host not found: ${host}`);
     return notFoundResponse();

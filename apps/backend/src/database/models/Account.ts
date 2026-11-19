@@ -158,9 +158,13 @@ function computeAccountSubscriptionStatus(args: {
   return "canceled";
 }
 
-export type AccountPermission = "admin" | "view";
+export type AccountPermission = "admin" | "billing" | "view";
 
-export const ALL_ACCOUNT_PERMISSIONS: AccountPermission[] = ["admin", "view"];
+export const ALL_ACCOUNT_PERMISSIONS: AccountPermission[] = [
+  "admin",
+  "billing",
+  "view",
+];
 
 /**
  * Usage a flat-rate plan may reach, as a share of its included screenshots,
@@ -894,11 +898,21 @@ export class Account extends Model {
    * Get the owner ids associated with the account.
    */
   async $getOwnerIds(): Promise<string[]> {
+    return this.$getUserIdsWithPermission("admin");
+  }
+
+  /**
+   * Get the ids of the users granted `permission` on the account: its user, or
+   * the team members whose role grants it.
+   */
+  async $getUserIdsWithPermission(
+    permission: AccountPermission,
+  ): Promise<string[]> {
     if (this.userId && !this.teamId) {
       return [this.userId];
     }
     if (this.teamId && !this.userId) {
-      return Team.getOwnerIds(this.teamId);
+      return Team.getUserIdsWithPermission(this.teamId, permission);
     }
     throw new Error("Incoherent account type");
   }

@@ -44,12 +44,12 @@ export const OvercapacityBanner = memo(
           You&apos;ve hit {Math.floor(consumptionRatio * 100)}% of the{" "}
           {plan.displayName} plan limit.
         </span>
-        {account.permissions.includes(AccountPermission.Admin) ? (
+        {account.permissions.includes(AccountPermission.Billing) ? (
           <Link href={`${getAccountURL({ accountSlug })}/settings/billing`}>
             Upgrade plan
           </Link>
         ) : account.__typename === "Team" ? (
-          <span>Ask a team owner to upgrade the plan.</span>
+          <span>Ask a team owner or billing member to upgrade the plan.</span>
         ) : null}
       </Banner>
     );

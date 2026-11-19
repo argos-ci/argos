@@ -62,7 +62,6 @@ async function updateUsage(project: Project) {
     await updateStripeUsage({ account, screenshots, includedScreenshots });
 
     if (spendLimitThreshold !== null) {
-      const ownerIds = await account.$getOwnerIds();
       await sendNotification({
         type: "spend_limit",
         data: {
@@ -71,7 +70,7 @@ async function updateUsage(project: Project) {
           blockWhenSpendLimitIsReached: account.blockWhenSpendLimitIsReached,
           threshold: spendLimitThreshold,
         },
-        recipients: ownerIds,
+        recipients: await account.$getUserIdsWithPermission("billing"),
       });
     }
 
@@ -79,7 +78,6 @@ async function updateUsage(project: Project) {
     // update, the step that can fail and get retried.
     const overageAlert = await claimOverageAlert(account);
     if (overageAlert !== null) {
-      const ownerIds = await account.$getOwnerIds();
       await sendNotification({
         type: "overage_alert",
         data: {
@@ -88,7 +86,7 @@ async function updateUsage(project: Project) {
           threshold: overageAlert.threshold,
           currency: overageAlert.currency,
         },
-        recipients: ownerIds,
+        recipients: await account.$getUserIdsWithPermission("billing"),
       });
     }
   });

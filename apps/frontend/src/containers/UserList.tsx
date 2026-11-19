@@ -115,6 +115,7 @@ export function UserListNoActions() {
 
 export const TeamMemberLabel: Record<TeamUserLevel, string> = {
   owner: "Owner",
+  billing: "Billing",
   member: "Member",
   contributor: "Contributor",
 };

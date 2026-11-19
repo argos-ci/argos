@@ -12,6 +12,7 @@ import { ensureProductionInternalProjectDomain } from "@/database/services/proje
 import { pushDeploymentNotification } from "@/deployment-notification";
 import { getDeploymentAliases } from "@/deployment/alias";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
+import { githubDeploymentJob } from "@/github-deployment/job";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
 
@@ -141,15 +142,18 @@ async function registerFileHashes(
 }
 
 /**
- * Update the deployment_aliases table with the current deployment.
- * Returns the aliases.
+ * Point the aliases of the deployment at it. Returns the aliases, and the
+ * deployments that held them before.
  */
 async function updateDeploymentAliases(input: {
   deployment: Deployment;
   project: Project;
   account: Account;
   projectDomains: ProjectDomain[];
-}): Promise<ReturnType<typeof getDeploymentAliases>> {
+}): Promise<{
+  aliases: ReturnType<typeof getDeploymentAliases>;
+  previousDeploymentIds: string[];
+}> {
   const { deployment, project, account, projectDomains } = input;
   const aliases = getDeploymentAliases({
     accountSlug: account.slug,
@@ -157,6 +161,13 @@ async function updateDeploymentAliases(input: {
     deployment,
     projectDomains,
   });
+  const previousAliases = await DeploymentAlias.query()
+    .distinct("deploymentId")
+    .whereIn(
+      "alias",
+      aliases.map((alias) => alias.alias),
+    )
+    .whereNot("deploymentId", deployment.id);
   const now = new Date().toISOString();
   await DeploymentAlias.query()
     .insert(
@@ -175,7 +186,10 @@ async function updateDeploymentAliases(input: {
       updatedAt: now,
     });
 
-  return aliases;
+  return {
+    aliases,
+    previousDeploymentIds: previousAliases.map((alias) => alias.deploymentId),
+  };
 }
 
 export const finalizeDeploymentOperation = {
@@ -266,7 +280,7 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
         )
       : [];
 
-    const aliases = await updateDeploymentAliases({
+    const { aliases, previousDeploymentIds } = await updateDeploymentAliases({
       deployment,
       project,
       account,
@@ -283,6 +297,7 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
         deploymentId: deployment.id,
         type: "success",
       }),
+      githubDeploymentJob.push(...previousDeploymentIds),
     ]);
 
     res.send(serializeDeployment(deployment));
