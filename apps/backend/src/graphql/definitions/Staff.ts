@@ -10,6 +10,7 @@ import {
   Account,
   StaffTeamContact,
   Subscription,
+  TeamUser,
   type StripeInvoice,
 } from "@/database/models";
 import type { AccountSubscriptionStatus } from "@/database/models/Account";
@@ -39,6 +40,7 @@ import type {
   IPlanInterval,
   IResolvers,
   IStaffTeamOrderBy,
+  ITeamUserLevel,
 } from "../__generated__/resolver-types";
 import type { Context } from "../context";
 import type { AccountActivation } from "../loaders";
@@ -333,6 +335,20 @@ export const typeDefs = gql`
     signupSourceDetail: String
   }
 
+  "A member of a team, with what staff reads to tell who is active."
+  type TeamStaffMember {
+    id: ID!
+    user: User!
+    level: TeamUserLevel!
+    "When the user joined the team."
+    joinedAt: DateTime!
+    """
+    When the user last used the web app, to within ten minutes. Null when they
+    have not signed in since sessions were introduced, in June 2026.
+    """
+    lastSeenAt: DateTime
+  }
+
   "Trace of a staff member reaching out to a team."
   type TeamStaffContact {
     id: ID!
@@ -466,6 +482,13 @@ export const typeDefs = gql`
     "When the team got its first build compared to a baseline"
     firstComparisonAt: DateTime
     owners: [TeamStaffOwner!]!
+    """
+    Every member of the team, owners first, then by the date they joined.
+
+    Unpaginated, and a query per team, so meant to be read for one team rather
+    than across the directory.
+    """
+    members: [TeamStaffMember!]!
     "When a staff member reached out to the team, null if never"
     contact: TeamStaffContact
     """
@@ -897,6 +920,16 @@ export const resolvers: IResolvers = {
       invariant(account.teamId, "not a team account");
       return ctx.loaders.TeamOwnersByTeamId.load(account.teamId);
     },
+    members: async (account) => {
+      invariant(account.teamId, "not a team account");
+      return TeamUser.query()
+        .where("teamId", account.teamId)
+        .orderByRaw(
+          `case "userLevel" when 'owner' then 0 when 'member' then 1 else 2 end`,
+        )
+        .orderBy("createdAt", "asc")
+        .orderBy("id", "asc");
+    },
     contact: async (account, _args, ctx) => {
       invariant(account.teamId, "not a team account");
       return ctx.loaders.StaffTeamContactByTeamId.load(account.teamId);
@@ -938,6 +971,23 @@ export const resolvers: IResolvers = {
         .$getSubscriptionManager()
         .getActiveSubscription();
       return getRunningTrialEnd(subscription);
+    },
+  },
+  TeamStaffMember: {
+    user: async (teamUser, _args, ctx) => {
+      const account = await ctx.loaders.AccountFromRelation.load({
+        userId: teamUser.userId,
+      });
+      invariant(account, "user account not found");
+      return account;
+    },
+    level: (teamUser) => teamUser.userLevel as ITeamUserLevel,
+    joinedAt: (teamUser) => new Date(teamUser.createdAt),
+    lastSeenAt: async (teamUser, _args, ctx) => {
+      const lastSeenAt = await ctx.loaders.UserLastSeenAtByUserId.load(
+        teamUser.userId,
+      );
+      return lastSeenAt ? new Date(lastSeenAt) : null;
     },
   },
   TeamStaffPeriodUsage: {

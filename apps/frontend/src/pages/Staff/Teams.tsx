@@ -9,8 +9,9 @@ import { diffInCalendarDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import {
-  CreditCardIcon,
+  ExternalLinkIcon,
   HourglassIcon,
+  MailIcon,
   MoreVerticalIcon,
   SearchIcon,
 } from "lucide-react";
@@ -46,6 +47,7 @@ import {
   MenuItem,
   MenuItemTooltip,
   MenuRoot,
+  MenuSeparator,
   MenuTrigger,
 } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
@@ -57,14 +59,17 @@ import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { getAccountURL } from "../Account/AccountParams";
+import { getOwnerEmails, useCopyOwnerEmails } from "./owner-emails";
 import {
   formatPrice,
   getPeriodFlatPrice,
   PRO_PLAN_NAME,
   type PricedPlan,
 } from "./pricing";
+import { getStaffTeamURL } from "./staff-team-url";
 import { StaffTrialDialog, type StaffTrialMode } from "./StaffTrialDialog";
 import { StripeCustomerLink } from "./stripe";
+import { getPeriodAmount, SubscriptionLabel } from "./team-billing";
 
 const StaffTeamsQuery = graphql(`
   query StaffTeams_staffTeams(
@@ -95,6 +100,10 @@ const StaffTeamsQuery = graphql(`
         subscriptionStatus
         stripeCustomerId
         staff {
+          owners {
+            id
+            email
+          }
           flatPrice
           addOns {
             label
@@ -354,36 +363,6 @@ type TeamBilling = {
 };
 
 /**
- * What a team was billed over one period: the invoice the period closed on
- * when there is one, and otherwise the plan's own amount, its add-ons and the
- * screenshots it consumed beyond the quota.
- *
- * Both halves are taken in the period's own unit rather than brought back to a
- * month, unlike the rate the trial pipeline quotes. This column answers what an
- * invoice came to, and a yearly subscription's invoice covers a year — dividing
- * it by twelve would report a figure Stripe never charged, under a header that
- * says otherwise. The plan and the day count next to it say which unit the row
- * is in.
- *
- * No subscription status to check, either. `billingPeriods` only ever holds the
- * periods Stripe actually invoices — trial periods and periods predating the
- * subscription are dropped server side — so a period being there is itself what
- * says it was billed, and a team with none was billed nothing.
- */
-function getPeriodAmount(
-  period: BillingPeriod,
-  staff: TeamItem["staff"],
-  plan: PricedPlan,
-): number {
-  return (
-    period.invoicedAmount ??
-    getPeriodFlatPrice(staff.flatPrice, plan) +
-      staff.addOns.reduce((total, addOn) => total + addOn.monthlyPrice, 0) +
-      period.additionalScreenshotsCost
-  );
-}
-
-/**
  * What the team billed over its last two periods, or null when it bills nothing
  * at all — a team off a usage-based plan, on a granted one, or with no
  * subscription.
@@ -591,31 +570,6 @@ function BilledPeriodCells(props: {
   );
 }
 
-/**
- * `trialing_with_payment_method` spelled out is far wider than the column, and
- * the only part that adds anything over "trialing" is that a card is on file —
- * which a credit card icon says just as well.
- */
-function SubscriptionLabel(props: { status: string | null | undefined }) {
-  const { status } = props;
-
-  if (status === AccountSubscriptionStatus.TrialingWithPaymentMethod) {
-    return (
-      <span className="whitespace-nowrap">
-        trialing
-        <Tooltip content="Payment method filled">
-          <CreditCardIcon
-            className="text-success-low ml-1 inline-block size-4"
-            aria-label="Payment method filled"
-          />
-        </Tooltip>
-      </span>
-    );
-  }
-
-  return <>{status ? status.replaceAll("_", " ") : "none"}</>;
-}
-
 function StaffMembersPanel(props: { members: TeamMemberItem[] }) {
   if (props.members.length === 0) {
     return <div className="text-low text-sm">No members found.</div>;
@@ -667,6 +621,8 @@ function StaffTeamActionsMenu(props: {
   // would leave the team with two in Stripe.
   const hasSubscription = checkHasSubscriptionStatus(team.subscriptionStatus);
   const label = `${team.name || team.slug} actions`;
+  const copyOwnerEmails = useCopyOwnerEmails();
+  const hasOwnerEmails = getOwnerEmails(team.staff.owners).length > 0;
 
   return (
     <MenuRoot>
@@ -676,6 +632,25 @@ function StaffTeamActionsMenu(props: {
         </Button>
       </MenuTrigger>
       <Menu aria-label={label}>
+        <MenuItem
+          icon={<MailIcon />}
+          disabled={!hasOwnerEmails}
+          suffix={
+            hasOwnerEmails ? null : (
+              <MenuItemTooltip content="No owner has an email on file" />
+            )
+          }
+          onAction={() => copyOwnerEmails(team.staff.owners)}
+        >
+          Copy owner emails
+        </MenuItem>
+        <MenuItem
+          icon={<ExternalLinkIcon />}
+          href={getAccountURL({ accountSlug: team.slug })}
+        >
+          Open team in Argos
+        </MenuItem>
+        <MenuSeparator />
         {isTrialing ? (
           <MenuItem icon={<HourglassIcon />} onAction={() => onTrial("extend")}>
             Extend trial…
@@ -708,7 +683,6 @@ function StaffTeamRow(props: {
   onTrial: (mode: StaffTrialMode) => void;
 }) {
   const { team, index, isLast, isOpened, toggleMembers, onTrial } = props;
-  const teamURL = getAccountURL({ accountSlug: team.slug });
   const billing = getTeamBilling(team);
   const {
     data: membersData,
@@ -744,7 +718,7 @@ function StaffTeamRow(props: {
                 wrapper takes the width the link does not, so the link lands at
                 the same offset on every row whatever the name is. */}
             <Link
-              href={teamURL}
+              href={getStaffTeamURL(team.slug)}
               className="min-w-0 flex-1 truncate font-medium"
             >
               {team.name || team.slug}

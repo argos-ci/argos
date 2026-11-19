@@ -59,6 +59,7 @@ import {
   TeamUser,
   Test,
   User,
+  UserSession,
 } from "@/database/models";
 import type { AccountPermission } from "@/database/models/Account";
 import type { ProjectPermission } from "@/database/models/Project";
@@ -2065,6 +2066,35 @@ async function loadLatestCompareScreenshots(
   return results;
 }
 
+/**
+ * When each user last used the web app, read off their sessions.
+ *
+ * Revoked and expired sessions count too: signing out revokes the session that
+ * holds the last activity. Unlike presence, which Redis forgets after a week,
+ * sessions are kept, though only since they were introduced in June 2026.
+ */
+function createUserLastSeenAtByUserIdLoader() {
+  return new DataLoader<string, string | null>(async (userIds) => {
+    const rows = (await UserSession.query()
+      .select("userId")
+      .max("lastSeenAt as lastSeenAt")
+      .whereIn("userId", userIds as string[])
+      .groupBy("userId")) as unknown as Array<{
+      userId: string | number;
+      lastSeenAt: string | Date | null;
+    }>;
+
+    const lastSeenAtByUserId = new Map(
+      rows.map((row) => [
+        String(row.userId),
+        row.lastSeenAt ? new Date(row.lastSeenAt).toISOString() : null,
+      ]),
+    );
+
+    return userIds.map((userId) => lastSeenAtByUserId.get(userId) ?? null);
+  });
+}
+
 function createPresenceLoader() {
   return new DataLoader<string, UserPresence | null>(async (userIds) =>
     getPresences(userIds as string[]),
@@ -2117,6 +2147,7 @@ function createUsersShareTeamLoader() {
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   Presence: createPresenceLoader(),
+  UserLastSeenAtByUserId: createUserLastSeenAtByUserIdLoader(),
   UsersShareTeam: createUsersShareTeamLoader(),
   AccountFromRelation: createAccountFromRelationLoader(),
   ProjectTeamUserLevel: createProjectTeamUserLevelLoader(),
