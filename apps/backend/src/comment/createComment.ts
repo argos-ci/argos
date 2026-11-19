@@ -93,6 +93,15 @@ export async function createComment(input: {
     throw boom(400, "Comment is too large");
   }
 
+  // A line range describes a textual snapshot. An uploaded image or video has
+  // no lines.
+  if (target.type === "media" && anchor?.type === "lines") {
+    throw boom(
+      400,
+      "A media comment can't be anchored to lines. Use a point or an area.",
+    );
+  }
+
   // Inserting the comment and loading the project are independent — run them
   // together rather than back-to-back.
   //

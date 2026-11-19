@@ -10,6 +10,7 @@ export type NormalizedRect = NormalizedPoint & {
   height: number;
 };
 export type ScreenPoint = { left: number; top: number };
+export type ScreenRect = ScreenPoint & { width: number; height: number };
 
 /**
  * Maps between an image's normalized coordinates (0–1 of its width/height) and
@@ -76,7 +77,26 @@ export function useImageProjection(params: {
     [paneSize, getOffsets, imgSize.width, imgSize.height, imgScale, transform],
   );
 
-  return { toScreen, toNormalized, ready: Boolean(paneSize && imgScale) };
+  const toScreenRect = useCallback(
+    (rect: NormalizedRect): ScreenRect => {
+      const start = toScreen(rect);
+      const end = toScreen({ x: rect.x + rect.width, y: rect.y + rect.height });
+      return {
+        left: start.left,
+        top: start.top,
+        width: end.left - start.left,
+        height: end.top - start.top,
+      };
+    },
+    [toScreen],
+  );
+
+  return {
+    toScreen,
+    toScreenRect,
+    toNormalized,
+    ready: Boolean(paneSize && imgScale),
+  };
 }
 
 /** Whether a normalized point falls within the image bounds. */

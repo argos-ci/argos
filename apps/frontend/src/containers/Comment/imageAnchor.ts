@@ -4,31 +4,33 @@ import type {
   NormalizedPoint,
   NormalizedRect,
 } from "@/containers/Build/projection";
+import { graphql, type DocumentType } from "@/gql";
 import type { CommentAnchorInput } from "@/gql/graphql";
+
+const _CommentAnchorFragment = graphql(`
+  fragment ImageAnchor_CommentAnchor on CommentAnchor {
+    __typename
+    ... on CommentPointAnchor {
+      x
+      y
+    }
+    ... on CommentAreaAnchor {
+      x
+      y
+      width
+      height
+    }
+  }
+`);
 
 /** Where on an image a comment points: a spot, or an area. */
 export type ImageAnchor =
   | ({ type: "point" } & NormalizedPoint)
   | ({ type: "area" } & NormalizedRect);
 
-/**
- * The `Comment.anchor` union as the fragments select it. Structural, so any
- * selection carrying the image anchors' fields fits, whatever else it selects.
- */
-type QueriedAnchor =
-  | { __typename: "CommentPointAnchor"; x: number; y: number }
-  | {
-      __typename: "CommentAreaAnchor";
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-    }
-  | { __typename: "CommentLinesAnchor" };
-
 /** The image anchor of a queried comment, null when it points elsewhere. */
 export function getImageAnchor(
-  anchor: QueriedAnchor | null | undefined,
+  anchor: DocumentType<typeof _CommentAnchorFragment> | null | undefined,
 ): ImageAnchor | null {
   switch (anchor?.__typename) {
     case "CommentPointAnchor":

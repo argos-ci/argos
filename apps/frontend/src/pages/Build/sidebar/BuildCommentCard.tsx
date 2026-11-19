@@ -12,7 +12,6 @@ import type { EditorValue } from "@/ui/Editor/Editor";
 import {
   CommentScreenshotReference,
   useGoToCommentDiff,
-  type CommentAnchor,
 } from "./CommentScreenshotReference";
 
 const _CommentFragment = graphql(`
@@ -22,21 +21,7 @@ const _CommentFragment = graphql(`
       ...CommentScreenshotReference_ScreenshotDiff
     }
     anchor {
-      __typename
-      ... on CommentPointAnchor {
-        x
-        y
-      }
-      ... on CommentAreaAnchor {
-        x
-        y
-        width
-        height
-      }
-      ... on CommentLinesAnchor {
-        from
-        to
-      }
+      ...CommentScreenshotReference_CommentAnchor
     }
     ...CommentCard_Comment
   }
@@ -114,7 +99,7 @@ export function BuildCommentCard(props: {
     [buildParams, comment.id],
   );
 
-  const anchor = (comment.anchor as CommentAnchor | null) ?? null;
+  const anchor = comment.anchor ?? null;
   const screenshotDiff = comment.screenshotDiff ?? null;
   const goToDiff = useGoToCommentDiff({
     commentId: comment.id,

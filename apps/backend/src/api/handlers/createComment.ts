@@ -253,22 +253,9 @@ function resolveMediaCommentOptions(input: {
     throw boom(400, "A reply cannot carry its own anchor");
   }
 
-  if (!requestBody.anchor) {
-    return { anchor: null };
-  }
-
-  const anchor = parseCommentAnchor(requestBody.anchor);
-
-  // A line range describes a textual snapshot. An uploaded image or video has
-  // no lines.
-  if (anchor.type === "lines") {
-    throw boom(
-      400,
-      "A media comment can't be anchored to lines. Use a point or an area.",
-    );
-  }
-
-  return { anchor };
+  return {
+    anchor: requestBody.anchor ? parseCommentAnchor(requestBody.anchor) : null,
+  };
 }
 
 /**

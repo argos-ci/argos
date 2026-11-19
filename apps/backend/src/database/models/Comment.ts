@@ -15,7 +15,12 @@ import { User } from "./User";
 const COORDINATE_MESSAGE = "Comment anchor coordinates must be between 0 and 1";
 const LINES_MESSAGE = "Comment anchor lines must be positive integers";
 const AREA_SIZE_MESSAGE =
-  "Comment anchor area width and height must be greater than 0 and at most 1";
+  "Comment anchor area width and height must be greater than 0";
+
+const NormalizedCoordinateSchema = z
+  .number()
+  .min(0, { message: COORDINATE_MESSAGE })
+  .max(1, { message: COORDINATE_MESSAGE });
 
 /**
  * A point on the referenced screenshot diff, stored as normalized coordinates
@@ -25,12 +30,8 @@ const AREA_SIZE_MESSAGE =
  */
 const CommentPointAnchorSchema = z.object({
   type: z.literal("point"),
-  x: z.number().min(0, { message: COORDINATE_MESSAGE }).max(1, {
-    message: COORDINATE_MESSAGE,
-  }),
-  y: z.number().min(0, { message: COORDINATE_MESSAGE }).max(1, {
-    message: COORDINATE_MESSAGE,
-  }),
+  x: NormalizedCoordinateSchema,
+  y: NormalizedCoordinateSchema,
 });
 
 /**
@@ -39,18 +40,10 @@ const CommentPointAnchorSchema = z.object({
  */
 const CommentAreaAnchorSchema = z.object({
   type: z.literal("area"),
-  x: z.number().min(0, { message: COORDINATE_MESSAGE }).max(1, {
-    message: COORDINATE_MESSAGE,
-  }),
-  y: z.number().min(0, { message: COORDINATE_MESSAGE }).max(1, {
-    message: COORDINATE_MESSAGE,
-  }),
-  width: z.number().gt(0, { message: AREA_SIZE_MESSAGE }).max(1, {
-    message: AREA_SIZE_MESSAGE,
-  }),
-  height: z.number().gt(0, { message: AREA_SIZE_MESSAGE }).max(1, {
-    message: AREA_SIZE_MESSAGE,
-  }),
+  x: NormalizedCoordinateSchema,
+  y: NormalizedCoordinateSchema,
+  width: z.number().gt(0, { message: AREA_SIZE_MESSAGE }),
+  height: z.number().gt(0, { message: AREA_SIZE_MESSAGE }),
 });
 
 /** A 1-based inclusive line range on a textual snapshot. */

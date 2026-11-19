@@ -47,17 +47,20 @@ import { resolveCommentMediaVersionId } from "@/media/version";
 import {
   ICommentChangeType,
   type ICommentAnchorInput,
-  type ICommentAreaAnchor,
-  type ICommentLinesAnchor,
   type ICommentPermission,
-  type ICommentPointAnchor,
   type IResolvers,
 } from "../__generated__/resolver-types";
 import { assertCanViewBuild } from "../buildAccess";
 import type { Context } from "../context";
 import { getMediaForUser } from "../mediaAccess";
 import { getTestForUser } from "../testAccess";
-import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
+import {
+  badUserInput,
+  forbidden,
+  notFound,
+  toGraphQLError,
+  unauthenticated,
+} from "../util";
 import { resolveAgent } from "./Agent";
 
 const { gql } = gqlTag;
@@ -86,6 +89,20 @@ function commentAnchorFromInput(input: ICommentAnchorInput): CommentAnchor {
     );
   }
   return result.data;
+}
+
+/**
+ * The service rejects a bad comment (empty, too large, lines on a media) with a
+ * 400, which Apollo would otherwise report as a server error.
+ */
+async function createCommentFromResolver(
+  input: Parameters<typeof createComment>[0],
+): Promise<void> {
+  try {
+    await createComment(input);
+  } catch (error) {
+    throw toGraphQLError(error);
+  }
 }
 
 /**
@@ -493,14 +510,7 @@ export const resolvers: IResolvers = {
       }
       return ctx.loaders.ScreenshotDiff.load(comment.screenshotDiffId);
     },
-    // The stored anchor is structurally the union the schema exposes; only its
-    // `side` differs nominally (model string-union vs generated enum), so cast.
-    anchor: (comment) =>
-      (comment.anchor ?? null) as
-        | ICommentPointAnchor
-        | ICommentAreaAnchor
-        | ICommentLinesAnchor
-        | null,
+    anchor: (comment) => comment.anchor,
     threadSubscribed: async (comment, _args, ctx) => {
       if (!ctx.auth) {
         return false;
@@ -531,7 +541,7 @@ export const resolvers: IResolvers = {
   },
   CommentAnchor: {
     __resolveType: (anchor) => {
-      switch ((anchor as CommentAnchor).type) {
+      switch (anchor.type) {
         case "point":
           return "CommentPointAnchor";
         case "area":
@@ -651,7 +661,7 @@ export const resolvers: IResolvers = {
         }
       }
 
-      await createComment({
+      await createCommentFromResolver({
         target,
         userId: auth.user.id,
         body: input.body as JSONContent,
@@ -690,7 +700,7 @@ export const resolvers: IResolvers = {
           })
         : null;
 
-      await createComment({
+      await createCommentFromResolver({
         target,
         userId: auth.user.id,
         body: input.body as JSONContent,
@@ -739,14 +749,7 @@ export const resolvers: IResolvers = {
 
       const anchor = input.anchor ? commentAnchorFromInput(input.anchor) : null;
 
-      // A line range describes a textual snapshot; an image has no lines.
-      if (anchor?.type === "lines") {
-        throw badUserInput(
-          "A media comment can't be anchored to lines. Use a point or an area.",
-        );
-      }
-
-      await createComment({
+      await createCommentFromResolver({
         target,
         userId: auth.user.id,
         body: input.body as JSONContent,

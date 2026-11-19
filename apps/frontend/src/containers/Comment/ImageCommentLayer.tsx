@@ -1,5 +1,4 @@
 import {
-  Fragment,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -157,7 +156,7 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
     onPlacingDismiss,
   } = props;
 
-  const { toScreen, toNormalized, ready } = useImageProjection({
+  const { toScreen, toScreenRect, toNormalized, ready } = useImageProjection({
     paneSize,
     imgSize,
     verticalAlign,
@@ -355,6 +354,10 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
         CLICK_MOVE_THRESHOLD
     ) {
       press.dragging = true;
+      // The drag ends in a new draft anyway: closing now keeps the popovers
+      // out of the render each move triggers.
+      setDraft(null);
+      setOpenThreadId(null);
     }
     if (press.dragging) {
       const point = getPointerPoint(event);
@@ -371,15 +374,13 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
     const point = getPointerPoint(event);
     const area = point ? getRectInImage(press.point, point) : null;
     setSelection(null);
-    setOpenThreadId(null);
     setDraft(area ? { type: "area", ...area } : null);
   };
   const handlePlacementPointerCancel = () => {
     pressRef.current = null;
     setSelection(null);
   };
-  const placeAt = (paneX: number, paneY: number) => {
-    const point = toNormalized(paneX, paneY);
+  const placePoint = (point: NormalizedPoint | null) => {
     setOpenThreadId(null);
     setDraft(
       point && isPointInImage(point) ? { type: "point", ...point } : null,
@@ -391,8 +392,7 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
     if (press?.dragging) {
       return;
     }
-    const rect = event.currentTarget.getBoundingClientRect();
-    placeAt(event.clientX - rect.left, event.clientY - rect.top);
+    placePoint(getPointerPoint(event));
   };
 
   const handleCreate = useCallback(
@@ -413,14 +413,8 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
     return null;
   }
 
-  const renderArea = (area: NormalizedRect) => (
-    <CommentArea
-      topLeft={toScreen(area)}
-      bottomRight={toScreen({
-        x: area.x + area.width,
-        y: area.y + area.height,
-      })}
-    />
+  const renderArea = (area: NormalizedRect, key?: string) => (
+    <CommentArea key={key} rect={toScreenRect(area)} />
   );
   const draftPin = draft ? toScreen(getAnchorPinPoint(draft)) : null;
 
@@ -445,7 +439,9 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
                 if (paneSize) {
-                  placeAt(paneSize.width / 2, paneSize.height / 2);
+                  placePoint(
+                    toNormalized(paneSize.width / 2, paneSize.height / 2),
+                  );
                 }
               }
             }}
@@ -454,11 +450,9 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
         {threads.map((thread) =>
           thread.anchor.type === "area" &&
           (thread.root.id === openThreadId ||
-            thread.root.id === hoveredThreadId) ? (
-            <Fragment key={thread.root.id}>
-              {renderArea(thread.anchor)}
-            </Fragment>
-          ) : null,
+            thread.root.id === hoveredThreadId)
+            ? renderArea(thread.anchor, thread.root.id)
+            : null,
         )}
         {selection ? renderArea(selection) : null}
         {/* The comment being drafted gets an immediate indicator at its spot. */}
@@ -483,15 +477,12 @@ export function ImageCommentLayer<TComment extends LayerComment>(props: {
               setDraft(null);
               setOpenThreadId(thread.root.id);
             }}
-            onHoverChange={(hovered) => {
-              setHoveredThreadId((current) =>
-                hovered
-                  ? thread.root.id
-                  : current === thread.root.id
-                    ? null
-                    : current,
-              );
-            }}
+            onHoverChange={
+              thread.anchor.type === "area"
+                ? (hovered) =>
+                    setHoveredThreadId(hovered ? thread.root.id : null)
+                : undefined
+            }
           />
         );
       })}

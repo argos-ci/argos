@@ -47,17 +47,7 @@ const _MediaCommentsFragment = graphql(`
       threadId
       mediaVersionId
       anchor {
-        __typename
-        ... on CommentPointAnchor {
-          x
-          y
-        }
-        ... on CommentAreaAnchor {
-          x
-          y
-          width
-          height
-        }
+        ...ImageAnchor_CommentAnchor
       }
       ...CommentCard_Comment
     }
@@ -80,17 +70,7 @@ const AddMediaCommentMutation = graphql(`
         id
         threadId
         anchor {
-          __typename
-          ... on CommentPointAnchor {
-            x
-            y
-          }
-          ... on CommentAreaAnchor {
-            x
-            y
-            width
-            height
-          }
+          ...ImageAnchor_CommentAnchor
         }
         ...CommentCard_Comment
       }
