@@ -401,35 +401,37 @@ export class ArgosDeploymentStack extends cdk.Stack {
       },
     );
 
+    // Shared by the two distributions viewers reach, so that neither can serve
+    // deployments differently from the other.
+    const viewerDistributionProps = {
+      defaultBehavior: {
+        origin: new origins.HttpOrigin(
+          filesDistribution.distributionDomainName,
+          {
+            protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+            customHeaders: {
+              [filesOriginAuthHeaderName]: filesOriginAuthHeaderValue,
+            },
+          },
+        ),
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        edgeLambdas: [
+          {
+            eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST,
+            functionVersion: viewerRequestFn.currentVersion,
+          },
+        ],
+        cachePolicy,
+        responseHeadersPolicy: viewerResponseHeadersPolicy,
+      },
+      certificate,
+      httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
+    } satisfies cloudfront.DistributionProps;
+
     const aliasDistribution = new cloudfront.Distribution(
       this,
       "AliasDistribution",
-      {
-        defaultBehavior: {
-          origin: new origins.HttpOrigin(
-            filesDistribution.distributionDomainName,
-            {
-              protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
-              customHeaders: {
-                [filesOriginAuthHeaderName]: filesOriginAuthHeaderValue,
-              },
-            },
-          ),
-          viewerProtocolPolicy:
-            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          edgeLambdas: [
-            {
-              eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST,
-              functionVersion: viewerRequestFn.currentVersion,
-            },
-          ],
-          cachePolicy,
-          responseHeadersPolicy: viewerResponseHeadersPolicy,
-        },
-        domainNames: [`*.${baseDomain}`],
-        certificate,
-        httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
-      },
+      { ...viewerDistributionProps, domainNames: [`*.${baseDomain}`] },
     );
 
     // ----------------------------------------------------------------
@@ -452,62 +454,36 @@ export class ArgosDeploymentStack extends cdk.Stack {
       },
     );
 
-    const customDomainsOriginId = "files-origin";
-
-    const customDomainsDistribution = new cloudfront.CfnDistribution(
+    // The certificate is required but unused: CloudFront demands one, only an
+    // ACM ARN is valid for a multi-tenant distribution, and tenants request
+    // their own. Pointing it at the wildcard we already renew avoids minting
+    // one to satisfy a validation rule.
+    const customDomainsDistribution = new cloudfront.Distribution(
       this,
       "CustomDomainsDistribution",
-      {
-        distributionConfig: {
-          enabled: true,
-          connectionMode: "tenant-only",
-          httpVersion: "http2and3",
-          // No `ipv6Enabled` — the connection group owns viewer-side
-          // addressing and CloudFront rejects the field here.
-          //
-          // The certificate is required but unused: CloudFront demands one of
-          // three and only an ACM ARN is valid for a multi-tenant distribution,
-          // while tenants request their own. Pointing it at the wildcard we
-          // already renew avoids minting one to satisfy a validation rule.
-          // Unset, the protocol version would default to the SSLv3 that
-          // multi-tenant distributions reject.
-          viewerCertificate: {
-            acmCertificateArn: certificate.certificateArn,
-            sslSupportMethod: "sni-only",
-            minimumProtocolVersion: "TLSv1.2_2021",
-          },
-          origins: [
-            {
-              id: customDomainsOriginId,
-              domainName: filesDistribution.distributionDomainName,
-              customOriginConfig: { originProtocolPolicy: "https-only" },
-              originCustomHeaders: [
-                {
-                  headerName: filesOriginAuthHeaderName,
-                  headerValue: filesOriginAuthHeaderValue,
-                },
-              ],
-            },
-          ],
-          defaultCacheBehavior: {
-            targetOriginId: customDomainsOriginId,
-            viewerProtocolPolicy: "redirect-to-https",
-            // On by default in the construct above, off in CloudFormation.
-            compress: true,
-            // Multi-tenant distributions reject the legacy TTL fields, so the
-            // shared cache policy is not just tidier here — it is required.
-            cachePolicyId: cachePolicy.cachePolicyId,
-            responseHeadersPolicyId:
-              viewerResponseHeadersPolicy.responseHeadersPolicyId,
-            lambdaFunctionAssociations: [
-              {
-                eventType: "viewer-request",
-                lambdaFunctionArn: viewerRequestFn.currentVersion.edgeArn,
-              },
-            ],
-          },
-        },
-      },
+      viewerDistributionProps,
+    );
+    cdk.Annotations.of(customDomainsDistribution).acknowledgeWarning(
+      "@aws-cdk/aws-cloudfront:emptyDomainNames",
+      "Tenants carry the domain names of a multi-tenant distribution.",
+    );
+
+    const customDomainsCfnDistribution =
+      customDomainsDistribution.node.defaultChild;
+    if (!(customDomainsCfnDistribution instanceof cloudfront.CfnDistribution)) {
+      throw new Error("Expected the distribution to render a CfnDistribution");
+    }
+    // The resource predates the construct: a new logical ID would replace the
+    // distribution and orphan every tenant.
+    customDomainsCfnDistribution.overrideLogicalId("CustomDomainsDistribution");
+    customDomainsCfnDistribution.addPropertyOverride(
+      "DistributionConfig.ConnectionMode",
+      "tenant-only",
+    );
+    // The connection group owns viewer-side addressing, and CloudFront rejects
+    // the field on a multi-tenant distribution.
+    customDomainsCfnDistribution.addPropertyDeletionOverride(
+      "DistributionConfig.IPV6Enabled",
     );
 
     // ----------------------------------------------------------------
@@ -589,7 +565,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // Both are read by the app: DEPLOYMENTS_CUSTOM_DOMAINS_DISTRIBUTION_ID and
     // DEPLOYMENTS_CUSTOM_DOMAINS_CONNECTION_GROUP_ID.
     new cdk.CfnOutput(this, "CustomDomainsDistributionId", {
-      value: customDomainsDistribution.ref,
+      value: customDomainsDistribution.distributionId,
     });
     new cdk.CfnOutput(this, "CustomDomainsConnectionGroupId", {
       value: connectionGroup.attrId,
