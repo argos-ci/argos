@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import { raw } from "objection";
 
 import { Build, GithubPullRequest, OriginPullRequest } from "@/database/models";
 
@@ -149,6 +150,11 @@ export async function getPullRequestStack(pullRequest: PullRequest): Promise<{
 /**
  * The latest build of the same suite as `build` for each pull request, keyed
  * by pull request id. Pull requests the suite never ran on are left out.
+ *
+ * Latest as `getNewerBuild` ranks them: the last run of the most recent
+ * commit, a commit being as recent as its first build. A re-run of an older
+ * commit is newer by id, and would send the reviewer to code the pull request
+ * has moved past.
  */
 export async function getLatestPullRequestBuilds(args: {
   build: Build;
@@ -158,18 +164,50 @@ export async function getLatestPullRequestBuilds(args: {
   const column = build.originPullRequestId
     ? "originPullRequestId"
     : "githubPullRequestId";
-  const builds = await Build.query()
-    .where("projectId", build.projectId)
-    .where("name", build.name)
-    .where("mode", "ci")
-    .where("mergeQueue", false)
+  const candidates = Build.query()
+    .joinRelated("compareScreenshotBucket")
+    .where("builds.projectId", build.projectId)
+    .where("builds.name", build.name)
+    .where("builds.mode", "ci")
+    .where("builds.mergeQueue", false)
     .whereIn(
-      column,
+      `builds.${column}`,
       pullRequests.map((pullRequest) => pullRequest.id),
     )
-    .distinctOn(column)
-    .orderBy(column)
-    .orderBy("id", "desc");
+    .select(
+      "builds.id",
+      "builds.createdAt",
+      raw("?? as ??", [`builds.${column}`, "pullRequestId"]),
+      raw("coalesce(??, ??) as ??", [
+        "builds.prHeadCommit",
+        "compareScreenshotBucket.commit",
+        "commit",
+      ]),
+    );
+  const builds = await Build.query()
+    .with("candidates", candidates)
+    .with("commits", (qb) =>
+      qb
+        .from("candidates")
+        .select(
+          "pullRequestId",
+          "commit",
+          raw("min(??) as ??", ["createdAt", "firstBuiltAt"]),
+        )
+        .groupBy("pullRequestId", "commit"),
+    )
+    .join("candidates", "candidates.id", "builds.id")
+    .join("commits", (join) =>
+      join
+        .on("commits.pullRequestId", "candidates.pullRequestId")
+        .andOn("commits.commit", "candidates.commit"),
+    )
+    .select("builds.*")
+    .distinctOn(`builds.${column}`)
+    .orderBy(`builds.${column}`)
+    .orderBy("commits.firstBuiltAt", "desc")
+    .orderBy("builds.createdAt", "desc")
+    .orderBy("builds.id", "desc");
   return new Map(
     builds.map((latest) => {
       const pullRequestId = latest[column];

@@ -198,4 +198,41 @@ describe("#getLatestPullRequestBuilds", () => {
     expect(builds.get(above.id)?.id).toBe(build.id);
     expect(builds.get(below.id)?.id).toBe(latest.id);
   });
+
+  test("skips a re-run of an older commit for the build of the newest one", async ({
+    repository,
+    project,
+  }) => {
+    const pullRequest = await createPullRequest(repository, {
+      number: 1,
+      headRef: "one",
+      baseRef: "main",
+    });
+    const createBuild = async (commit: string, createdAt: string) => {
+      const bucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        commit,
+      });
+      return factory.Build.create({
+        projectId: project.id,
+        compareScreenshotBucketId: bucket.id,
+        githubPullRequestId: pullRequest.id,
+        name: "default",
+        mode: "ci",
+        createdAt,
+      });
+    };
+    const older = "1".repeat(40);
+    const newer = "2".repeat(40);
+
+    await createBuild(older, "2026-11-01T10:00:00.000Z");
+    const latest = await createBuild(newer, "2026-11-01T11:00:00.000Z");
+    const rerun = await createBuild(older, "2026-11-01T12:00:00.000Z");
+
+    const builds = await getLatestPullRequestBuilds({
+      build: rerun,
+      pullRequests: [pullRequest],
+    });
+    expect(builds.get(pullRequest.id)?.id).toBe(latest.id);
+  });
 });
