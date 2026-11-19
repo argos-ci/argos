@@ -49,7 +49,6 @@ const _BuildFragment = graphql(`
     ...BuildBaselineEligibilityChip_Build
     ...BuildReviewability_Build
     ...BuildSwitcher_Build
-    ...PullRequestStack_Build
   }
 `);
 
@@ -269,9 +268,9 @@ export const BuildHeader = memo(
           {build?.pullRequest ? (
             <>
               <PullRequestStack
-                build={build}
                 accountSlug={props.accountSlug}
                 projectName={props.projectName}
+                buildNumber={props.buildNumber}
               />
               <PullRequestButton pullRequest={build.pullRequest} size="small" />
             </>

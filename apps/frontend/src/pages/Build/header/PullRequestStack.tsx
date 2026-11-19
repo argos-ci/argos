@@ -1,3 +1,4 @@
+import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { StackIcon } from "@primer/octicons-react";
 import { clsx } from "clsx";
@@ -30,6 +31,22 @@ const _BuildFragment = graphql(`
           type
           status
         }
+      }
+    }
+  }
+`);
+
+const PullRequestStackQuery = graphql(`
+  query PullRequestStack_build(
+    $accountSlug: String!
+    $projectName: String!
+    $buildNumber: Int!
+  ) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
+      id
+      build(number: $buildNumber) {
+        id
+        ...PullRequestStack_Build
       }
     }
   }
@@ -80,8 +97,34 @@ function StackNode(props: {
  * The pull requests this one is stacked with, each opening its latest build,
  * down to the branch the stack merges into. Hangs off the pull request in the
  * build header, and renders nothing when the pull request is not stacked.
+ *
+ * Queried apart from the build page, which refetches every two seconds while
+ * the build runs: the stack costs a query per pull request in it, and a build
+ * running does not change it.
  */
 export function PullRequestStack(props: {
+  accountSlug: string;
+  projectName: string;
+  buildNumber: number;
+}) {
+  const { accountSlug, projectName, buildNumber } = props;
+  const { data } = useQuery(PullRequestStackQuery, {
+    variables: { accountSlug, projectName, buildNumber },
+  });
+  const build = data?.project?.build;
+  if (!build) {
+    return null;
+  }
+  return (
+    <PullRequestStackMenu
+      build={build}
+      accountSlug={accountSlug}
+      projectName={projectName}
+    />
+  );
+}
+
+export function PullRequestStackMenu(props: {
   build: Build;
   accountSlug: string;
   projectName: string;
@@ -147,6 +190,9 @@ export function PullRequestStack(props: {
             }
             checked={item.pullRequest.id === currentId}
             textValue={`#${item.pullRequest.number} ${item.pullRequest.title ?? ""}`}
+            // Typing filters a menu, and a row it drops would leave the line
+            // joining the rest pointing at nothing: every row is kept.
+            filterPriority={index}
             suffix={item.build ? undefined : "No build"}
           >
             <span className="text-low mr-2 tabular-nums">
@@ -163,6 +209,7 @@ export function PullRequestStack(props: {
               </StackNode>
             }
             textValue={stack.baseBranch}
+            filterPriority={stack.items.length}
           >
             <span className="font-mono">{stack.baseBranch}</span>
           </MenuItem>

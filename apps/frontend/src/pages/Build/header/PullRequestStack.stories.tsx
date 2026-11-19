@@ -5,9 +5,9 @@ import { PullRequestButton } from "@/containers/PullRequestButton";
 import { BuildStatus, BuildType, PullRequestState } from "@/gql/graphql";
 import { openOverlayParameters, OverlayStage } from "@/ui/storyOverlay";
 
-import { PullRequestStack } from "./PullRequestStack";
+import { PullRequestStackMenu } from "./PullRequestStack";
 
-type Build = ComponentProps<typeof PullRequestStack>["build"];
+type Build = ComponentProps<typeof PullRequestStackMenu>["build"];
 type StackItem = NonNullable<Build["pullRequestStack"]>["items"][number];
 
 function item(
@@ -58,7 +58,7 @@ const bottom = item(101, "Add the order summary", {
 
 const meta = {
   title: "Pages/Build/PullRequestStack",
-  component: PullRequestStack,
+  component: PullRequestStackMenu,
   args: {
     build: stack([top, middle, bottom], 102),
     accountSlug: "acme",
@@ -66,10 +66,10 @@ const meta = {
   },
   render: (args) => (
     <OverlayStage>
-      <PullRequestStack {...args} />
+      <PullRequestStackMenu {...args} />
     </OverlayStage>
   ),
-} satisfies Meta<typeof PullRequestStack>;
+} satisfies Meta<typeof PullRequestStackMenu>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -78,7 +78,7 @@ type Story = StoryObj<typeof meta>;
 export const Closed: Story = {
   render: (args) => (
     <div className="p-4">
-      <PullRequestStack {...args} />
+      <PullRequestStackMenu {...args} />
     </div>
   ),
 };
@@ -203,7 +203,7 @@ export const InHeader: Story = {
   render: (args) => (
     <OverlayStage>
       <div className="flex w-full max-w-2xl items-center justify-end gap-2">
-        <PullRequestStack {...args} />
+        <PullRequestStackMenu {...args} />
         <PullRequestButton pullRequest={pullRequest} size="small" />
       </div>
     </OverlayStage>
