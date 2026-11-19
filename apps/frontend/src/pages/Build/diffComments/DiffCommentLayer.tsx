@@ -15,7 +15,6 @@ import {
   getCommentThreads,
   type CommentThread,
 } from "@/containers/Comment/commentThreads";
-import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import { useIsThreadAnchorShown } from "@/containers/Comment/useCollapsedThread";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
@@ -24,6 +23,7 @@ import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import type { BundledLanguage } from "@/shiki/bundle";
 import { type EditorValue } from "@/ui/Editor/Editor";
+import { MentionableUsersProvider } from "@/ui/Editor/MentionableUsersContext";
 import { toast } from "@/ui/Toaster";
 import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";

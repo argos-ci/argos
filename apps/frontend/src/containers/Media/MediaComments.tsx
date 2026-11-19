@@ -11,7 +11,6 @@ import {
   getCommentThreads,
   type CommentThread,
 } from "@/containers/Comment/commentThreads";
-import { useMentionableUsers } from "@/containers/Comment/MentionableUsersContext";
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { useHighlightedCommentId } from "@/containers/Comment/useHighlightedCommentId";
 import { DocumentType, graphql } from "@/gql";
@@ -148,7 +147,6 @@ export function MediaComments(props: {
   const { mode } = useCommentTool();
   const client = useApolloClient();
   const roleScope = useCommentRoleScope();
-  const mentions = useMentionableUsers();
   const [replyPending, setReplyPending] = useState(false);
 
   const canComment = checkCanCommentOnMedia(media);
@@ -224,7 +222,6 @@ export function MediaComments(props: {
             <StandaloneEditor
               onSubmit={handleSubmit}
               draftKey={`media.${media.id}.comment`}
-              mentions={mentions}
               placeholder="Leave a comment on this media…"
               submitLabel="Submit the comment"
               disabled={replyPending}

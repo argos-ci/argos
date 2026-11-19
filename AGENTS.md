@@ -249,6 +249,10 @@ The TipTap extension list is **duplicated** and must stay in sync between
 HTML rendering) and `apps/frontend/src/ui/Editor/`. A node the client produces
 but the backend doesn't register is rejected with `Invalid comment body`.
 
+Every `Editor` suggests the users of the nearest `MentionableUsersProvider`
+(`ui/Editor/MentionableUsersContext`) on `@`. Wrap a new comment surface in one
+instead of passing `mentions`, which only overrides the list.
+
 Never trust the client for anything derived from `content` (e.g. mentioned
 users) — re-parse the stored JSON server-side and check permissions (see
 `src/comment/mentions.ts`). A `mention` node persists **only the account id**,

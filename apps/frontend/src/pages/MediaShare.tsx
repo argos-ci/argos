@@ -32,7 +32,6 @@ import {
   downloadWithToast,
   fetchBlob,
 } from "@/containers/Build/ScreenshotActions";
-import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import { useCommentRoleScope } from "@/containers/Comment/useCommentRoleScope";
 import { MediaSharingIllustration } from "@/containers/EmptyStateIllustrations";
 import { MediaComments } from "@/containers/Media/MediaComments";
@@ -58,6 +57,7 @@ import { Button, LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Chip } from "@/ui/Chip";
 import { Code } from "@/ui/Code";
+import { MentionableUsersProvider } from "@/ui/Editor/MentionableUsersContext";
 import { Heading } from "@/ui/Heading";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import {

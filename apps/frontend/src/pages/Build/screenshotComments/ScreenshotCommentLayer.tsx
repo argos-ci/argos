@@ -13,7 +13,6 @@ import {
 import { type NormalizedPoint } from "@/containers/Build/projection";
 import { type PaneSize } from "@/containers/Build/Zoomer";
 import { getCommentThreads } from "@/containers/Comment/commentThreads";
-import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import {
   PointCommentLayer,
   type PointCommentThread,
@@ -25,6 +24,7 @@ import { ProjectPermission } from "@/gql/graphql";
 import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { type EditorValue } from "@/ui/Editor/Editor";
+import { MentionableUsersProvider } from "@/ui/Editor/MentionableUsersContext";
 import { toast } from "@/ui/Toaster";
 import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";

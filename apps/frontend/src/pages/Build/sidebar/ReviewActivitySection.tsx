@@ -12,7 +12,6 @@ import {
   getCommentThreads,
   type CommentThread,
 } from "@/containers/Comment/commentThreads";
-import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import { SubscribeToggleButton } from "@/containers/Comment/SubscribeToggleButton";
 import { useHighlightedCommentId } from "@/containers/Comment/useHighlightedCommentId";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
@@ -21,6 +20,7 @@ import { ProjectPermission, ReviewChangeType } from "@/gql/graphql";
 import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { Activity, ActivityItem } from "@/ui/Activity";
 import type { MentionUser } from "@/ui/Editor/mention";
+import { MentionableUsersProvider } from "@/ui/Editor/MentionableUsersContext";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Time } from "@/ui/Time";
 import { getMentionUser, getUserCardData, UserHoverCard } from "@/ui/UserCard";

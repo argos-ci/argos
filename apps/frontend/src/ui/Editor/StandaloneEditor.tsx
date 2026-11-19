@@ -69,8 +69,6 @@ export interface StandaloneEditorProps {
     pending: boolean;
     disabled: boolean;
   }) => React.ReactNode;
-  /** Users that can be mentioned with `@`, forwarded to the {@link Editor}. */
-  mentions?: MentionUser[];
   /** Users to resolve existing mentions against, forwarded to the {@link Editor}. */
   mentionedUsers?: MentionUser[];
   /**
@@ -104,7 +102,6 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
     footerStart,
     contentClassName,
     renderSubmit,
-    mentions,
     mentionedUsers,
     draftKey,
   } = props;
@@ -152,7 +149,6 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
       defaultValue={initialContent}
       onChange={setValue}
       onSubmit={submit}
-      mentions={mentions}
       mentionedUsers={mentionedUsers}
       placeholder={placeholder}
       disabled={disabled || isPending}

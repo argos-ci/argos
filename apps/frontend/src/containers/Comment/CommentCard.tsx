@@ -38,7 +38,6 @@ import {
   CommentReactionList,
 } from "./CommentReactions";
 import { DeleteCommentDialog } from "./DeleteCommentDialog";
-import { useMentionableUsers } from "./MentionableUsersContext";
 import { useCollapsedThread } from "./useCollapsedThread";
 
 // Shared id so copying a comment link reuses a single toast instead of stacking.
@@ -522,7 +521,6 @@ function CommentMessage(props: {
   const ref = useRef<HTMLDivElement>(null);
   const clipboard = useClipboard();
   const roleScope = useCommentRoleScope();
-  const mentions = useMentionableUsers();
   // Resolve the comment's own mentions (which persist only an id) to render
   // their name/avatar/role — these may include users no longer mentionable.
   const mentionedUsers = comment.mentionedUsers.map(getMentionUser);
@@ -678,7 +676,6 @@ function CommentMessage(props: {
             <StandaloneEditor
               variant="plain"
               defaultValue={comment.content}
-              mentions={mentions}
               mentionedUsers={mentionedUsers}
               onSubmit={handleEditSubmit}
               onCancel={() => setIsEditing(false)}
@@ -729,7 +726,6 @@ function ReplyComposer(props: {
   autoFocus?: boolean;
 }) {
   const { draftKey, onSubmit, autoFocus = false } = props;
-  const mentions = useMentionableUsers();
   const { initialContent, value, setValue, clear } = useEditorDraft(draftKey);
   const [editorKey, setEditorKey] = useState(0);
   const [isPending, setIsPending] = useState(false);
@@ -771,7 +767,6 @@ function ReplyComposer(props: {
           defaultValue={initialContent}
           onChange={setValue}
           onSubmit={submit}
-          mentions={mentions}
           placeholder="Leave a reply…"
           disabled={isPending}
           autoFocus={autoFocus}
