@@ -294,6 +294,29 @@ served from the app origin, because the container never stopped serving
 - **Changing config:** update the SSM parameter (step 4), then redeploy. Config
   is read at synth time, so a parameter change alone does nothing.
 
+## Deployment files replicas
+
+The origin Lambda@Edge resolves every cache miss with a lookup in
+`<stage>_deployment_files`. It runs in the region of the edge cache that took
+the request, so outside `us-east-1` that lookup is a cross-region round trip.
+`DEPLOYMENT_FILES_REPLICA_BY_EDGE_REGION` in `lib/deployment-stack.ts` lists the
+edge regions that read a Global Tables replica instead, and which one. The
+others read `us-east-1`. A replica miss or error is retried in `us-east-1`
+before answering 404, since replication lags the write by about a second.
+
+Add one region per deploy. The deploy returns while the new replica is still
+`CREATING`, because seeding a copy of the production table can take longer than
+CloudFormation waits for a custom resource. Wait until it is `ACTIVE` before
+adding the next one:
+
+```bash
+aws dynamodb describe-table --table-name production_deployment_files --region us-east-1 --query 'Table.Replicas'
+```
+
+A replica is billed in its region: one replicated write per new row (about 7M
+a month in production), storage beyond the region's free 25 GB, and once, a
+restore-priced copy of the table to seed it.
+
 ## Custom domains (CloudFront SaaS Manager)
 
 Customer domains are served by a **second** distribution in the deployment

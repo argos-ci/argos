@@ -41,6 +41,17 @@ const STAGE_DOMAINS: Record<ArgosDeploymentStackProps["stage"], string> = {
   production: "argos-ci.live",
 };
 
+/**
+ * The deployment files replica that the origin Lambda@Edge reads, by the region
+ * it runs in (the regional edge cache that took the request). Every region it
+ * maps to gets a replica. Unlisted regions read the table in `us-east-1`.
+ */
+const DEPLOYMENT_FILES_REPLICA_BY_EDGE_REGION: Record<string, string> = {
+  "eu-central-1": "eu-central-1",
+  "eu-west-1": "eu-central-1",
+  "eu-west-2": "eu-central-1",
+};
+
 export class ArgosDeploymentStack extends cdk.Stack {
   public readonly bucket: s3.Bucket;
   public readonly filesTable: dynamodb.Table;
@@ -177,6 +188,15 @@ export class ArgosDeploymentStack extends cdk.Stack {
         pointInTimeRecoverySpecification: {
           pointInTimeRecoveryEnabled: isProduction,
         },
+        replicationRegions: [
+          ...new Set(Object.values(DEPLOYMENT_FILES_REPLICA_BY_EDGE_REGION)),
+        ],
+        // Seeding a replica of the production table can outlast the hour a
+        // custom resource may take, so the deploy returns while it is still
+        // CREATING, and the origin Lambda reads `us-east-1` until it is ready.
+        // DynamoDB adds one replica at a time: add a region only once the
+        // previous one is ACTIVE.
+        waitForReplicationToFinish: false,
       },
     );
 
@@ -260,7 +280,12 @@ export class ArgosDeploymentStack extends cdk.Stack {
         minify: true,
         sourceMap: false,
         target: "es2022",
-        define: { "process.env.STAGE": JSON.stringify(stage) },
+        define: {
+          "process.env.STAGE": JSON.stringify(stage),
+          "process.env.DEPLOYMENT_FILES_REPLICA_BY_EDGE_REGION": JSON.stringify(
+            JSON.stringify(DEPLOYMENT_FILES_REPLICA_BY_EDGE_REGION),
+          ),
+        },
       },
     });
 
