@@ -2,7 +2,6 @@ import { useId, useState } from "react";
 import { MessageSquarePlusIcon } from "lucide-react";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { useMentionableUsers } from "@/containers/Comment/MentionableUsersContext";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { hasEditorContent } from "@/ui/Editor/util";
@@ -31,7 +30,6 @@ export function DiffCommentDraft(props: {
   onCancel: () => void;
 }) {
   const { avatar, canAddToReview, onSubmit, onCancel } = props;
-  const mentions = useMentionableUsers();
   const altHeld = useAltKeyHeld();
   const [value, setValue] = useState<EditorValue>(null);
   const [isPending, setIsPending] = useState(false);
@@ -78,7 +76,6 @@ export function DiffCommentDraft(props: {
           <Editor
             onChange={setValue}
             onSubmit={submit}
-            mentions={mentions}
             placeholder="Leave a comment"
             disabled={isPending}
             autoFocus

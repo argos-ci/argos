@@ -20,6 +20,7 @@ import {
 import { LinkEditTrigger } from "./EditorLinkEdit";
 import { EditorToolbar } from "./EditorToolbar";
 import { createMentionExtension, type MentionUser } from "./mention";
+import { useMentionableUsers } from "./MentionableUsersContext";
 import { SlashCommand } from "./slashCommand";
 
 const CollapseAllSelectionDelete = Extension.create({
@@ -108,9 +109,10 @@ export interface EditorProps {
   /** Render the content without allowing edits. */
   readOnly?: boolean;
   /**
-   * Users that can be mentioned with `@` (the autocomplete suggestions). When
-   * omitted, typing `@` shows no suggestions. Read lazily, so it can change
-   * without recreating the editor.
+   * Users that can be mentioned with `@` (the autocomplete suggestions).
+   * Defaults to the {@link MentionableUsersProvider} above the editor; pass it
+   * only to offer another list. Read lazily, so it can change without
+   * recreating the editor.
    */
   mentions?: MentionUser[];
   /**
@@ -158,10 +160,13 @@ export default function Editor(props: EditorProps) {
     disabled,
     variant = "boxed",
     readOnly = false,
-    mentions,
+    mentions: mentionsProp,
     mentionedUsers,
     repositoryUrl,
   } = props;
+
+  const mentionableUsers = useMentionableUsers();
+  const mentions = mentionsProp ?? mentionableUsers;
 
   const isBoxed = variant === "boxed";
   const editable = !disabled && !readOnly;
@@ -201,10 +206,10 @@ export default function Editor(props: EditorProps) {
       // never during this render, so reading the refs here is safe.
       /* oxlint-disable react/react-compiler */
       createMentionExtension({
-        getSuggestions: () => mentionsRef.current ?? [],
+        getSuggestions: () => mentionsRef.current,
         resolveUser: (id) =>
           mentionedUsersRef.current?.find((user) => user.id === id) ??
-          mentionsRef.current?.find((user) => user.id === id),
+          mentionsRef.current.find((user) => user.id === id),
       }),
       createCommitAutolinkExtension({
         getRepositoryUrl: () => repositoryUrlRef.current,

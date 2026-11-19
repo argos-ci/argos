@@ -1,11 +1,11 @@
 import { createContext, useContext } from "react";
 
-import type { MentionUser } from "@/ui/Editor/mention";
+import type { MentionUser } from "./mention";
 
 /**
- * The users that can be mentioned in comments on the current build. Provided
- * once near the top of the activity section and consumed by every comment
- * editor (new comment, reply and edit) so the `@` autocomplete is synchronous.
+ * The users that can be mentioned in the comments below the provider. Every
+ * {@link Editor} reads them unless it is given its own `mentions`, so a new
+ * comment surface cannot forget them, and the `@` autocomplete is synchronous.
  */
 const MentionableUsersContext = createContext<MentionUser[]>([]);
 
