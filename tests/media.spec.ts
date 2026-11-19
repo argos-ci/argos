@@ -232,6 +232,28 @@ loggedTest(
 );
 
 loggedTest(
+  "mentions a teammate from the activity composer",
+  async ({ page, project }) => {
+    const media = await createMediaScenario({ projectId: project.id });
+
+    await page.goto(`/m/${media.after.shareToken}`);
+
+    const composer = page.getByLabel("Add a comment");
+    await composer.click();
+    await composer.pressSequentially("Over to you @Kyle");
+
+    // The composer sits at the right edge of the page, where the list used to
+    // overflow the viewport.
+    const suggestion = page.getByRole("button", { name: /Kyle Bertolino/ });
+    await expect(suggestion).toBeInViewport({ ratio: 1 });
+    await suggestion.click();
+    await page.getByRole("button", { name: "Submit the comment" }).click();
+
+    await expect(page.getByText("@Kyle Bertolino")).toBeVisible();
+  },
+);
+
+loggedTest(
   "brings a resolved thread's pin back with the thread",
   async ({ team, page, auth, project }) => {
     // "The primary button is misaligned here" only says something next to its
