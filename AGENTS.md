@@ -228,6 +228,13 @@ it there with a `*.stories.tsx`, so Argos screenshots it. To line an icon up wit
 the first line of text, wrap it in `flex h-lh items-center` rather than picking
 an `mt-*`: the box is one line-height tall at any text size.
 
+**A new widget ships with stories, wherever it lives.** A component a user sees
+outside `@/ui` (a page's menu, panel or banner) gets a `*.stories.tsx` next to
+it, one story per state it can be in (closed and open, empty, long text, each
+status). Argos screenshots stories, while e2e specs reach only a few states.
+Keep data fetching out of the part the stories render: a query in it has no
+Apollo provider in Storybook.
+
 If possible, put some screenshots or videos using `/argos-upload` skill.
 
 ## Notifications
