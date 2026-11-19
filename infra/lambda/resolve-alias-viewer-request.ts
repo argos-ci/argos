@@ -1,5 +1,6 @@
 import { createPublicKey } from "node:crypto";
-import { Agent, request } from "node:https";
+import { Agent, get } from "node:https";
+import { text } from "node:stream/consumers";
 import type {
   CloudFrontHeaders,
   CloudFrontRequestEvent,
@@ -158,24 +159,16 @@ const apiAgent = new Agent({ keepAlive: true });
 function getApi(
   url: string,
   isRetry = false,
-): Promise<{ status: number; body: string }> {
+): Promise<{ status: number | undefined; body: string }> {
   return new Promise((resolve, reject) => {
-    const req = request(
+    const req = get(
       url,
       { agent: apiAgent, headers: { "user-agent": "argos-deployment-edge" } },
       (res) => {
-        const status = res.statusCode;
-        if (status === undefined) {
-          reject(new Error(`No status code from ${url}`));
-          return;
-        }
-        let body = "";
-        res.setEncoding("utf8");
-        res.on("data", (chunk: string) => {
-          body += chunk;
-        });
-        res.on("end", () => resolve({ status, body }));
-        res.on("error", reject);
+        text(res).then(
+          (body) => resolve({ status: res.statusCode, body }),
+          reject,
+        );
       },
     );
     req.on("error", (error) => {
@@ -192,7 +185,6 @@ function getApi(
       }
       reject(error);
     });
-    req.end();
   });
 }
 
@@ -210,7 +202,7 @@ async function resolveAlias(
   if (response.status === 404) {
     return null;
   }
-  if (response.status < 200 || response.status >= 300) {
+  if (response.status !== 200) {
     throw new Error(
       `Failed to resolve deployment domain "${domain}" (${response.status})`,
     );
