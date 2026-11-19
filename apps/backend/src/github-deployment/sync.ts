@@ -20,6 +20,7 @@ import {
 } from "@/github-pull-request/remote";
 import { UnretryableError } from "@/job-core";
 import parentLogger from "@/logger";
+import { redisLock } from "@/util/redis";
 
 const logger = parentLogger.child({ module: "github-deployment" });
 
@@ -195,6 +196,16 @@ async function createGitHubDeploymentStatus(input: {
  * state. Idempotent: it creates the GitHub deployment once, then adds a status.
  */
 export async function syncGitHubDeployment(deploymentId: string) {
+  // Two syncs of a deployment at once would both find no GitHub deployment
+  // and create one each, or post their statuses out of order.
+  await redisLock.acquire(
+    ["github-deployment-sync", deploymentId],
+    () => reportGitHubDeployment(deploymentId),
+    { timeout: 20_000 },
+  );
+}
+
+async function reportGitHubDeployment(deploymentId: string) {
   const deployment = await Deployment.query()
     .findById(deploymentId)
     .withGraphFetched(

@@ -133,6 +133,18 @@ describe("syncGitHubDeployment", () => {
     });
   });
 
+  test("creates one GitHub deployment when two syncs run at once", async ({
+    deployment,
+  }) => {
+    await Promise.all([
+      syncGitHubDeployment(deployment.id),
+      syncGitHubDeployment(deployment.id),
+    ]);
+
+    expect(octokit.repos.createDeployment).toHaveBeenCalledOnce();
+    expect(octokit.repos.createDeploymentStatus).toHaveBeenCalledTimes(2);
+  });
+
   test("adds a status to the GitHub deployment it already created", async ({
     deployment,
   }) => {
