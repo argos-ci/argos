@@ -12,7 +12,7 @@ import { clsx } from "clsx";
 import { getMenuItemClassName, menuListClassName } from "../menuStyle";
 import { popupSurfaceClassName } from "../popupSurface";
 import { UserHoverCard } from "../UserCard";
-import { positionSuggestionPopup } from "./suggestionPopup";
+import { createSuggestionPopup } from "./suggestionPopup";
 
 /**
  * A user that can be mentioned in a comment. `id` is the public account id —
@@ -256,7 +256,14 @@ export function createMentionExtension(options: MentionExtensionOptions) {
         filterMentionUsers(getSuggestions(), query),
       render: () => {
         let component: ReactRenderer<MentionListHandle> | null = null;
-        let popup: HTMLDivElement | null = null;
+        let popup: ReturnType<typeof createSuggestionPopup> | null = null;
+
+        const destroy = () => {
+          popup?.destroy();
+          component?.destroy();
+          popup = null;
+          component = null;
+        };
 
         return {
           onStart: (props: SuggestionRenderProps) => {
@@ -264,33 +271,21 @@ export function createMentionExtension(options: MentionExtensionOptions) {
               props,
               editor: props.editor,
             });
-            popup = document.createElement("div");
-            popup.append(component.element);
-            document.body.append(popup);
-            positionSuggestionPopup(popup, props.clientRect);
+            popup = createSuggestionPopup(component.element);
+            popup.update(props.clientRect);
           },
           onUpdate: (props: SuggestionRenderProps) => {
             component?.updateProps(props);
-            if (popup) {
-              positionSuggestionPopup(popup, props.clientRect);
-            }
+            popup?.update(props.clientRect);
           },
           onKeyDown: (props: { event: KeyboardEvent }) => {
             if (props.event.key === "Escape") {
-              popup?.remove();
-              component?.destroy();
-              popup = null;
-              component = null;
+              destroy();
               return true;
             }
             return component?.ref?.onKeyDown(props.event) ?? false;
           },
-          onExit: () => {
-            popup?.remove();
-            component?.destroy();
-            popup = null;
-            component = null;
-          },
+          onExit: destroy,
         };
       },
     },

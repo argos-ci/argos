@@ -26,7 +26,7 @@ import { popupSurfaceClassName } from "@/ui/popupSurface";
 import { Shortcut } from "@/ui/Shortcut";
 import { ALT, MOD, SHIFT } from "@/util/os";
 
-import { positionSuggestionPopup } from "./suggestionPopup";
+import { createSuggestionPopup } from "./suggestionPopup";
 
 /** Range of the document the slash trigger spans (`/query`), to be replaced. */
 interface SlashRange {
@@ -277,10 +277,10 @@ export const SlashCommand = Extension.create({
         },
         render: () => {
           let component: ReactRenderer<SlashCommandListHandle> | null = null;
-          let popup: HTMLDivElement | null = null;
+          let popup: ReturnType<typeof createSuggestionPopup> | null = null;
 
           const destroy = () => {
-            popup?.remove();
+            popup?.destroy();
             component?.destroy();
             popup = null;
             component = null;
@@ -292,16 +292,12 @@ export const SlashCommand = Extension.create({
                 props,
                 editor: props.editor,
               });
-              popup = document.createElement("div");
-              popup.append(component.element);
-              document.body.append(popup);
-              positionSuggestionPopup(popup, props.clientRect);
+              popup = createSuggestionPopup(component.element);
+              popup.update(props.clientRect);
             },
             onUpdate: (props: SuggestionProps<SlashCommandItem>) => {
               component?.updateProps(props);
-              if (popup) {
-                positionSuggestionPopup(popup, props.clientRect);
-              }
+              popup?.update(props.clientRect);
             },
             onKeyDown: (props: SuggestionKeyDownProps) => {
               if (props.event.key === "Escape") {
