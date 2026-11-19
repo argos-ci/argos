@@ -15,7 +15,7 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { AuthGuard } from "@/containers/AuthGuard";
 import type { DocumentType } from "@/gql";
 import { graphql } from "@/gql";
-import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
+import { Alert, AlertText } from "@/ui/Alert";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { ChartCard } from "@/ui/ChartCard";
 import type { ChartConfig } from "@/ui/Charts";
@@ -41,6 +41,7 @@ import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { PRO_MONTHLY_PRICE, PRO_PLAN_NAME } from "./pricing";
+import { StaffAccessRestricted } from "./StaffAccessRestricted";
 import { StripeCustomerLink } from "./stripe";
 
 /**
@@ -1568,13 +1569,7 @@ function StaffRevenuePage() {
   if (isForbidden) {
     return (
       <PageContainer>
-        <Alert>
-          <AlertTitle>Access restricted</AlertTitle>
-          <AlertText>This page is only available to staff users.</AlertText>
-          <AlertText>
-            <Link href="/teams">Go to your teams</Link>
-          </AlertText>
-        </Alert>
+        <StaffAccessRestricted />
       </PageContainer>
     );
   }
