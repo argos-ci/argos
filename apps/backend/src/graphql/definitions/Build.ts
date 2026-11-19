@@ -9,6 +9,10 @@ import {
 } from "@/build/baselineEligibility";
 import { getBuildImpactAnalysis } from "@/build/impact-analysis";
 import { getNewerBuild } from "@/build/lineage";
+import {
+  getLatestPullRequestBuilds,
+  getPullRequestStack,
+} from "@/build/pull-request-stack";
 import { getSiblingBuilds } from "@/build/siblings";
 import { Build, BuildNotificationSubscription } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
@@ -109,6 +113,8 @@ export const typeDefs = gql`
     prNumber: Int
     "Pull request"
     pullRequest: PullRequest
+    "The stack the pull request belongs to, when it builds on another pull request or another one builds on it"
+    pullRequestStack: PullRequestStack
     "Build stats"
     stats: BuildStats
     "Screenshots the build is billed for: every screenshot it uploaded, Storybook ones included. Zero until the build is finalized."
@@ -283,6 +289,16 @@ async function getProject(ctx: Context, build: Build) {
   return project;
 }
 
+async function getPullRequest(ctx: Context, build: Build) {
+  if (build.githubPullRequestId) {
+    return ctx.loaders.GithubPullRequest.load(build.githubPullRequestId);
+  }
+  if (build.originPullRequestId) {
+    return ctx.loaders.OriginPullRequest.load(build.originPullRequestId);
+  }
+  return null;
+}
+
 const baselineIneligibilityReasonMap: Record<
   BuildBaselineIneligibilityReason,
   IBuildBaselineIneligibilityReason
@@ -381,13 +397,31 @@ export const resolvers: IResolvers = {
       return compareBucket.branch || null;
     },
     pullRequest: async (build, _args, ctx) => {
-      if (build.githubPullRequestId) {
-        return ctx.loaders.GithubPullRequest.load(build.githubPullRequestId);
+      return getPullRequest(ctx, build);
+    },
+    pullRequestStack: async (build, _args, ctx) => {
+      if (build.mergeQueue) {
+        return null;
       }
-      if (build.originPullRequestId) {
-        return ctx.loaders.OriginPullRequest.load(build.originPullRequestId);
+      const pullRequest = await getPullRequest(ctx, build);
+      if (!pullRequest) {
+        return null;
       }
-      return null;
+      const stack = await getPullRequestStack(pullRequest);
+      if (stack.pullRequests.length < 2) {
+        return null;
+      }
+      const builds = await getLatestPullRequestBuilds({
+        build,
+        pullRequests: stack.pullRequests,
+      });
+      return {
+        baseBranch: stack.baseBranch,
+        items: stack.pullRequests.map((item) => ({
+          pullRequest: item,
+          build: builds.get(item.id) ?? null,
+        })),
+      };
     },
     parallel: (build) => {
       if (build.batchCount !== null && build.externalId !== null) {
@@ -563,11 +597,7 @@ export const resolvers: IResolvers = {
           await Promise.all([
             ctx.loaders.ScreenshotBucket.load(build.compareScreenshotBucketId),
             ctx.loaders.BuildAggregatedStatus.load(build),
-            build.githubPullRequestId
-              ? ctx.loaders.GithubPullRequest.load(build.githubPullRequestId)
-              : build.originPullRequestId
-                ? ctx.loaders.OriginPullRequest.load(build.originPullRequestId)
-                : null,
+            getPullRequest(ctx, build),
           ]);
         return getBuildBaselineEligibility({
           build,

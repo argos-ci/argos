@@ -2197,6 +2197,203 @@ function getRealWorldMetadata(s: RealWorldScreenshot): ScreenshotMetadata {
  * mimics a pull request that redesigns the analytics dashboard: a few
  * screenshots change, one is added and one is removed.
  */
+/**
+ * Three pull requests stacked on each other. The bottom one merges into `main`
+ * and changed the screenshot; the middle one, compared with it, changed
+ * nothing; the top one has not run the suite yet.
+ */
+export async function createStackedPullRequestsScenario(input: {
+  projectId: string;
+}): Promise<{ bottomBuild: Build; middleBuild: Build }> {
+  const { projectId } = input;
+  const seededAt = getSeedInstant();
+  const githubRepositoryId = await createGithubRepository(projectId);
+
+  const pullRequestProps = {
+    githubRepositoryId,
+    state: "open" as const,
+    merged: false,
+    draft: false,
+    headFromFork: false,
+    jobStatus: "complete" as const,
+    date: seededAt,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const [bottom, middle] = await GithubPullRequest.query().insertAndFetch([
+    {
+      ...pullRequestProps,
+      number: 101,
+      title: "Add the order summary",
+      headRef: "feat/summary",
+      baseRef: "main",
+    },
+    {
+      ...pullRequestProps,
+      number: 102,
+      title: "Refactor the order summary card",
+      headRef: "feat/summary-card",
+      baseRef: "feat/summary",
+    },
+    {
+      ...pullRequestProps,
+      number: 103,
+      title: "Animate the order total",
+      headRef: "feat/summary-total",
+      baseRef: "feat/summary-card",
+    },
+  ]);
+  invariant(bottom && middle);
+
+  const [baseFile, compareFile, diffFile] = await Promise.all([
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 1024,
+      key: "dummy-375x1024.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 720,
+      key: "dummy-375x720.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshotDiff",
+      width: 375,
+      height: 1024,
+      key: "diff-1024-to-720.png",
+      contentType: "image/png",
+    }),
+  ]);
+
+  const test = await Test.query().insertAndFetch({
+    name: "summary.png",
+    buildName: "default",
+    projectId,
+  });
+
+  const bucketProps = {
+    name: "default",
+    projectId,
+    complete: true,
+    valid: true,
+    screenshotCount: 1,
+    storybookScreenshotCount: 0,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const [mainBucket, bottomBucket, middleBucket] =
+    await ScreenshotBucket.query().insertAndFetch([
+      {
+        ...bucketProps,
+        branch: "main",
+        commit: "a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2",
+      },
+      {
+        ...bucketProps,
+        branch: "feat/summary",
+        commit: "b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3",
+      },
+      {
+        ...bucketProps,
+        branch: "feat/summary-card",
+        commit: "c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4",
+      },
+    ]);
+  invariant(mainBucket && bottomBucket && middleBucket);
+
+  const screenshotProps = {
+    testId: test.id,
+    name: "summary.png",
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const [mainScreenshot, bottomScreenshot, middleScreenshot] =
+    await Screenshot.query().insertAndFetch([
+      {
+        ...screenshotProps,
+        screenshotBucketId: mainBucket.id,
+        s3Id: baseFile.key,
+        fileId: baseFile.id,
+      },
+      {
+        ...screenshotProps,
+        screenshotBucketId: bottomBucket.id,
+        s3Id: compareFile.key,
+        fileId: compareFile.id,
+      },
+      {
+        ...screenshotProps,
+        screenshotBucketId: middleBucket.id,
+        s3Id: compareFile.key,
+        fileId: compareFile.id,
+      },
+    ]);
+  invariant(mainScreenshot && bottomScreenshot && middleScreenshot);
+
+  const buildProps = {
+    name: "default",
+    type: "check" as const,
+    jobStatus: "complete" as const,
+    projectId,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const diffProps = {
+    testId: test.id,
+    jobStatus: "complete" as const,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+
+  const bottomBuild = await Build.query().insertAndFetch({
+    ...buildProps,
+    number: 1,
+    baseScreenshotBucketId: mainBucket.id,
+    compareScreenshotBucketId: bottomBucket.id,
+    githubPullRequestId: bottom.id,
+    baseBranch: "main",
+    baseBranchResolvedFrom: "pull-request",
+  });
+  await ScreenshotDiff.query().insert({
+    ...diffProps,
+    buildId: bottomBuild.id,
+    baseScreenshotId: mainScreenshot.id,
+    compareScreenshotId: bottomScreenshot.id,
+    score: 0.3,
+    s3Id: diffFile.key,
+    fileId: diffFile.id,
+  });
+
+  const middleBuild = await Build.query().insertAndFetch({
+    ...buildProps,
+    number: 2,
+    baseScreenshotBucketId: bottomBucket.id,
+    compareScreenshotBucketId: middleBucket.id,
+    githubPullRequestId: middle.id,
+    baseBranch: "feat/summary",
+    baseBranchResolvedFrom: "pull-request",
+  });
+  await ScreenshotDiff.query().insert({
+    ...diffProps,
+    buildId: middleBuild.id,
+    baseScreenshotId: bottomScreenshot.id,
+    compareScreenshotId: middleScreenshot.id,
+    score: 0,
+    s3Id: null,
+  });
+
+  await Promise.all([
+    concludeBuild({ build: bottomBuild, notify: false }),
+    concludeBuild({ build: middleBuild, notify: false }),
+  ]);
+
+  return { bottomBuild, middleBuild };
+}
+
 async function createRealWorldBuildScenario(input: {
   projectId: string;
 }): Promise<Build> {
@@ -4147,7 +4344,8 @@ async function createDemoMediaScenario(input: {
  * links it — enough for the page to render a real number, title and URL. The
  * repository is `acme-<projectId>/sparkle`.
  */
-async function createGithubPullRequest(projectId: string): Promise<string> {
+/** Connect the project to a GitHub repository of its own. */
+async function createGithubRepository(projectId: string): Promise<string> {
   const project = await Project.query().findById(projectId);
   invariant(project, "project should exist");
 
@@ -4169,8 +4367,12 @@ async function createGithubPullRequest(projectId: string): Promise<string> {
 
   await project.$query().patch({ githubRepositoryId: repository.id });
 
+  return repository.id;
+}
+
+async function createGithubPullRequest(projectId: string): Promise<string> {
   const pullRequest = await GithubPullRequest.query().insertAndFetch({
-    githubRepositoryId: repository.id,
+    githubRepositoryId: await createGithubRepository(projectId),
     number: 1234,
     title: "Tighten the checkout spacing",
     state: "open",

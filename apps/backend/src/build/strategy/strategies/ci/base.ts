@@ -1,5 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 
+import { checkIsStackedPullRequest } from "@/build/pull-request-stack";
 import {
   Build,
   type GithubPullRequest,
@@ -165,10 +166,20 @@ async function resolveCIBase(args: GetCIBaseArgs): GetBaseResult {
   // be the baseline. Anywhere else it has to be approved: a push to a base
   // branch without auto-approval walks the ancestors below, and would otherwise
   // compare with the previous push whether anyone reviewed it or not.
+  //
+  // A pull request stacked on another one is the exception: the one below is
+  // still in review, and its latest build is what the stacked one changes.
+  // Comparing with the last approved build would show both pull requests'
+  // changes at once.
   const isBaseBranchAutoApproved = baseBranch
     ? context.checkIsAutoApproved(baseBranch)
     : false;
-  const approved = isBaseBranchAutoApproved ? undefined : true;
+  const isStacked = await checkIsStackedPullRequest({
+    project,
+    pullRequest,
+    baseBranch,
+  });
+  const approved = isBaseBranchAutoApproved || isStacked ? undefined : true;
 
   // When we have a merge base commit that differs from the head, we first try
   // to find a bucket for that exact commit.
