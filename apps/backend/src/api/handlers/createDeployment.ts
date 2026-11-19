@@ -279,6 +279,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
         projectName: project.name,
       }),
       githubPullRequestId: pullRequest?.id ?? null,
+      authSource: auth.source,
     });
 
     await Promise.all([

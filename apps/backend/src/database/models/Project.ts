@@ -137,6 +137,7 @@ export class Project extends Model {
           gitlabProjectId: { type: ["null", "string"] },
           originRepositoryId: { type: ["null", "string"] },
           prCommentEnabled: { type: "boolean" },
+          githubDeploymentEnabled: { type: "boolean" },
           githubActionsOidcEnabled: { type: "boolean" },
           tokenlessAuthEnabled: { type: "boolean" },
           deploymentEnabled: { type: "boolean" },
@@ -197,6 +198,7 @@ export class Project extends Model {
   gitlabProjectId!: string | null;
   originRepositoryId!: string | null;
   prCommentEnabled!: boolean;
+  githubDeploymentEnabled!: boolean;
   githubActionsOidcEnabled!: boolean;
   tokenlessAuthEnabled!: boolean;
   deploymentEnabled!: boolean;

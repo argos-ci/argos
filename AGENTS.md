@@ -174,6 +174,12 @@ atomically with `onConflict([...]).ignore()` (or `.merge(...)`), and read the
 `.returning(...)` rows when you need to know whether the row was actually
 created (empty array = conflict ignored, e.g. don't send the notification).
 
+The same race exists when the thing created lives elsewhere (a GitHub
+deployment whose id you store), and there is no constraint to lean on. Take a
+`redisLock` keyed on the row in the function that checks and creates, and read
+the row inside it. Don't count on the job runner's lock on `[queue, id]`: it
+can't be seen where the check is made, and other callers don't take it.
+
 ## GraphQL
 
 - The schema is the source of truth. After editing any `typeDefs` in

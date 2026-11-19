@@ -113,6 +113,10 @@ export const ProjectSchema = z
     deploymentEnabled: z.boolean().meta({
       description: "Whether deployments are served for this project.",
     }),
+    githubDeploymentEnabled: z.boolean().meta({
+      description:
+        "Whether Argos reports deployments to the linked GitHub repository as GitHub deployments.",
+    }),
     deploymentAuth: DeploymentAuth,
     defaultUserLevel: ProjectUserLevel.nullable(),
     ignoreConfig: IgnoreConfigSchema,
@@ -184,6 +188,7 @@ export async function serializeProject(
     githubActionsOidcEnabled: project.githubActionsOidcEnabled,
     tokenlessAuthEnabled: project.tokenlessAuthEnabled,
     deploymentEnabled: project.deploymentEnabled,
+    githubDeploymentEnabled: project.githubDeploymentEnabled,
     deploymentAuth: project.deploymentAuth,
     defaultUserLevel: project.defaultUserLevel,
     ignoreConfig: project.$getIgnoreConfig(),
