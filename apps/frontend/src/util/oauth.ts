@@ -1,3 +1,5 @@
+import { resolveWelcomeRedirect } from "@/util/welcome";
+
 type OAuthState = {
   redirect: string;
 };
@@ -32,7 +34,9 @@ export function getOAuthURL(input: {
 }
 
 /**
- * Read where to land after authenticating.
+ * Read where to land after authenticating. The state comes from the callback
+ * URL, which anyone can craft, and the error page uses it before the server has
+ * checked it, so only a same-origin path is returned.
  */
 export function getRedirectFromState(state: RawState): string {
   try {
@@ -40,7 +44,7 @@ export function getRedirectFromState(state: RawState): string {
     if (!checkIsValidOAuthState(parsed)) {
       throw new Error("Invalid OAuth state structure");
     }
-    return parsed.redirect;
+    return resolveWelcomeRedirect(parsed.redirect);
   } catch (error) {
     throw new Error("Failed to read OAuth state", { cause: error });
   }
