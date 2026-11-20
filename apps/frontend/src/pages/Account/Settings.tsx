@@ -292,23 +292,12 @@ function PageContent() {
     {
       name: "Webhooks",
       slug: "webhooks",
-      nested: true,
       element: hasAdminPermission && (
         <Routes>
-          <Route
-            index
-            element={
-              <AccountWebhooks account={account} accountSlug={accountSlug} />
-            }
-          />
+          <Route index element={<AccountWebhooks account={account} />} />
           <Route
             path=":webhookId"
-            element={
-              <WebhookDeliveriesRoute
-                accountSlug={accountSlug}
-                backHref={`${settingsUrl}/webhooks`}
-              />
-            }
+            element={<WebhookDeliveriesRoute accountSlug={accountSlug} />}
           />
         </Routes>
       ),
@@ -359,7 +348,6 @@ function PageContent() {
         sections={matchedRoutes.map((route, index) => ({
           name: route.name,
           href: `${settingsUrl}${index > 0 && route.slug ? `/${route.slug}` : ""}`,
-          nested: route.nested,
         }))}
       />
       <SettingsPage>
@@ -369,13 +357,7 @@ function PageContent() {
               <Route
                 key={route.slug}
                 index={index === 0}
-                path={
-                  index === 0
-                    ? ""
-                    : route.nested
-                      ? `${route.slug}/*`
-                      : route.slug
-                }
+                path={index === 0 ? "" : `${route.slug}/*`}
                 element={route.element}
               />
             );
@@ -401,10 +383,7 @@ function checkIsNonEmptyElement(element: ReactNode): boolean {
   return true;
 }
 
-function WebhookDeliveriesRoute(props: {
-  accountSlug: string;
-  backHref: string;
-}) {
+function WebhookDeliveriesRoute(props: { accountSlug: string }) {
   const { webhookId } = useParams();
   invariant(webhookId, "webhookId route param required");
   return <WebhookDeliveries webhookId={webhookId} {...props} />;

@@ -221,27 +221,19 @@ describe("webhooks", () => {
       const event = await factory.ProjectEvent.create({
         projectId: project.id,
       });
-      const [, failed] = await WebhookDelivery.query().insert([
-        {
-          webhookId: webhook.id,
-          eventId: event.id,
-          jobStatus: "complete",
-          attempts: 1,
-          conclusion: "success",
-          responseStatus: 200,
-          responseBody: "ok",
-        },
-        {
-          webhookId: webhook.id,
-          eventId: event.id,
-          jobStatus: "complete",
-          attempts: 4,
-          conclusion: "failed",
-          responseStatus: 500,
-          responseBody: "boom",
-        },
-      ]);
-      invariant(failed);
+      await factory.WebhookDelivery.create({
+        webhookId: webhook.id,
+        eventId: event.id,
+      });
+      const failed = await factory.WebhookDelivery.create({
+        webhookId: webhook.id,
+        eventId: event.id,
+        attempts: 4,
+        conclusion: "failed",
+        responseStatus: 500,
+        responseBody: "boom",
+        failureReason: "Your endpoint responded with HTTP 500.",
+      });
 
       const listed = await post("owner", {
         query: DeliveriesQuery,

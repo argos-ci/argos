@@ -34,9 +34,8 @@ const _AccountFragment = graphql(`
 
 export function AccountWebhooks(props: {
   account: DocumentType<typeof _AccountFragment>;
-  accountSlug: string;
 }) {
-  const { account, accountSlug } = props;
+  const { account } = props;
   // Only administrators of the account see its webhooks.
   if (!account.webhooks) {
     return null;
@@ -53,12 +52,7 @@ export function AccountWebhooks(props: {
         </CardParagraph>
         {account.webhooks.length > 0 && (
           <div className="overflow-auto">
-            <WebhookList
-              webhooks={account.webhooks}
-              getWebhookHref={(webhook) =>
-                `/${accountSlug}/settings/webhooks/${webhook.id}`
-              }
-            />
+            <WebhookList webhooks={account.webhooks} />
           </div>
         )}
       </CardBody>

@@ -5,7 +5,6 @@ import { test as base, describe, expect } from "vitest";
 import {
   UserAccessTokenScope,
   Webhook,
-  WebhookDelivery,
   type Account,
   type Project,
 } from "@/database/models";
@@ -171,27 +170,19 @@ describe("webhooks API", () => {
   }) => {
     const webhook = await factory.Webhook.create({ accountId: account.id });
     const event = await factory.ProjectEvent.create({ projectId: project.id });
-    const [, failed] = await WebhookDelivery.query().insert([
-      {
-        webhookId: webhook.id,
-        eventId: event.id,
-        jobStatus: "complete",
-        attempts: 1,
-        conclusion: "success",
-        responseStatus: 200,
-      },
-      {
-        webhookId: webhook.id,
-        eventId: event.id,
-        jobStatus: "complete",
-        attempts: 4,
-        conclusion: "failed",
-        responseStatus: 500,
-        responseBody: "boom",
-        failureReason: "Your endpoint responded with HTTP 500.",
-      },
-    ]);
-    invariant(failed);
+    await factory.WebhookDelivery.create({
+      webhookId: webhook.id,
+      eventId: event.id,
+    });
+    const failed = await factory.WebhookDelivery.create({
+      webhookId: webhook.id,
+      eventId: event.id,
+      attempts: 4,
+      conclusion: "failed",
+      responseStatus: 500,
+      responseBody: "boom",
+      failureReason: "Your endpoint responded with HTTP 500.",
+    });
     const deliveries = `/webhooks/${webhook.id}/deliveries`;
 
     const listed = await call("owner", "get", `${deliveries}?status=failed`);

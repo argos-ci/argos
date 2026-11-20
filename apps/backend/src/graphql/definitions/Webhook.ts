@@ -3,21 +3,23 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { serializeEvent } from "@/api/schema/primitives/event";
 import type { AuthViewer } from "@/auth/payload";
 import { Webhook, WebhookDelivery } from "@/database/models";
 import { loadAccountById } from "@/database/services/team-member";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { boom } from "@/util/error";
 import {
+  assertAccountAdmin,
+  checkIsAccountAdmin,
   createWebhook,
-  deleteWebhook,
-  getAccountWebhook,
+  findAccountWebhook,
+  findWebhookDelivery,
   listAccountWebhooks,
   listWebhookDeliveries,
+  loadAccountProjects,
   resendWebhookDelivery,
-  type WebhookDeliveryStatus,
 } from "@/webhook/manage";
+import { getWebhookRequestBody } from "@/webhook/request";
 
 import {
   IWebhookDeliveryStatus,
@@ -166,12 +168,6 @@ const EVENT_FROM_GRAPHQL = {
   [IWebhookEvent.DeploymentReady]: "deployment.ready",
 } satisfies Record<IWebhookEvent, ProjectEventName>;
 
-const STATUS_FROM_GRAPHQL = {
-  [IWebhookDeliveryStatus.Pending]: "pending",
-  [IWebhookDeliveryStatus.Success]: "success",
-  [IWebhookDeliveryStatus.Failed]: "failed",
-} satisfies Record<IWebhookDeliveryStatus, WebhookDeliveryStatus>;
-
 function assertAuth(auth: AuthViewer | null): AuthViewer {
   if (!auth) {
     throw unauthenticated();
@@ -179,14 +175,40 @@ function assertAuth(auth: AuthViewer | null): AuthViewer {
   return auth;
 }
 
+/**
+ * A webhook by id, for an administrator of its account: the guard of every
+ * webhook mutation.
+ */
+async function loadAdminWebhook(
+  id: string,
+  auth: AuthViewer,
+): Promise<Webhook> {
+  const webhook = isValidPgBigInt(id)
+    ? await Webhook.query().findById(id).withGraphFetched("account")
+    : undefined;
+  if (!webhook) {
+    throw boom(404, "Webhook not found.");
+  }
+  invariant(webhook.account, "webhook account not fetched");
+  await assertAccountAdmin(webhook.account, auth);
+  return webhook;
+}
+
 const accountResolvers: Pick<
   NonNullable<IResolvers["Team"]>,
   "webhooks" | "webhook"
 > = {
-  webhooks: (account, _args, ctx) =>
-    listAccountWebhooks({ account, auth: assertAuth(ctx.auth) }),
-  webhook: (account, args, ctx) =>
-    getAccountWebhook({ account, auth: assertAuth(ctx.auth), id: args.id }),
+  webhooks: async (account, _args, ctx) => {
+    const isAdmin = await checkIsAccountAdmin(account, assertAuth(ctx.auth));
+    return isAdmin ? listAccountWebhooks(account) : null;
+  },
+  webhook: async (account, args, ctx) => {
+    const [isAdmin, webhook] = await Promise.all([
+      checkIsAccountAdmin(account, assertAuth(ctx.auth)),
+      findAccountWebhook(account, args.id),
+    ]);
+    return isAdmin ? webhook : null;
+  },
 };
 
 export const resolvers: IResolvers = {
@@ -203,28 +225,19 @@ export const resolvers: IResolvers = {
     deliveries: async (webhook, args) => {
       const result = await listWebhookDeliveries({
         webhookId: webhook.id,
-        status: args.status ? STATUS_FROM_GRAPHQL[args.status] : null,
+        status: args.status ?? null,
         eventId: args.eventId ?? null,
         after: args.after,
         first: args.first,
       });
       return paginateResult({ result, after: args.after, first: args.first });
     },
-    delivery: async (webhook, args) => {
-      if (!isValidPgBigInt(args.id)) {
-        return null;
-      }
-      const delivery = await WebhookDelivery.query().findOne({
-        id: args.id,
-        webhookId: webhook.id,
-      });
-      return delivery ?? null;
-    },
+    delivery: (webhook, args) => findWebhookDelivery(webhook, args.id),
   },
   WebhookDeliveryEvent: {
     type: (event) => EVENT_TO_GRAPHQL[event.name],
     timestamp: (event) => new Date(event.createdAt),
-    body: (event) => JSON.stringify(serializeEvent(event)),
+    body: (event) => getWebhookRequestBody(event),
   },
   WebhookDelivery: {
     status: (delivery) => {
@@ -244,23 +257,33 @@ export const resolvers: IResolvers = {
       invariant(event, `Event not found: ${delivery.eventId}`);
       return event;
     },
+    responseBody: async (delivery, _args, ctx) => {
+      // Delivery lists leave the body out (see `listWebhookDeliveries`).
+      if (delivery.responseBody !== undefined) {
+        return delivery.responseBody;
+      }
+      const full = await ctx.loaders.WebhookDelivery.load(delivery.id);
+      invariant(full, `Delivery not found: ${delivery.id}`);
+      return full.responseBody;
+    },
   },
   Team: accountResolvers,
   User: accountResolvers,
   Mutation: {
     createWebhook: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
+      const auth = assertAuth(ctx.auth);
       const { accountId, url, events, projectIds } = args.input;
       try {
         const account = await loadAccountById(accountId);
+        await assertAccountAdmin(account, auth);
+        const projects = projectIds
+          ? await loadAccountProjects(account, projectIds)
+          : null;
         const { webhook, secret } = await createWebhook({
           account,
-          auth: ctx.auth,
           url,
           events: events.map((event) => EVENT_FROM_GRAPHQL[event]),
-          projectIds: projectIds ?? null,
+          projects,
         });
         return { webhook, secret, account };
       } catch (error) {
@@ -268,17 +291,10 @@ export const resolvers: IResolvers = {
       }
     },
     deleteWebhook: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
+      const auth = assertAuth(ctx.auth);
       try {
-        const webhook = isValidPgBigInt(args.input.id)
-          ? await Webhook.query().findById(args.input.id)
-          : null;
-        if (!webhook) {
-          throw boom(404, "Webhook not found.");
-        }
-        await deleteWebhook({ webhook, auth: ctx.auth });
+        const webhook = await loadAdminWebhook(args.input.id, auth);
+        await webhook.$query().delete();
         return webhook.id;
       } catch (error) {
         throw toGraphQLError(error);
@@ -289,11 +305,12 @@ export const resolvers: IResolvers = {
       try {
         const delivery = isValidPgBigInt(args.input.id)
           ? await WebhookDelivery.query().findById(args.input.id)
-          : null;
+          : undefined;
         if (!delivery) {
           throw boom(404, "Delivery not found.");
         }
-        return await resendWebhookDelivery({ delivery, auth });
+        await loadAdminWebhook(delivery.webhookId, auth);
+        return await resendWebhookDelivery(delivery);
       } catch (error) {
         throw toGraphQLError(error);
       }

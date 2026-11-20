@@ -1,9 +1,12 @@
-import { ProjectEventNameSchema } from "@argos/schemas/project-event";
+import {
+  ProjectEventNameSchema,
+  type ProjectEventName,
+} from "@argos/schemas/project-event";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import type { AuthViewer } from "@/auth/payload";
+import type { AuthOAuthPayload, AuthPATPayload } from "@/auth/payload";
 import {
   Project,
   ProjectEvent,
@@ -13,13 +16,13 @@ import {
 } from "@/database/models";
 import { boom } from "@/util/error";
 import {
+  assertAccountAdmin,
   createWebhook,
-  deleteWebhook,
+  findAccountWebhook,
+  findWebhookDelivery,
   getProjectsByWebhookId,
   listAccountWebhooks,
   listWebhookDeliveries,
-  loadAccountWebhook,
-  loadWebhookDelivery,
   resendWebhookDelivery,
 } from "@/webhook/manage";
 
@@ -151,40 +154,42 @@ const responses = {
 
 const security = patOrOAuthAuth(["account:admin"]);
 
-async function serializeWebhooks(
-  webhooks: Webhook[],
-): Promise<z.infer<typeof WebhookSchema>[]> {
-  const projectsByWebhookId = await getProjectsByWebhookId(
-    webhooks.filter((webhook) => !webhook.allProjects).map(({ id }) => id),
-  );
-  return webhooks.map((webhook) => ({
+type ApiAuth = AuthPATPayload | AuthOAuthPayload;
+
+function serializeWebhook(
+  webhook: Webhook,
+  projects: readonly Project[] | null,
+): z.infer<typeof WebhookSchema> {
+  return {
     id: webhook.id,
     url: webhook.url,
     events: webhook.events,
-    projects: webhook.allProjects
-      ? null
-      : (projectsByWebhookId.get(webhook.id) ?? []).map(
-          (project) => project.name,
-        ),
+    projects: projects?.map((project) => project.name) ?? null,
     createdAt: new Date(webhook.createdAt).toISOString(),
-  }));
+  };
 }
 
-async function serializeWebhook(webhook: Webhook) {
-  const [serialized] = await serializeWebhooks([webhook]);
-  invariant(serialized, "Webhook not serialized");
-  return serialized;
+async function serializeWebhooks(webhooks: Webhook[]) {
+  const projectsByWebhookId = await getProjectsByWebhookId(
+    webhooks.filter((webhook) => !webhook.allProjects).map(({ id }) => id),
+  );
+  return webhooks.map((webhook) =>
+    serializeWebhook(
+      webhook,
+      webhook.allProjects ? null : (projectsByWebhookId.get(webhook.id) ?? []),
+    ),
+  );
 }
 
 function serializeDelivery(
   delivery: WebhookDelivery,
-  event: ProjectEvent,
+  eventType: ProjectEventName,
 ): z.infer<typeof WebhookDeliverySchema> {
   return {
     id: delivery.id,
     status: delivery.conclusion ?? "pending",
-    eventId: event.id,
-    eventType: event.name,
+    eventId: delivery.eventId,
+    eventType,
     attempts: delivery.attempts,
     attemptedAt: delivery.attemptedAt
       ? new Date(delivery.attemptedAt).toISOString()
@@ -197,13 +202,15 @@ function serializeDelivery(
 }
 
 async function serializeDeliveries(deliveries: WebhookDelivery[]) {
-  const events = await ProjectEvent.query().findByIds([
-    ...new Set(deliveries.map((delivery) => delivery.eventId)),
-  ]);
+  // A list only names its events: their payloads stay for the detail.
+  const events = await ProjectEvent.query()
+    .select("id", "name")
+    .findByIds([...new Set(deliveries.map(({ eventId }) => eventId))]);
+  const names = new Map(events.map((event) => [event.id, event.name]));
   return deliveries.map((delivery) => {
-    const event = events.find(({ id }) => id === delivery.eventId);
-    invariant(event, `Event not found: ${delivery.eventId}`);
-    return serializeDelivery(delivery, event);
+    const name = names.get(delivery.eventId);
+    invariant(name, `Event not found: ${delivery.eventId}`);
+    return serializeDelivery(delivery, name);
   });
 }
 
@@ -213,7 +220,7 @@ async function serializeDeliveryDetail(
   const event = await ProjectEvent.query().findById(delivery.eventId);
   invariant(event, `Event not found: ${delivery.eventId}`);
   return {
-    ...serializeDelivery(delivery, event),
+    ...serializeDelivery(delivery, event.name),
     responseBody: delivery.responseBody,
     event: serializeEvent(event),
   };
@@ -238,11 +245,30 @@ async function loadProjectsByName(account: Account, names: string[]) {
 }
 
 async function loadWebhookForRequest(
-  auth: Parameters<typeof getAccountForAuth>[0] & AuthViewer,
+  auth: ApiAuth,
   params: { accountSlug: string; webhookId: string },
-) {
+): Promise<Webhook> {
   const account = getAccountForAuth(auth, { slug: params.accountSlug });
-  return loadAccountWebhook({ account, auth, id: params.webhookId });
+  const [, webhook] = await Promise.all([
+    assertAccountAdmin(account, auth),
+    findAccountWebhook(account, params.webhookId),
+  ]);
+  if (!webhook) {
+    throw boom(404, "Webhook not found.");
+  }
+  return webhook;
+}
+
+async function loadDeliveryForRequest(
+  auth: ApiAuth,
+  params: { accountSlug: string; webhookId: string; deliveryId: string },
+): Promise<WebhookDelivery> {
+  const webhook = await loadWebhookForRequest(auth, params);
+  const delivery = await findWebhookDelivery(webhook, params.deliveryId);
+  if (!delivery) {
+    throw boom(404, "Delivery not found.");
+  }
+  return delivery;
 }
 
 export const listAccountWebhooksOperation = {
@@ -268,14 +294,8 @@ export const listAccountWebhooksHandler: CreateAPIHandler = ({ get }) => {
     const account = getAccountForAuth(auth, {
       slug: req.ctx.params.accountSlug,
     });
-    const webhooks = await listAccountWebhooks({ account, auth });
-    if (!webhooks) {
-      throw boom(
-        403,
-        "Only administrators of the account can manage webhooks.",
-      );
-    }
-    res.send(await serializeWebhooks(webhooks));
+    await assertAccountAdmin(account, auth);
+    res.send(await serializeWebhooks(await listAccountWebhooks(account)));
   });
 };
 
@@ -306,18 +326,18 @@ export const createAccountWebhookHandler: CreateAPIHandler = ({ post }) => {
     const account = getAccountForAuth(auth, {
       slug: req.ctx.params.accountSlug,
     });
-    const { url, events, projects } = req.ctx.body;
-    const projectIds = projects
-      ? (await loadProjectsByName(account, projects)).map(({ id }) => id)
+    await assertAccountAdmin(account, auth);
+    const { url, events } = req.ctx.body;
+    const projects = req.ctx.body.projects
+      ? await loadProjectsByName(account, req.ctx.body.projects)
       : null;
     const { webhook, secret } = await createWebhook({
       account,
-      auth,
       url,
       events,
-      projectIds,
+      projects,
     });
-    res.status(201).send({ ...(await serializeWebhook(webhook)), secret });
+    res.status(201).send({ ...serializeWebhook(webhook, projects), secret });
   });
 };
 
@@ -344,7 +364,8 @@ export const getAccountWebhookHandler: CreateAPIHandler = ({ get }) => {
       await req.ctx.auth(),
       req.ctx.params,
     );
-    res.send(await serializeWebhook(webhook));
+    const [serialized] = await serializeWebhooks([webhook]);
+    res.send(serialized);
   });
 };
 
@@ -366,9 +387,11 @@ export const deleteAccountWebhookHandler: CreateAPIHandler = ({
   delete: del,
 }) => {
   del("/accounts/{accountSlug}/webhooks/{webhookId}", async (req, res) => {
-    const auth = await req.ctx.auth();
-    const webhook = await loadWebhookForRequest(auth, req.ctx.params);
-    await deleteWebhook({ webhook, auth });
+    const webhook = await loadWebhookForRequest(
+      await req.ctx.auth(),
+      req.ctx.params,
+    );
+    await webhook.$query().delete();
     res.status(204).send();
   });
 };
@@ -440,14 +463,10 @@ export const getWebhookDeliveryHandler: CreateAPIHandler = ({ get }) => {
   get(
     "/accounts/{accountSlug}/webhooks/{webhookId}/deliveries/{deliveryId}",
     async (req, res) => {
-      const webhook = await loadWebhookForRequest(
+      const delivery = await loadDeliveryForRequest(
         await req.ctx.auth(),
         req.ctx.params,
       );
-      const delivery = await loadWebhookDelivery({
-        webhook,
-        id: req.ctx.params.deliveryId,
-      });
       res.send(await serializeDeliveryDetail(delivery));
     },
   );
@@ -474,13 +493,11 @@ export const resendWebhookDeliveryHandler: CreateAPIHandler = ({ post }) => {
   post(
     "/accounts/{accountSlug}/webhooks/{webhookId}/deliveries/{deliveryId}/resend",
     async (req, res) => {
-      const auth = await req.ctx.auth();
-      const webhook = await loadWebhookForRequest(auth, req.ctx.params);
-      const delivery = await loadWebhookDelivery({
-        webhook,
-        id: req.ctx.params.deliveryId,
-      });
-      const resent = await resendWebhookDelivery({ delivery, auth });
+      const delivery = await loadDeliveryForRequest(
+        await req.ctx.auth(),
+        req.ctx.params,
+      );
+      const resent = await resendWebhookDelivery(delivery);
       const [serialized] = await serializeDeliveries([resent]);
       res.status(201).send(serialized);
     },

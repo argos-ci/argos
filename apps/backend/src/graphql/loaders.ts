@@ -91,7 +91,10 @@ import { getMediaPairKey, getOppositeMediaState } from "@/media/pair";
 import { MAX_PULL_REQUEST_MEDIAS, queryProjectMedia } from "@/media/query";
 import { getLatestMediaVersions } from "@/media/version";
 import { getTestAllMetrics } from "@/metrics/test";
-import { getProjectsByWebhookId } from "@/webhook/manage";
+import {
+  getProjectsByWebhookId,
+  WEBHOOK_DELIVERY_LIST_COLUMNS,
+} from "@/webhook/manage";
 
 import { ISignupSource, ITestStatus } from "./__generated__/resolver-types";
 import { getVisibleProjectIds } from "./services/project";
@@ -612,7 +615,8 @@ function createWebhookLastDeliveryLoader() {
       .from(
         knex.raw(
           `unnest(?::bigint[]) as webhook(id) cross join lateral (
-            select * from webhook_deliveries
+            select ${WEBHOOK_DELIVERY_LIST_COLUMNS.map((column) => `"${column}"`).join(", ")}
+            from webhook_deliveries
             where "webhookId" = webhook.id
             order by id desc
             limit 1
@@ -2197,6 +2201,7 @@ export const createLoaders = () => ({
   DiscordWebhooksByAccountId: createDiscordWebhooksByAccountIdLoader(),
   Build: createModelLoader(Build),
   ProjectEvent: createModelLoader(ProjectEvent),
+  WebhookDelivery: createModelLoader(WebhookDelivery),
   BuildFromCompareScreenshotBucketId:
     createBuildFromCompareScreenshotBucketIdLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),

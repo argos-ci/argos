@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { useApolloClient, useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import clsx from "clsx";
 import { ArrowLeftIcon, RotateCwIcon, SearchIcon } from "lucide-react";
-import { useSearchParams } from "react-router";
+import {
+  parseAsString,
+  parseAsStringEnum,
+  useQueryState,
+  useQueryStates,
+} from "nuqs";
 
 import { graphql } from "@/gql";
-import { WebhookDeliveryStatus, type WebhookEvent } from "@/gql/graphql";
+import { WebhookDeliveryStatus } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
@@ -20,9 +24,10 @@ import { Select, SelectButton, SelectValue } from "@/ui/Select";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
+import { checkAreDefaultValues } from "@/util/search-params";
 
 import { getDeliveryChip, getProjectsLabel } from "./delivery";
-import { formatWebhookEvents, WEBHOOK_EVENTS } from "./events";
+import { formatWebhookEvents } from "./events";
 
 const PAGE_SIZE = 30;
 
@@ -117,17 +122,10 @@ const STATUS_FILTERS = {
   [WebhookDeliveryStatus.Success]: "Delivered",
 } as const;
 
-type StatusFilter = keyof typeof STATUS_FILTERS;
-
-function checkIsStatusFilter(value: unknown): value is StatusFilter {
-  return typeof value === "string" && value in STATUS_FILTERS;
-}
-
-function getEventName(type: WebhookEvent): string {
-  const event = WEBHOOK_EVENTS.find((event) => event.value === type);
-  invariant(event, `Unknown webhook event: ${type}`);
-  return event.name;
-}
+const filtersSchema = {
+  status: parseAsStringEnum(Object.values(WebhookDeliveryStatus)),
+  eventId: parseAsString,
+};
 
 /**
  * Whether the status code alone says what went wrong. A missing response or a
@@ -151,26 +149,14 @@ function formatJson(body: string): string {
 export function WebhookDeliveries(props: {
   accountSlug: string;
   webhookId: string;
-  /** The page listing the account's webhooks. */
-  backHref: string;
 }) {
-  const { accountSlug, webhookId, backHref } = props;
-  const [searchParams, setSearchParams] = useSearchParams();
-  const statusParam = searchParams.get("status");
-  const status: StatusFilter = checkIsStatusFilter(statusParam)
-    ? statusParam
-    : "all";
-  const eventId = searchParams.get("eventId") ?? "";
+  const { accountSlug, webhookId } = props;
+  const [filters, setFilters] = useQueryStates(filtersSchema);
+  const [selectedParam, setSelected] = useQueryState("delivery", parseAsString);
   const [first, setFirst] = useState(PAGE_SIZE);
 
   const { data, previousData, refetch } = useQuery(DeliveriesQuery, {
-    variables: {
-      accountSlug,
-      webhookId,
-      first,
-      status: status === "all" ? null : status,
-      eventId: eventId || null,
-    },
+    variables: { accountSlug, webhookId, first, ...filters },
   });
   const account = (data ?? previousData)?.account;
 
@@ -183,30 +169,13 @@ export function WebhookDeliveries(props: {
   }
 
   const deliveries = webhook.deliveries.edges;
-  const selectedId = searchParams.get("delivery") ?? deliveries[0]?.id ?? null;
-
-  const updateParams = (changes: Record<string, string | null>) => {
-    setSearchParams(
-      (params) => {
-        const next = new URLSearchParams(params);
-        for (const [key, value] of Object.entries(changes)) {
-          if (value) {
-            next.set(key, value);
-          } else {
-            next.delete(key);
-          }
-        }
-        return next;
-      },
-      { replace: true },
-    );
-  };
+  const selectedId = selectedParam ?? deliveries[0]?.id ?? null;
 
   return (
     <Card>
       <CardBody>
         <Link
-          href={backHref}
+          href=".."
           variant="neutral"
           className="text-low mb-2 inline-flex items-center gap-1 text-sm"
         >
@@ -224,10 +193,11 @@ export function WebhookDeliveries(props: {
             onSubmit={(event) => {
               event.preventDefault();
               const value = new FormData(event.currentTarget).get("eventId");
-              updateParams({
-                eventId: typeof value === "string" ? value.trim() : null,
-                delivery: null,
+              void setFilters({
+                eventId:
+                  typeof value === "string" ? value.trim() || null : null,
               });
+              void setSelected(null);
             }}
           >
             <TextInputGroup>
@@ -235,10 +205,10 @@ export function WebhookDeliveries(props: {
                 <SearchIcon />
               </TextInputIcon>
               <TextInput
-                key={eventId}
+                key={filters.eventId}
                 type="search"
                 name="eventId"
-                defaultValue={eventId}
+                defaultValue={filters.eventId ?? ""}
                 placeholder="Find by event ID…"
                 aria-label="Event ID"
               />
@@ -247,14 +217,13 @@ export function WebhookDeliveries(props: {
           <Select
             aria-label="Status"
             items={STATUS_FILTERS}
-            value={status}
+            value={filters.status ?? "all"}
             onValueChange={(value) => {
-              if (checkIsStatusFilter(value)) {
-                updateParams({
-                  status: value === "all" ? null : value,
-                  delivery: null,
-                });
-              }
+              // "all" parses to no filter.
+              void setFilters({
+                status: filtersSchema.status.parse(String(value)),
+              });
+              void setSelected(null);
             }}
           >
             <SelectButton className="text-sm">
@@ -282,7 +251,7 @@ export function WebhookDeliveries(props: {
           <div className="min-w-0">
             {deliveries.length === 0 ? (
               <ListEmpty className="text-low">
-                {status === "all" && !eventId
+                {checkAreDefaultValues(filtersSchema, filters)
                   ? "No delivery yet. Deliveries are kept 7 days."
                   : "No delivery matches these filters."}
               </ListEmpty>
@@ -294,24 +263,19 @@ export function WebhookDeliveries(props: {
                     <ListRowButton
                       key={delivery.id}
                       aria-current={delivery.id === selectedId}
-                      onClick={() => updateParams({ delivery: delivery.id })}
-                      className={clsx(
-                        "flex items-center gap-3 px-3 py-2 text-left text-sm",
-                        delivery.id === selectedId && "bg-primary-subtle",
-                      )}
+                      onClick={() => void setSelected(delivery.id)}
+                      className="aria-[current=true]:bg-primary-subtle flex items-center gap-3 px-3 py-2 text-left text-sm"
                     >
                       <Chip scale="xs" color={chip.color} className="shrink-0">
                         {delivery.responseStatus ?? chip.label}
                       </Chip>
                       <span className="min-w-0 flex-1 truncate font-mono text-xs">
-                        {getEventName(delivery.event.type)}
+                        {formatWebhookEvents([delivery.event.type])}
                       </span>
-                      <span
+                      <Time
+                        date={delivery.createdAt}
                         className="text-low shrink-0 text-xs"
-                        data-visual-test="transparent"
-                      >
-                        <Time date={delivery.createdAt} />
-                      </span>
+                      />
                     </ListRowButton>
                   );
                 })}
@@ -329,8 +293,11 @@ export function WebhookDeliveries(props: {
                 deliveryId={selectedId}
                 onResent={async (id) => {
                   // The new delivery is pending: a status filter would hide it.
-                  updateParams({ status: null, delivery: id });
-                  await refetch();
+                  // Refetched with the filter's next value, so the list loads
+                  // once.
+                  await refetch({ status: null });
+                  await setFilters({ status: null });
+                  await setSelected(id);
                 }}
               />
             )}
@@ -376,7 +343,7 @@ function DeliveryDetail(props: {
         <div className="min-w-0">
           <div className="text-low text-xs font-medium">Delivery</div>
           <div className="truncate font-mono font-medium">
-            {getEventName(delivery.event.type)}
+            {formatWebhookEvents([delivery.event.type])}
           </div>
         </div>
         <Button

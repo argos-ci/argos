@@ -1,11 +1,10 @@
 import { invariant } from "@argos/util/invariant";
 
-import { serializeEvent } from "@/api/schema/primitives/event";
 import config from "@/config";
 import { ProjectEvent, Webhook, WebhookDelivery } from "@/database/models";
 import { createModelJob, type JobContext } from "@/job-core";
 
-import { postWebhookRequest } from "./request";
+import { getWebhookRequestBody, postWebhookRequest } from "./request";
 
 class WebhookAttemptError extends Error {}
 
@@ -29,7 +28,7 @@ export async function deliverWebhook(
     url: webhook.url,
     secret: webhook.secret,
     messageId: event.id,
-    body: JSON.stringify(serializeEvent(event)),
+    body: getWebhookRequestBody(event),
     allowPrivateNetwork: config.get("webhooks.allowPrivateNetwork"),
   });
   const attempt = {

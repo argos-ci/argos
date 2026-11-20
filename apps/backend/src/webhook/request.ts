@@ -3,6 +3,9 @@ import { lookup } from "node:dns";
 import type { LookupFunction } from "node:net";
 import { Agent, fetch } from "undici";
 
+import { serializeEvent } from "@/api/schema/primitives/event";
+import type { ProjectEvent } from "@/database/models";
+
 import { checkIsPublicAddress, parseWebhookUrl } from "./url";
 
 export const WEBHOOK_TIMEOUT_MS = 10_000;
@@ -52,6 +55,14 @@ const publicAgent = new Agent({ connect: { lookup: lookupPublicAddress } });
 const privateNetworkAgent = new Agent();
 
 const SECRET_PREFIX = "whsec_";
+
+/**
+ * The body of the request sending an event: what is signed, and what the
+ * deliveries page shows as sent.
+ */
+export function getWebhookRequestBody(event: ProjectEvent): string {
+  return JSON.stringify(serializeEvent(event));
+}
 
 /**
  * A new signing secret, in the Standard Webhooks format: `whsec_` followed by

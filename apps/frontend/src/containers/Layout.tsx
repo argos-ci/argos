@@ -66,20 +66,17 @@ export function SettingsLayout(props: ComponentPropsWithRef<"div">) {
  * laid out as a row, the list left most sections out of view.
  */
 export function SettingsNav(props: {
-  sections: {
-    name: string;
-    href: string;
-    /** Stays active on the section's own sub-pages. */
-    nested?: boolean | undefined;
-  }[];
+  sections: { name: string; href: string }[];
 }) {
   const { sections } = props;
   return (
     <Nav>
       <NavList className="max-md:hidden">
-        {sections.map((section) => (
+        {sections.map((section, index) => (
           <NavListItem key={section.href}>
-            <NavLink to={section.href} end={!section.nested}>
+            {/* The first section's URL prefixes every other one: it is the
+                only one matched exactly. */}
+            <NavLink to={section.href} end={index === 0}>
               {section.name}
             </NavLink>
           </NavListItem>
