@@ -1,7 +1,9 @@
-import { timingSafeEqual } from "node:crypto";
-
 import { OAuthClient, OAuthGrant } from "@/database/models";
-import { generateRandomString, hashToken } from "@/database/services/crypto";
+import {
+  generateRandomString,
+  hashToken,
+  safeCompare,
+} from "@/database/services/crypto";
 import logger from "@/logger";
 
 import { resolveKnownApp } from "./known-apps";
@@ -73,16 +75,6 @@ export function validateRedirectUri(
 }
 
 /**
- * Constant-time comparison of two hex-encoded hashes of equal length.
- */
-function safeCompareHash(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
-  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
-}
-
-/**
  * Verify a client secret against the stored hash. Returns `false` for public
  * clients (no secret) or when the secret is missing/incorrect.
  */
@@ -93,7 +85,7 @@ export function verifyClientSecret(
   if (!client.clientSecretHash || !providedSecret) {
     return false;
   }
-  return safeCompareHash(client.clientSecretHash, hashToken(providedSecret));
+  return safeCompare(client.clientSecretHash, hashToken(providedSecret));
 }
 
 /**

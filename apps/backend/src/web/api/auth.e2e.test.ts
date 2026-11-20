@@ -1,18 +1,16 @@
 import { invariant } from "@argos/util/invariant";
 import { http, HttpResponse } from "msw";
-import { HttpNetworkFrame } from "msw/experimental";
 import { setupServer } from "msw/node";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
-import { createSamlAuthCode } from "@/auth/saml";
 import { createSession } from "@/auth/session";
 import { SESSION_COOKIE_NAME } from "@/auth/session-cookie";
 import { Account } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import oauthRouter from "../auth-oauth";
-import { createTestApp } from "../test-util";
+import { createTestApp, failUnhandledExceptLoopback } from "../test-util";
 import router from "./auth";
 import { exchangeSamlCode } from "./auth.test-util";
 
@@ -50,18 +48,7 @@ const githubServer = setupServer(
 );
 
 beforeAll(() => {
-  githubServer.listen({
-    onUnhandledFrame: ({ frame, defaults }) => {
-      // Supertest reaches the app under test through the loopback interface.
-      if (
-        frame instanceof HttpNetworkFrame &&
-        new URL(frame.data.request.url).hostname === "127.0.0.1"
-      ) {
-        return;
-      }
-      defaults.error();
-    },
-  });
+  githubServer.listen({ onUnhandledFrame: failUnhandledExceptLoopback });
 });
 
 afterAll(() => {
@@ -189,15 +176,12 @@ describe("POST /auth/saml", () => {
   samlTest(
     "rejects a code exchanged in another browser than the one the ACS bound it to",
     async ({ samlTeamAccount }) => {
-      const code = await createSamlAuthCode({
-        teamAccountId: samlTeamAccount.id,
+      const res = await exchangeSamlCode({
+        teamAccount: samlTeamAccount,
         email: EMAIL,
         ssoSubject: SSO_SUBJECT,
+        fromAnotherBrowser: true,
       });
-
-      const res = await request(createTestApp(router))
-        .post("/auth/saml")
-        .send({ code });
 
       expect(res.status).toBe(401);
     },

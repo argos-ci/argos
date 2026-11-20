@@ -1,49 +1,42 @@
-import { randomBytes } from "node:crypto";
 import { assertNever } from "@argos/util/assertNever";
-import { Router, type RequestHandler, type Response } from "express";
-import { z } from "zod";
+import { Router, type RequestHandler } from "express";
 
 import {
-  bindCallbackToBrowser,
-  type CallbackProvider,
+  getCallbackUrl,
+  issueCallbackState,
+  OAUTH_PROVIDERS,
+  type OAuthProvider,
 } from "@/auth/callback-binding";
 import config from "@/config";
 import { getGoogleAuthUrl } from "@/google";
 
-import { getFirstString, getSafeRedirect } from "./util";
+import { getLoginRedirect } from "./util";
 
-type OAuthProvider = Exclude<CallbackProvider, "saml">;
-
-const QuerySchema = z.object({
-  r: z.union([z.string(), z.array(z.string())]).optional(),
-});
-
-function getCallbackUrl(provider: OAuthProvider): string {
-  return new URL(
-    `/auth/${provider}/callback`,
-    config.get("server.url"),
-  ).toString();
+function withParams(base: string, params: Record<string, string>): string {
+  const url = new URL(base);
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+  return url.toString();
 }
 
 function getAuthorizationUrl(provider: OAuthProvider, state: string): string {
   switch (provider) {
-    case "github": {
-      const url = new URL("https://github.com/login/oauth/authorize");
-      url.searchParams.set("scope", "user:email");
-      url.searchParams.set("client_id", config.get("github.clientId"));
-      url.searchParams.set("redirect_uri", getCallbackUrl(provider));
-      url.searchParams.set("state", state);
-      return url.toString();
-    }
-    case "gitlab": {
-      const url = new URL("https://gitlab.com/oauth/authorize");
-      url.searchParams.set("scope", "read_user");
-      url.searchParams.set("response_type", "code");
-      url.searchParams.set("client_id", config.get("gitlab.appId"));
-      url.searchParams.set("redirect_uri", getCallbackUrl(provider));
-      url.searchParams.set("state", state);
-      return url.toString();
-    }
+    case "github":
+      return withParams("https://github.com/login/oauth/authorize", {
+        scope: "user:email",
+        client_id: config.get("github.clientId"),
+        redirect_uri: getCallbackUrl(provider),
+        state,
+      });
+    case "gitlab":
+      return withParams("https://gitlab.com/oauth/authorize", {
+        scope: "read_user",
+        response_type: "code",
+        client_id: config.get("gitlab.appId"),
+        redirect_uri: getCallbackUrl(provider),
+        state,
+      });
     case "google":
       return getGoogleAuthUrl({
         clientId: config.get("google.clientId"),
@@ -62,41 +55,20 @@ function getAuthorizationUrl(provider: OAuthProvider, state: string): string {
  */
 function getGitHubAppInstallUrl(state: string): string {
   const appUrl = new URL(config.get("github.appUrl"));
-  const url = new URL(`${appUrl.pathname}/installations/new`, appUrl.origin);
-  url.searchParams.set("state", state);
-  return url.toString();
+  return withParams(`${appUrl.origin}${appUrl.pathname}/installations/new`, {
+    state,
+  });
 }
 
-/**
- * Issue the `state` of an authorization request, bound to this browser. The
- * callback page reads `redirect` back from it, so it is base64-encoded JSON.
- */
-function issueOAuthState(
-  res: Response,
-  input: { provider: OAuthProvider; redirect: string },
-): string {
-  const nonce = randomBytes(32).toString("base64url");
-  const state = Buffer.from(
-    JSON.stringify({ nonce, redirect: input.redirect }),
-  ).toString("base64");
-  bindCallbackToBrowser(res, { provider: input.provider, value: state });
-  return state;
-}
-
-/**
- * Start an OAuth flow: issue a state bound to this browser, then send the
- * browser to the provider with it.
- */
 function startOAuth(
   provider: OAuthProvider,
   getUrl: (state: string) => string,
 ): RequestHandler {
   return (req, res) => {
-    const query = QuerySchema.safeParse(req.query);
-    const redirect = getSafeRedirect(
-      query.success ? getFirstString(query.data.r) : undefined,
-    );
-    const state = issueOAuthState(res, { provider, redirect });
+    const state = issueCallbackState(res, {
+      provider,
+      redirect: getLoginRedirect(req.query),
+    });
     res.set("Cache-Control", "no-store");
     res.redirect(getUrl(state));
   };
@@ -104,7 +76,7 @@ function startOAuth(
 
 const router: Router = Router();
 
-for (const provider of ["github", "gitlab", "google"] as const) {
+for (const provider of OAUTH_PROVIDERS) {
   router.get(
     `/auth/${provider}/login`,
     startOAuth(provider, (state) => getAuthorizationUrl(provider, state)),

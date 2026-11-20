@@ -4,8 +4,10 @@ import express, { Router } from "express";
 import { z } from "zod";
 
 import {
-  consumeCallbackBinding,
-  type CallbackProvider,
+  EXPIRED_LOGIN_MESSAGE,
+  getCallbackUrl,
+  requireCallbackState,
+  type OAuthProvider,
 } from "@/auth/callback-binding";
 import { completeLogin, type AuthPayload } from "@/auth/login";
 import type { AuthSessionPayload } from "@/auth/payload";
@@ -34,7 +36,6 @@ import {
   retrieveOAuthToken as retrieveGitlabOAuthToken,
 } from "@/gitlab";
 import { getGoogleAuthenticatedClient, getGoogleUserProfile } from "@/google";
-import { boom } from "@/util/error";
 
 import { allowApp } from "../middlewares/cors";
 import { requireCsrf } from "../middlewares/csrf";
@@ -47,7 +48,6 @@ export default router;
 
 const OAuthBodySchema = z.object({
   code: z.string(),
-  state: z.string(),
 });
 const SamlBodySchema = z.object({
   code: z.string(),
@@ -59,14 +59,11 @@ type OAuthResult = {
   creation: boolean;
 };
 
-const EXPIRED_LOGIN_MESSAGE =
-  "This login has expired or was started in another browser. Try again.";
-
 /**
  * Create an OAuth handler.
  */
 function withOAuth(
-  method: Exclude<CallbackProvider, "saml">,
+  method: OAuthProvider,
   retrieveAccount: (
     body: OAuthBody,
     auth: AuthSessionPayload | null,
@@ -77,18 +74,11 @@ function withOAuth(
     allowOnlyPost,
     requireCsrf,
     express.json(),
+    requireCallbackState(method),
     asyncHandler(async (req, res) => {
       const auth = await safeSessionAuthFromExpressReq(req);
       try {
         const parsed = OAuthBodySchema.parse(req.body);
-        if (
-          !consumeCallbackBinding(req, res, {
-            provider: method,
-            value: parsed.state,
-          })
-        ) {
-          throw boom(401, EXPIRED_LOGIN_MESSAGE);
-        }
         const { account, creation } = await retrieveAccount(
           parsed,
           auth ?? null,
@@ -128,7 +118,7 @@ router.use(
       clientId: config.get("github.clientId"),
       clientSecret: config.get("github.clientSecret"),
       code: body.code,
-      redirectUri: `${config.get("server.url")}/auth/github/callback`,
+      redirectUri: getCallbackUrl("github"),
     });
 
     const octokit = getTokenOctokit({
@@ -168,7 +158,7 @@ router.use(
       clientId: config.get("gitlab.appId"),
       clientSecret: config.get("gitlab.appSecret"),
       code: body.code,
-      redirectUri: `${config.get("server.url")}/auth/gitlab/callback`,
+      redirectUri: getCallbackUrl("gitlab"),
     });
 
     const api = getGitlabClient({ accessToken: response.access_token });
@@ -196,7 +186,7 @@ router.use(
       code: body.code,
       clientId: config.get("google.clientId"),
       clientSecret: config.get("google.clientSecret"),
-      redirectUri: `${config.get("server.url")}/auth/google/callback`,
+      redirectUri: getCallbackUrl("google"),
     });
     const profile = await getGoogleUserProfile({ client });
     const googleUser = await getOrCreateGoogleUser(profile, {
@@ -217,14 +207,10 @@ router.use(
   allowOnlyPost,
   requireCsrf,
   express.json(),
+  requireCallbackState("saml"),
   asyncHandler(async (req, res) => {
     const parsed = SamlBodySchema.parse(req.body);
-    const payload = consumeCallbackBinding(req, res, {
-      provider: "saml",
-      value: parsed.code,
-    })
-      ? await consumeSamlAuthCode(parsed.code)
-      : null;
+    const payload = await consumeSamlAuthCode(parsed.code);
     if (!payload) {
       res.status(401).send({ error: { message: EXPIRED_LOGIN_MESSAGE } });
       return;

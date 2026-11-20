@@ -1,7 +1,7 @@
 import express, { Router, type ErrorRequestHandler } from "express";
 import { z } from "zod";
 
-import { bindCallbackToBrowser } from "@/auth/callback-binding";
+import { issueCallbackState } from "@/auth/callback-binding";
 import {
   checkHasAccessToSAML,
   checkTeamSamlEnabled,
@@ -16,11 +16,7 @@ import { Account } from "@/database/models";
 import logger from "@/logger";
 import { boom, HTTPError } from "@/util/error";
 
-import { asyncHandler, getFirstString, getSafeRedirect } from "./util";
-
-const LoginQuerySchema = z.object({
-  r: z.union([z.string(), z.array(z.string())]).optional(),
-});
+import { asyncHandler, getFirstString, getLoginRedirect } from "./util";
 
 const AcsBodySchema = z.object({
   SAMLResponse: z.string(),
@@ -82,10 +78,7 @@ router.get(
     if (!teamSlug) {
       throw boom(400, "Team slug is missing.");
     }
-    const query = LoginQuerySchema.safeParse(req.query);
-    const redirect = getSafeRedirect(
-      query.success ? getFirstString(query.data.r) : undefined,
-    );
+    const redirect = getLoginRedirect(req.query);
     const account = await getTeamAccountOrThrow(teamSlug);
     const samlConfig = await getEnabledTeamSamlConfig(account);
     const loginUrl = await createSamlLoginRedirect({
@@ -137,14 +130,11 @@ router.post(
       email,
       ssoSubject: parsed.subject ?? email,
     });
-    bindCallbackToBrowser(res, { provider: "saml", value: code });
     const loginUrl = new URL("/auth/saml/callback", config.get("server.url"));
     loginUrl.searchParams.set("code", code);
     loginUrl.searchParams.set(
       "state",
-      Buffer.from(
-        JSON.stringify({ nonce: "none", redirect: parsed.redirect }),
-      ).toString("base64"),
+      issueCallbackState(res, { provider: "saml", redirect: parsed.redirect }),
     );
     res.redirect(loginUrl.toString());
   }),

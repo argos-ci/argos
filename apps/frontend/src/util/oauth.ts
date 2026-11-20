@@ -32,8 +32,7 @@ export function getOAuthURL(input: {
 }
 
 /**
- * Read where to land after authenticating. The server checks the state against
- * the one it issued to this browser before it redeems the code.
+ * Read where to land after authenticating.
  */
 export function getRedirectFromState(state: RawState): string {
   try {
@@ -47,9 +46,6 @@ export function getRedirectFromState(state: RawState): string {
   }
 }
 
-/**
- * Type guard for the OAuth state structure.
- */
 function checkIsValidOAuthState(value: unknown): value is OAuthState {
   return (
     !!value &&

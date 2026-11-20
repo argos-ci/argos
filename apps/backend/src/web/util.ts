@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import { z } from "zod";
 
 import config from "@/config";
 
@@ -48,7 +49,7 @@ export const subdomain =
  * rather than matched as a string: `//evil.example` and `/\evil.example` both
  * start with a slash and both leave the origin.
  */
-export function getSafeRedirect(redirect: string | undefined) {
+function getSafeRedirect(redirect: string | undefined) {
   if (!redirect) {
     return "/";
   }
@@ -73,4 +74,19 @@ export function getFirstString(input: string | string[] | undefined) {
     return input[0];
   }
   return undefined;
+}
+
+const LoginQuerySchema = z.object({
+  r: z.union([z.string(), z.array(z.string())]).optional(),
+});
+
+/**
+ * Where to land after a login, from the `r` query param of the route that
+ * starts it.
+ */
+export function getLoginRedirect(query: unknown): string {
+  const parsed = LoginQuerySchema.safeParse(query);
+  return getSafeRedirect(
+    parsed.success ? getFirstString(parsed.data.r) : undefined,
+  );
 }

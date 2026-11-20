@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { MarkGithubIcon } from "@primer/octicons-react";
 
@@ -55,14 +54,7 @@ export function GitHubLoginButton({
   children?: React.ReactNode;
   redirect?: string | null;
 }) {
-  const url = useMemo(
-    () =>
-      getOAuthURL({
-        provider: "github",
-        redirect: redirect ?? null,
-      }),
-    [redirect],
-  );
+  const url = getOAuthURL({ provider: "github", redirect: redirect ?? null });
   return (
     <LinkButton variant="github" href={url} {...props}>
       <ButtonIcon>
