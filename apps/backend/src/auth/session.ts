@@ -27,7 +27,7 @@ export const ABSOLUTE_TIMEOUT_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
  */
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-export type AuthMethod = (typeof UserSession.authMethods)[number];
+type AuthMethod = (typeof UserSession.authMethods)[number];
 
 /** How a session is opened. A SAML login names the team whose IdP answered. */
 export type SessionAuthMethod =

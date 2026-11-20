@@ -3,10 +3,13 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
+import {
+  consumeCallbackBinding,
+  type CallbackProvider,
+} from "@/auth/callback-binding";
 import { completeLogin, type AuthPayload } from "@/auth/login";
 import type { AuthSessionPayload } from "@/auth/payload";
 import { consumeSamlAuthCode } from "@/auth/saml";
-import type { AuthMethod } from "@/auth/session";
 import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
 import type { Account } from "@/database/models";
@@ -31,6 +34,7 @@ import {
   retrieveOAuthToken as retrieveGitlabOAuthToken,
 } from "@/gitlab";
 import { getGoogleAuthenticatedClient, getGoogleUserProfile } from "@/google";
+import { boom } from "@/util/error";
 
 import { allowApp } from "../middlewares/cors";
 import { requireCsrf } from "../middlewares/csrf";
@@ -43,6 +47,7 @@ export default router;
 
 const OAuthBodySchema = z.object({
   code: z.string(),
+  state: z.string(),
 });
 const SamlBodySchema = z.object({
   code: z.string(),
@@ -54,11 +59,14 @@ type OAuthResult = {
   creation: boolean;
 };
 
+const EXPIRED_LOGIN_MESSAGE =
+  "This login has expired or was started in another browser. Try again.";
+
 /**
  * Create an OAuth handler.
  */
 function withOAuth(
-  method: Exclude<AuthMethod, "saml">,
+  method: Exclude<CallbackProvider, "saml">,
   retrieveAccount: (
     body: OAuthBody,
     auth: AuthSessionPayload | null,
@@ -73,6 +81,14 @@ function withOAuth(
       const auth = await safeSessionAuthFromExpressReq(req);
       try {
         const parsed = OAuthBodySchema.parse(req.body);
+        if (
+          !consumeCallbackBinding(req, res, {
+            provider: method,
+            value: parsed.state,
+          })
+        ) {
+          throw boom(401, EXPIRED_LOGIN_MESSAGE);
+        }
         const { account, creation } = await retrieveAccount(
           parsed,
           auth ?? null,
@@ -203,13 +219,14 @@ router.use(
   express.json(),
   asyncHandler(async (req, res) => {
     const parsed = SamlBodySchema.parse(req.body);
-    const payload = await consumeSamlAuthCode(parsed.code);
+    const payload = consumeCallbackBinding(req, res, {
+      provider: "saml",
+      value: parsed.code,
+    })
+      ? await consumeSamlAuthCode(parsed.code)
+      : null;
     if (!payload) {
-      res.status(401).send({
-        error: {
-          message: "Invalid or expired SAML auth code.",
-        },
-      });
+      res.status(401).send({ error: { message: EXPIRED_LOGIN_MESSAGE } });
       return;
     }
     const [auth, teamAccount] = await Promise.all([

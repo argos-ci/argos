@@ -42,3 +42,35 @@ export const subdomain =
 
     next();
   };
+
+/**
+ * A same-origin path to land on after login. Resolved with the URL parser
+ * rather than matched as a string: `//evil.example` and `/\evil.example` both
+ * start with a slash and both leave the origin.
+ */
+export function getSafeRedirect(redirect: string | undefined) {
+  if (!redirect) {
+    return "/";
+  }
+  const origin = new URL(config.get("server.url")).origin;
+  let url: URL;
+  try {
+    url = new URL(redirect, origin);
+  } catch {
+    return "/";
+  }
+  if (url.origin !== origin) {
+    return "/";
+  }
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+export function getFirstString(input: string | string[] | undefined) {
+  if (typeof input === "string") {
+    return input;
+  }
+  if (Array.isArray(input)) {
+    return input[0];
+  }
+  return undefined;
+}

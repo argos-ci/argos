@@ -1,5 +1,6 @@
 import request from "supertest";
 
+import { getCallbackCookieName } from "@/auth/callback-binding";
 import { createSamlAuthCode } from "@/auth/saml";
 import type { Account } from "@/database/models";
 
@@ -8,7 +9,8 @@ import router from "./auth";
 
 /**
  * What the callback page does with the code the ACS endpoint hands it, once
- * `teamAccount`'s IdP has vouched for `email`.
+ * `teamAccount`'s IdP has vouched for `email`, in the browser the ACS bound the
+ * code to.
  */
 export async function exchangeSamlCode(input: {
   teamAccount: Account;
@@ -20,5 +22,8 @@ export async function exchangeSamlCode(input: {
     email: input.email,
     ssoSubject: input.ssoSubject,
   });
-  return request(createTestApp(router)).post("/auth/saml").send({ code });
+  return request(createTestApp(router))
+    .post("/auth/saml")
+    .set("Cookie", `${getCallbackCookieName("saml")}=${code}`)
+    .send({ code });
 }

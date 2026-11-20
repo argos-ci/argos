@@ -1,6 +1,7 @@
 import express, { Router, type ErrorRequestHandler } from "express";
 import { z } from "zod";
 
+import { bindCallbackToBrowser } from "@/auth/callback-binding";
 import {
   checkHasAccessToSAML,
   checkTeamSamlEnabled,
@@ -15,7 +16,7 @@ import { Account } from "@/database/models";
 import logger from "@/logger";
 import { boom, HTTPError } from "@/util/error";
 
-import { asyncHandler } from "./util";
+import { asyncHandler, getFirstString, getSafeRedirect } from "./util";
 
 const LoginQuerySchema = z.object({
   r: z.union([z.string(), z.array(z.string())]).optional(),
@@ -52,38 +53,6 @@ const redirectFailedLoginToLoginPage: ErrorRequestHandler = (
     getLoginErrorUrl("SAML login failed on the Argos side. Try again shortly."),
   );
 };
-
-/**
- * A same-origin path to land on after login. Resolved with the URL parser
- * rather than matched as a string: `//evil.example` and `/\evil.example` both
- * start with a slash and both leave the origin.
- */
-function getSafeRedirect(redirect: string | undefined) {
-  if (!redirect) {
-    return "/";
-  }
-  const origin = new URL(config.get("server.url")).origin;
-  let url: URL;
-  try {
-    url = new URL(redirect, origin);
-  } catch {
-    return "/";
-  }
-  if (url.origin !== origin) {
-    return "/";
-  }
-  return `${url.pathname}${url.search}${url.hash}`;
-}
-
-function getFirstString(input: string | string[] | undefined) {
-  if (typeof input === "string") {
-    return input;
-  }
-  if (Array.isArray(input)) {
-    return input[0];
-  }
-  return undefined;
-}
 
 async function getTeamAccountOrThrow(teamSlug: string) {
   const account = await Account.query()
@@ -168,6 +137,7 @@ router.post(
       email,
       ssoSubject: parsed.subject ?? email,
     });
+    bindCallbackToBrowser(res, { provider: "saml", value: code });
     const loginUrl = new URL("/auth/saml/callback", config.get("server.url"));
     loginUrl.searchParams.set("code", code);
     loginUrl.searchParams.set(
