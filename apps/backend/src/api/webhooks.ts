@@ -1,7 +1,9 @@
 import {
   PROJECT_EVENT_DESCRIPTIONS,
   PROJECT_EVENTS,
+  type ProjectEventName,
 } from "@argos/schemas/project-event";
+import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import type { ZodOpenApiPathsObject } from "zod-openapi";
 
@@ -30,6 +32,18 @@ const WebhookHeadersSchema = z.object({
 });
 
 /**
+ * The component of an event body. The feed response registers each one, as
+ * output: given as a zod schema, a webhook body would count as a request, and
+ * the generator would split every schema it contains (`Build`, `Account`,
+ * `User`…) into an input and an `…Output` copy across the whole document.
+ */
+function getEventComponentId(name: ProjectEventName): string {
+  const id = EVENT_SCHEMAS[name].meta()?.id;
+  invariant(id, `No component id for ${name}`);
+  return id;
+}
+
+/**
  * The requests Argos sends to the webhooks a team configures, one per event
  * type, for the `webhooks` section of the OpenAPI document.
  */
@@ -45,7 +59,13 @@ export const webhooks: ZodOpenApiPathsObject = Object.fromEntries(
         requestParams: { header: WebhookHeadersSchema },
         requestBody: {
           required: true,
-          content: { "application/json": { schema: EVENT_SCHEMAS[name] } },
+          content: {
+            "application/json": {
+              schema: {
+                $ref: `#/components/schemas/${getEventComponentId(name)}`,
+              },
+            },
+          },
         },
         responses: {
           "200": {
