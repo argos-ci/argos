@@ -1,10 +1,10 @@
 import { http, HttpResponse } from "msw";
-import { HttpNetworkFrame } from "msw/experimental";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll } from "vitest";
 
 import type { Project } from "@/database/models";
 import { factory } from "@/database/testing";
+import { failUnhandledExceptLoopback } from "@/web/test-util";
 
 export const commitSha = "b6bf264029c03888b7fb7e6db7386f3b245b77b0";
 export const branch = "main";
@@ -17,18 +17,7 @@ const githubServer = setupServer();
  */
 export function setupGithubServer() {
   beforeAll(() => {
-    githubServer.listen({
-      onUnhandledFrame: ({ frame, defaults }) => {
-        // Supertest reaches the app under test through the loopback interface.
-        if (
-          frame instanceof HttpNetworkFrame &&
-          new URL(frame.data.request.url).hostname === "127.0.0.1"
-        ) {
-          return;
-        }
-        defaults.error();
-      },
-    });
+    githubServer.listen({ onUnhandledFrame: failUnhandledExceptLoopback });
   });
 
   afterEach(() => {

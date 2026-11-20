@@ -1,6 +1,7 @@
 import express, { Router, type ErrorRequestHandler } from "express";
 import { z } from "zod";
 
+import { issueCallbackState } from "@/auth/callback-binding";
 import {
   checkHasAccessToSAML,
   checkTeamSamlEnabled,
@@ -15,11 +16,7 @@ import { Account } from "@/database/models";
 import logger from "@/logger";
 import { boom, HTTPError } from "@/util/error";
 
-import { asyncHandler } from "./util";
-
-const LoginQuerySchema = z.object({
-  r: z.union([z.string(), z.array(z.string())]).optional(),
-});
+import { asyncHandler, getFirstString, getLoginRedirect } from "./util";
 
 const AcsBodySchema = z.object({
   SAMLResponse: z.string(),
@@ -53,38 +50,6 @@ const redirectFailedLoginToLoginPage: ErrorRequestHandler = (
   );
 };
 
-/**
- * A same-origin path to land on after login. Resolved with the URL parser
- * rather than matched as a string: `//evil.example` and `/\evil.example` both
- * start with a slash and both leave the origin.
- */
-function getSafeRedirect(redirect: string | undefined) {
-  if (!redirect) {
-    return "/";
-  }
-  const origin = new URL(config.get("server.url")).origin;
-  let url: URL;
-  try {
-    url = new URL(redirect, origin);
-  } catch {
-    return "/";
-  }
-  if (url.origin !== origin) {
-    return "/";
-  }
-  return `${url.pathname}${url.search}${url.hash}`;
-}
-
-function getFirstString(input: string | string[] | undefined) {
-  if (typeof input === "string") {
-    return input;
-  }
-  if (Array.isArray(input)) {
-    return input[0];
-  }
-  return undefined;
-}
-
 async function getTeamAccountOrThrow(teamSlug: string) {
   const account = await Account.query()
     .withGraphFetched("teamSamlConfig")
@@ -113,10 +78,7 @@ router.get(
     if (!teamSlug) {
       throw boom(400, "Team slug is missing.");
     }
-    const query = LoginQuerySchema.safeParse(req.query);
-    const redirect = getSafeRedirect(
-      query.success ? getFirstString(query.data.r) : undefined,
-    );
+    const redirect = getLoginRedirect(req.query);
     const account = await getTeamAccountOrThrow(teamSlug);
     const samlConfig = await getEnabledTeamSamlConfig(account);
     const loginUrl = await createSamlLoginRedirect({
@@ -172,9 +134,7 @@ router.post(
     loginUrl.searchParams.set("code", code);
     loginUrl.searchParams.set(
       "state",
-      Buffer.from(
-        JSON.stringify({ nonce: "none", redirect: parsed.redirect }),
-      ).toString("base64"),
+      issueCallbackState(res, { provider: "saml", redirect: parsed.redirect }),
     );
     res.redirect(loginUrl.toString());
   }),

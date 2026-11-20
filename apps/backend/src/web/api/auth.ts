@@ -3,10 +3,15 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
+import {
+  EXPIRED_LOGIN_MESSAGE,
+  getCallbackUrl,
+  requireCallbackState,
+  type OAuthProvider,
+} from "@/auth/callback-binding";
 import { completeLogin, type AuthPayload } from "@/auth/login";
 import type { AuthSessionPayload } from "@/auth/payload";
 import { consumeSamlAuthCode } from "@/auth/saml";
-import type { AuthMethod } from "@/auth/session";
 import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
 import type { Account } from "@/database/models";
@@ -58,7 +63,7 @@ type OAuthResult = {
  * Create an OAuth handler.
  */
 function withOAuth(
-  method: Exclude<AuthMethod, "saml">,
+  method: OAuthProvider,
   retrieveAccount: (
     body: OAuthBody,
     auth: AuthSessionPayload | null,
@@ -69,6 +74,7 @@ function withOAuth(
     allowOnlyPost,
     requireCsrf,
     express.json(),
+    requireCallbackState(method),
     asyncHandler(async (req, res) => {
       const auth = await safeSessionAuthFromExpressReq(req);
       try {
@@ -112,7 +118,7 @@ router.use(
       clientId: config.get("github.clientId"),
       clientSecret: config.get("github.clientSecret"),
       code: body.code,
-      redirectUri: `${config.get("server.url")}/auth/github/callback`,
+      redirectUri: getCallbackUrl("github"),
     });
 
     const octokit = getTokenOctokit({
@@ -152,7 +158,7 @@ router.use(
       clientId: config.get("gitlab.appId"),
       clientSecret: config.get("gitlab.appSecret"),
       code: body.code,
-      redirectUri: `${config.get("server.url")}/auth/gitlab/callback`,
+      redirectUri: getCallbackUrl("gitlab"),
     });
 
     const api = getGitlabClient({ accessToken: response.access_token });
@@ -180,7 +186,7 @@ router.use(
       code: body.code,
       clientId: config.get("google.clientId"),
       clientSecret: config.get("google.clientSecret"),
-      redirectUri: `${config.get("server.url")}/auth/google/callback`,
+      redirectUri: getCallbackUrl("google"),
     });
     const profile = await getGoogleUserProfile({ client });
     const googleUser = await getOrCreateGoogleUser(profile, {
@@ -201,15 +207,12 @@ router.use(
   allowOnlyPost,
   requireCsrf,
   express.json(),
+  requireCallbackState("saml"),
   asyncHandler(async (req, res) => {
     const parsed = SamlBodySchema.parse(req.body);
     const payload = await consumeSamlAuthCode(parsed.code);
     if (!payload) {
-      res.status(401).send({
-        error: {
-          message: "Invalid or expired SAML auth code.",
-        },
-      });
+      res.status(401).send({ error: { message: EXPIRED_LOGIN_MESSAGE } });
       return;
     }
     const [auth, teamAccount] = await Promise.all([
