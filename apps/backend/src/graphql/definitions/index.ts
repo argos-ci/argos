@@ -59,6 +59,7 @@ import * as UserAccessToken from "./UserAccessToken";
 import * as UserPasskey from "./UserPasskey";
 import * as UserSession from "./UserSession";
 import * as ValidationStatus from "./ValidationStatus";
+import * as Webhook from "./Webhook";
 
 export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Account,
@@ -120,4 +121,5 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   UserPasskey,
   UserSession,
   ValidationStatus,
+  Webhook,
 ];

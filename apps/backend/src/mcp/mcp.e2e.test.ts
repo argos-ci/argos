@@ -7,6 +7,7 @@ import {
 import express from "express";
 import request from "supertest";
 import { test as base, describe, expect, vi } from "vitest";
+import { z } from "zod";
 
 import {
   Account,
@@ -574,6 +575,92 @@ describe.for([
         .body;
       expect(client.getServerVersion()).toEqual(card.serverInfo);
       expect(client.getServerCapabilities()).toEqual(card.capabilities);
+    } finally {
+      await client.close();
+    }
+  });
+
+  test("lists and polls the project events", async ({
+    mcpUrl,
+    patToken,
+    project,
+  }) => {
+    const client = await connectClient(mcpUrl, patToken, options);
+    try {
+      const list = await client.request(
+        { method: "events/list", params: {} },
+        z.object({
+          events: z.array(
+            z.object({
+              name: z.string(),
+              delivery: z.array(z.string()),
+              inputSchema: z.object({ type: z.literal("object") }).loose(),
+              payloadSchema: z.object({ type: z.literal("object") }).loose(),
+            }),
+          ),
+        }),
+      );
+      expect(list.events.map((event) => event.name)).toEqual([
+        "build.completed",
+        "build.reviewed",
+        "deployment.created",
+        "deployment.ready",
+      ]);
+      expect(
+        list.events.every((event) => event.delivery.join() === "poll"),
+      ).toBe(true);
+
+      const PollResultSchema = z.object({
+        events: z.array(z.object({ eventId: z.string() }).loose()),
+        cursor: z.string(),
+        truncated: z.boolean(),
+        hasMore: z.boolean(),
+        nextPollMs: z.number(),
+      });
+      const poll = ({
+        name = "build.completed",
+        project = "awesome-project",
+        cursor,
+      }: {
+        name?: string;
+        project?: string;
+        cursor: string | null;
+      }) =>
+        client.request(
+          {
+            method: "events/poll",
+            params: {
+              name,
+              arguments: { owner: "jane-doe", project },
+              cursor,
+            },
+          },
+          PollResultSchema,
+        );
+
+      const start = await poll({ cursor: null });
+      expect(start.events).toEqual([]);
+
+      const event = await factory.ProjectEvent.create({
+        projectId: project.id,
+      });
+      const next = await poll({ cursor: start.cursor });
+      expect(next.events).toEqual([
+        {
+          eventId: event.id,
+          name: "build.completed",
+          timestamp: new Date(event.createdAt).toISOString(),
+          data: { build: { id: "1" } },
+        },
+      ]);
+      expect(next.nextPollMs).toBeGreaterThan(0);
+
+      await expect(
+        poll({ name: "build.deleted", cursor: null }),
+      ).rejects.toMatchObject({ code: -32023 });
+      await expect(
+        poll({ project: "unknown", cursor: null }),
+      ).rejects.toMatchObject({ code: -32023 });
     } finally {
       await client.close();
     }

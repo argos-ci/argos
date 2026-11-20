@@ -18,6 +18,7 @@ import {
 } from "../models/Project";
 import { ProjectUser } from "../models/ProjectUser";
 import { Team } from "../models/Team";
+import { WebhookProject } from "../models/WebhookProject";
 import { transaction } from "../transaction";
 import { isValidPgBigInt } from "../util/biginteger";
 import { moveProjectTokens } from "./project-token";
@@ -533,12 +534,17 @@ export async function transferProject(args: {
         accountId: targetAccount.id,
         name: resolvedName,
       });
-      await moveProjectTokens({
-        projectId: project.id,
-        fromAccountId: previousAccountId,
-        toAccountId: targetAccount.id,
-        trx,
-      });
+      await Promise.all([
+        moveProjectTokens({
+          projectId: project.id,
+          fromAccountId: previousAccountId,
+          toAccountId: targetAccount.id,
+          trx,
+        }),
+        // A link to the account the project leaves is inert while the project
+        // is away (see `querySubscribedWebhooks`), but would revive if it came back.
+        WebhookProject.query(trx).where("projectId", project.id).delete(),
+      ]);
       return transferredProject;
     }),
   ]);

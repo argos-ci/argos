@@ -27,6 +27,7 @@ import {
 import { subscribeUserToCommentThread } from "@/database/services/comment-notification-subscription";
 import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
+import { sendProjectEvent } from "@/event/send";
 import { sendNotification } from "@/notification";
 import { getProjectNotificationRecipients } from "@/project/members";
 import { boom } from "@/util/error";
@@ -275,6 +276,7 @@ export async function createBuildReview(input: {
         payload: { build, compareScreenshotBucket, buildReview },
       },
     }),
+    sendProjectEvent({ name: "build.reviewed", build, buildReview }),
     // Automatic reviews are silent: the user didn't act, so don't subscribe
     // them to the build and don't email subscribers about the review.
     automatic
