@@ -213,3 +213,64 @@ export async function resendWebhookDelivery(args: {
   await webhookDeliveryJob.push(resent.id);
   return resent;
 }
+
+/**
+ * A webhook of the account, for an administrator. Throws a 403 for anyone
+ * else and a 404 when the account has no such webhook.
+ */
+export async function loadAccountWebhook(args: {
+  account: Account;
+  auth: AuthViewer;
+  id: string;
+}): Promise<Webhook> {
+  const { account, auth, id } = args;
+  await assertAccountAdmin(account, auth);
+  const webhook = isValidPgBigInt(id)
+    ? await Webhook.query().findOne({ id, accountId: account.id })
+    : undefined;
+  if (!webhook) {
+    throw boom(404, "Webhook not found.");
+  }
+  return webhook;
+}
+
+/**
+ * One of a webhook's deliveries. Throws a 404 when it has none with this id.
+ */
+export async function loadWebhookDelivery(args: {
+  webhook: Webhook;
+  id: string;
+}): Promise<WebhookDelivery> {
+  const { webhook, id } = args;
+  const delivery = isValidPgBigInt(id)
+    ? await WebhookDelivery.query().findOne({ id, webhookId: webhook.id })
+    : undefined;
+  if (!delivery) {
+    throw boom(404, "Delivery not found.");
+  }
+  return delivery;
+}
+
+/**
+ * The live projects each webhook is linked to, by webhook id. A link to a
+ * project of another account reaches nothing.
+ */
+export async function getProjectsByWebhookId(
+  webhookIds: readonly string[],
+): Promise<Map<string, Project[]>> {
+  const links = await WebhookProject.query()
+    .withGraphJoined("project")
+    .join("webhooks", "webhooks.id", "webhook_projects.webhookId")
+    .whereIn("webhook_projects.webhookId", [...webhookIds])
+    .whereNull("project.deletedAt")
+    .whereColumn("project.accountId", "webhooks.accountId")
+    .orderBy("project.name");
+  const projectsByWebhookId = new Map<string, Project[]>();
+  for (const link of links) {
+    invariant(link.project, "Webhook link without project");
+    const projects = projectsByWebhookId.get(link.webhookId) ?? [];
+    projects.push(link.project);
+    projectsByWebhookId.set(link.webhookId, projects);
+  }
+  return projectsByWebhookId;
+}

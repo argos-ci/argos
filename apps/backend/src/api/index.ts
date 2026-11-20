@@ -110,6 +110,15 @@ import {
 import { updateBuild } from "./handlers/updateBuild";
 import { updateComment } from "./handlers/updateComment";
 import { updateProject } from "./handlers/updateProject";
+import {
+  createAccountWebhookHandler,
+  deleteAccountWebhookHandler,
+  getAccountWebhookHandler,
+  getWebhookDeliveryHandler,
+  listAccountWebhooksHandler,
+  listWebhookDeliveriesHandler,
+  resendWebhookDeliveryHandler,
+} from "./handlers/webhooks";
 import { schema } from "./schema";
 import { errorHandler, registerHandler } from "./util";
 
@@ -203,6 +212,13 @@ registerHandler(router, deleteProjectTokenHandler);
 registerHandler(router, listAccountProjectTokensHandler);
 registerHandler(router, createAccountProjectTokenHandler);
 registerHandler(router, deleteAccountProjectTokenHandler);
+registerHandler(router, listAccountWebhooksHandler);
+registerHandler(router, createAccountWebhookHandler);
+registerHandler(router, getAccountWebhookHandler);
+registerHandler(router, deleteAccountWebhookHandler);
+registerHandler(router, listWebhookDeliveriesHandler);
+registerHandler(router, getWebhookDeliveryHandler);
+registerHandler(router, resendWebhookDeliveryHandler);
 registerHandler(router, setProjectContributor);
 registerHandler(router, removeProjectContributorHandler);
 registerHandler(router, listAutomationRules);
