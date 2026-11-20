@@ -90,12 +90,8 @@ function WebhookActions(props: {
   );
 }
 
-export function WebhookList(props: {
-  webhooks: Webhook[];
-  /** The page listing a webhook's deliveries. */
-  getWebhookHref: (webhook: Webhook) => string;
-}) {
-  const { webhooks, getWebhookHref } = props;
+export function WebhookList(props: { webhooks: Webhook[] }) {
+  const { webhooks } = props;
   const deleting = useDialogValueState<WebhookDialogValue | null>(null);
   const columns = "grid-cols-[4fr_2fr_1fr_2rem]";
 
@@ -118,7 +114,7 @@ export function WebhookList(props: {
           >
             <div className="min-w-0 py-2">
               <Link
-                href={getWebhookHref(webhook)}
+                href={webhook.id}
                 variant="neutral"
                 className="block truncate font-medium"
                 title={webhook.url}

@@ -443,6 +443,15 @@ export const ProjectEvent = defineFactory(models.ProjectEvent, () => ({
   data: { build: { id: "1" } },
 }));
 
+export const WebhookDelivery = defineFactory(models.WebhookDelivery, () => ({
+  webhookId: Webhook.associate("id") as unknown as string,
+  eventId: ProjectEvent.associate("id") as unknown as string,
+  jobStatus: "complete" as const,
+  attempts: 1,
+  conclusion: "success" as const,
+  responseStatus: 200,
+}));
+
 export const AutomationRule = defineFactory(models.AutomationRule, () => ({
   active: true,
   name: FactoryGirl.sequence("automationRule.name", (n) => `rule-${n}`),

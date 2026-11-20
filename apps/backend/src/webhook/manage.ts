@@ -24,33 +24,84 @@ import { parseWebhookUrl } from "./url";
  */
 const MAX_WEBHOOKS_PER_ACCOUNT = 20;
 
-async function assertAccountAdmin(account: Account, auth: AuthViewer) {
+/** What delivery lists read: every column but the response body. */
+export const WEBHOOK_DELIVERY_LIST_COLUMNS = [
+  "id",
+  "createdAt",
+  "updatedAt",
+  "webhookId",
+  "eventId",
+  "jobStatus",
+  "attempts",
+  "conclusion",
+  "attemptedAt",
+  "responseStatus",
+  "durationMs",
+  "failureReason",
+] as const;
+
+/**
+ * Whether the viewer may manage the account's webhooks: a webhook receives
+ * every event of the projects it covers, so only administrators can.
+ *
+ * The functions below do not check it: each API layer applies it with its
+ * own policy (a 403, or a `null` field).
+ */
+export async function checkIsAccountAdmin(
+  account: Account,
+  auth: AuthViewer,
+): Promise<boolean> {
   const permissions = await account.$getPermissions(auth);
-  if (!permissions.includes("admin")) {
+  return permissions.includes("admin");
+}
+
+export async function assertAccountAdmin(
+  account: Account,
+  auth: AuthViewer,
+): Promise<void> {
+  if (!(await checkIsAccountAdmin(account, auth))) {
     throw boom(403, "Only administrators of the account can manage webhooks.");
   }
 }
 
-/**
- * The account's webhooks, or `null` when the viewer is not an administrator:
- * a webhook receives every event of the projects it covers.
- */
-export async function listAccountWebhooks(args: {
-  account: Account;
-  auth: AuthViewer;
-}): Promise<Webhook[] | null> {
-  const { account, auth } = args;
-  const permissions = await account.$getPermissions(auth);
-  if (!permissions.includes("admin")) {
-    return null;
-  }
+export async function listAccountWebhooks(
+  account: Account,
+): Promise<Webhook[]> {
   return Webhook.query()
     .where("accountId", account.id)
     .orderBy("createdAt", "desc")
     .orderBy("id", "desc");
 }
 
-async function loadAccountProjects(
+export async function findAccountWebhook(
+  account: Account,
+  id: string,
+): Promise<Webhook | null> {
+  if (!isValidPgBigInt(id)) {
+    return null;
+  }
+  const webhook = await Webhook.query().findOne({ id, accountId: account.id });
+  return webhook ?? null;
+}
+
+export async function findWebhookDelivery(
+  webhook: Webhook,
+  id: string,
+): Promise<WebhookDelivery | null> {
+  if (!isValidPgBigInt(id)) {
+    return null;
+  }
+  const delivery = await WebhookDelivery.query().findOne({
+    id,
+    webhookId: webhook.id,
+  });
+  return delivery ?? null;
+}
+
+/**
+ * The account's live projects with these ids, or a 404 for any other id.
+ */
+export async function loadAccountProjects(
   account: Account,
   projectIds: readonly string[],
 ): Promise<Project[]> {
@@ -75,14 +126,12 @@ async function loadAccountProjects(
  */
 export async function createWebhook(args: {
   account: Account;
-  auth: AuthViewer;
   url: string;
   events: readonly ProjectEventName[];
-  /** The projects to receive events from, `null` for all of them. */
-  projectIds: readonly string[] | null;
+  /** The account's projects to receive events from, `null` for all of them. */
+  projects: readonly Project[] | null;
 }): Promise<{ webhook: Webhook; secret: string }> {
-  const { account, auth, projectIds } = args;
-  await assertAccountAdmin(account, auth);
+  const { account, projects } = args;
 
   const url = parseWebhookUrl(args.url, {
     allowPrivateNetwork: config.get("webhooks.allowPrivateNetwork"),
@@ -92,10 +141,6 @@ export async function createWebhook(args: {
   if (events.length === 0) {
     throw boom(400, "Select at least one event.", { field: "events" });
   }
-
-  const projects = projectIds
-    ? await loadAccountProjects(account, projectIds)
-    : null;
 
   const count = await Webhook.query()
     .where("accountId", account.id)
@@ -131,39 +176,10 @@ export async function createWebhook(args: {
   return { webhook, secret };
 }
 
-export async function deleteWebhook(args: {
-  webhook: Webhook;
-  auth: AuthViewer;
-}): Promise<void> {
-  const { webhook, auth } = args;
-  const account = await webhook.$relatedQuery("account");
-  invariant(account, "webhook account not found");
-  await assertAccountAdmin(account, auth);
-  await webhook.$query().delete();
-}
+type WebhookDeliveryStatus = "pending" | "success" | "failed";
 
 /**
- * A webhook of the account, or `null` when there is none with this id or the
- * viewer is not an administrator.
- */
-export async function getAccountWebhook(args: {
-  account: Account;
-  auth: AuthViewer;
-  id: string;
-}): Promise<Webhook | null> {
-  const { account, auth, id } = args;
-  const permissions = await account.$getPermissions(auth);
-  if (!permissions.includes("admin") || !isValidPgBigInt(id)) {
-    return null;
-  }
-  const webhook = await Webhook.query().findOne({ id, accountId: account.id });
-  return webhook ?? null;
-}
-
-export type WebhookDeliveryStatus = "pending" | "success" | "failed";
-
-/**
- * A webhook's deliveries, most recent first.
+ * A webhook's deliveries, most recent first, without their response bodies.
  */
 export async function listWebhookDeliveries(args: {
   webhookId: string;
@@ -177,9 +193,9 @@ export async function listWebhookDeliveries(args: {
     return { results: [], total: 0 };
   }
   const query = WebhookDelivery.query()
+    .select(WEBHOOK_DELIVERY_LIST_COLUMNS)
     .where("webhookId", webhookId)
-    .orderBy("id", "desc")
-    .range(after, after + first - 1);
+    .orderBy("id", "desc");
   if (status === "pending") {
     query.whereNull("conclusion");
   } else if (status) {
@@ -188,67 +204,31 @@ export async function listWebhookDeliveries(args: {
   if (eventId !== null) {
     query.where("eventId", eventId);
   }
-  return query;
+  const results = await query.clone().offset(after).limit(first);
+  // A page that comes up short tells the total without counting.
+  const total =
+    results.length < first && (results.length > 0 || after === 0)
+      ? after + results.length
+      : await query.clone().resultSize();
+  return { results, total };
 }
 
 /**
  * Send a delivery's event to its webhook again, as a new delivery. It keeps
  * the event's id, so an endpoint that already processed it can tell.
  */
-export async function resendWebhookDelivery(args: {
-  delivery: WebhookDelivery;
-  auth: AuthViewer;
-}): Promise<WebhookDelivery> {
-  const { delivery, auth } = args;
-  const webhook = await Webhook.query()
-    .findById(delivery.webhookId)
-    .withGraphFetched("account");
-  invariant(webhook?.account, "delivery webhook account not found");
-  await assertAccountAdmin(webhook.account, auth);
-  const resent = await WebhookDelivery.query().insertAndFetch({
-    webhookId: webhook.id,
-    eventId: delivery.eventId,
-    jobStatus: "pending",
-  });
+export async function resendWebhookDelivery(
+  delivery: WebhookDelivery,
+): Promise<WebhookDelivery> {
+  const resent = await WebhookDelivery.query()
+    .insert({
+      webhookId: delivery.webhookId,
+      eventId: delivery.eventId,
+      jobStatus: "pending",
+    })
+    .returning("*");
   await webhookDeliveryJob.push(resent.id);
   return resent;
-}
-
-/**
- * A webhook of the account, for an administrator. Throws a 403 for anyone
- * else and a 404 when the account has no such webhook.
- */
-export async function loadAccountWebhook(args: {
-  account: Account;
-  auth: AuthViewer;
-  id: string;
-}): Promise<Webhook> {
-  const { account, auth, id } = args;
-  await assertAccountAdmin(account, auth);
-  const webhook = isValidPgBigInt(id)
-    ? await Webhook.query().findOne({ id, accountId: account.id })
-    : undefined;
-  if (!webhook) {
-    throw boom(404, "Webhook not found.");
-  }
-  return webhook;
-}
-
-/**
- * One of a webhook's deliveries. Throws a 404 when it has none with this id.
- */
-export async function loadWebhookDelivery(args: {
-  webhook: Webhook;
-  id: string;
-}): Promise<WebhookDelivery> {
-  const { webhook, id } = args;
-  const delivery = isValidPgBigInt(id)
-    ? await WebhookDelivery.query().findOne({ id, webhookId: webhook.id })
-    : undefined;
-  if (!delivery) {
-    throw boom(404, "Delivery not found.");
-  }
-  return delivery;
 }
 
 /**
@@ -258,6 +238,10 @@ export async function loadWebhookDelivery(args: {
 export async function getProjectsByWebhookId(
   webhookIds: readonly string[],
 ): Promise<Map<string, Project[]>> {
+  const projectsByWebhookId = new Map<string, Project[]>();
+  if (webhookIds.length === 0) {
+    return projectsByWebhookId;
+  }
   const links = await WebhookProject.query()
     .withGraphJoined("project")
     .join("webhooks", "webhooks.id", "webhook_projects.webhookId")
@@ -265,7 +249,6 @@ export async function getProjectsByWebhookId(
     .whereNull("project.deletedAt")
     .whereColumn("project.accountId", "webhooks.accountId")
     .orderBy("project.name");
-  const projectsByWebhookId = new Map<string, Project[]>();
   for (const link of links) {
     invariant(link.project, "Webhook link without project");
     const projects = projectsByWebhookId.get(link.webhookId) ?? [];
