@@ -12,8 +12,8 @@ import { ensureProductionInternalProjectDomain } from "@/database/services/proje
 import { pushDeploymentNotification } from "@/deployment-notification";
 import { getDeploymentAliases } from "@/deployment/alias";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
-import { githubDeploymentJob } from "@/github-deployment/job";
 import { sendProjectEvent } from "@/event/send";
+import { githubDeploymentJob } from "@/github-deployment/job";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
 

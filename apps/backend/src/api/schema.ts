@@ -153,6 +153,15 @@ import {
   updateTestCommentOperation,
 } from "./handlers/updateComment";
 import { updateProjectOperation } from "./handlers/updateProject";
+import {
+  createAccountWebhookOperation,
+  deleteAccountWebhookOperation,
+  getAccountWebhookOperation,
+  getWebhookDeliveryOperation,
+  listAccountWebhooksOperation,
+  listWebhookDeliveriesOperation,
+  resendWebhookDeliveryOperation,
+} from "./handlers/webhooks";
 import { securitySchemes } from "./security";
 import { webhooks } from "./webhooks";
 
@@ -240,7 +249,7 @@ export const zodSchema = {
       name: "Events",
       description:
         "Follow what happens in your projects: builds completing and getting reviewed, deployments created and ready. Read them from the events feed, or receive each one on a webhook set up in your account settings.",
-      "x-page-icon": "webhook",
+      "x-page-icon": "bolt",
     },
     {
       name: "Automations",
@@ -265,6 +274,12 @@ export const zodSchema = {
       description:
         "Manage the project tokens CI authenticates with. A project can have several, so a token is rotated without downtime: create its replacement, update the CI secret, then revoke the old one.",
       "x-page-icon": "key-round",
+    },
+    {
+      name: "Webhooks",
+      description:
+        "Manage the webhooks Argos posts your projects' events to, look into their deliveries and resend one that failed.",
+      "x-page-icon": "webhook",
     },
   ],
   components: {
@@ -310,6 +325,24 @@ export const zodSchema = {
     "/accounts/{accountSlug}/project-tokens/{tokenId}": {
       delete: deleteAccountProjectTokenOperation,
     },
+    "/accounts/{accountSlug}/webhooks": {
+      get: listAccountWebhooksOperation,
+      post: createAccountWebhookOperation,
+    },
+    "/accounts/{accountSlug}/webhooks/{webhookId}": {
+      get: getAccountWebhookOperation,
+      delete: deleteAccountWebhookOperation,
+    },
+    "/accounts/{accountSlug}/webhooks/{webhookId}/deliveries": {
+      get: listWebhookDeliveriesOperation,
+    },
+    "/accounts/{accountSlug}/webhooks/{webhookId}/deliveries/{deliveryId}": {
+      get: getWebhookDeliveryOperation,
+    },
+    "/accounts/{accountSlug}/webhooks/{webhookId}/deliveries/{deliveryId}/resend":
+      {
+        post: resendWebhookDeliveryOperation,
+      },
     "/accounts/{accountSlug}/invite-link/reset": {
       post: resetAccountInviteLinkOperation,
     },

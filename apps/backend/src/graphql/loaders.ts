@@ -62,7 +62,6 @@ import {
   User,
   UserSession,
   WebhookDelivery,
-  WebhookProject,
 } from "@/database/models";
 import type { AccountPermission } from "@/database/models/Account";
 import type { ProjectPermission } from "@/database/models/Project";
@@ -92,6 +91,7 @@ import { getMediaPairKey, getOppositeMediaState } from "@/media/pair";
 import { MAX_PULL_REQUEST_MEDIAS, queryProjectMedia } from "@/media/query";
 import { getLatestMediaVersions } from "@/media/version";
 import { getTestAllMetrics } from "@/metrics/test";
+import { getProjectsByWebhookId } from "@/webhook/manage";
 
 import { ISignupSource, ITestStatus } from "./__generated__/resolver-types";
 import { getVisibleProjectIds } from "./services/project";
@@ -592,24 +592,11 @@ function createDiscordWebhooksByAccountIdLoader() {
   });
 }
 
-/**
- * The live projects a webhook is linked to. A link to a project of another
- * account reaches nothing.
- */
 function createWebhookProjectsLoader() {
   return new DataLoader<string, Project[]>(async (webhookIds) => {
-    const links = await WebhookProject.query()
-      .withGraphJoined("project")
-      .join("webhooks", "webhooks.id", "webhook_projects.webhookId")
-      .whereIn("webhook_projects.webhookId", [...webhookIds])
-      .whereNull("project.deletedAt")
-      .whereColumn("project.accountId", "webhooks.accountId")
-      .orderBy("project.name");
-    return webhookIds.map((webhookId) =>
-      links.flatMap((link) => {
-        invariant(link.project, "Webhook link without project");
-        return link.webhookId === webhookId ? [link.project] : [];
-      }),
+    const projectsByWebhookId = await getProjectsByWebhookId(webhookIds);
+    return webhookIds.map(
+      (webhookId) => projectsByWebhookId.get(webhookId) ?? [],
     );
   });
 }
