@@ -50,10 +50,12 @@ import { toast } from "@/ui/Toaster";
 import { Truncable } from "@/ui/Truncable";
 
 import { MsTeamsLogo } from "../MsTeamsLogo";
+import { TeamOwnersLink } from "./TeamOwnersLink";
 
 const _AccountFragment = graphql(`
   fragment TeamMsTeams_Account on Account {
     id
+    slug
     msTeamsWebhooks {
       id
       name
@@ -192,7 +194,15 @@ export function TeamMsTeams(props: { account: Account }) {
                 className="flex-1"
               />
             </div>
-          ) : null}
+          ) : (
+            <p className="text-low text-sm">
+              Only{" "}
+              <TeamOwnersLink account={{ slug: account.slug, permissions }}>
+                team owners
+              </TeamOwnersLink>{" "}
+              can manage Microsoft Teams channels.
+            </p>
+          )}
         </CardBody>
         <CardFooter className="flex items-center justify-between gap-4">
           <p>
