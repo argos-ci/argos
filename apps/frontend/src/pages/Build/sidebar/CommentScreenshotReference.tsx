@@ -1,11 +1,12 @@
 import { invariant } from "@argos/util/invariant";
 import { useSetAtom } from "jotai/react";
-import { MapPinIcon } from "lucide-react";
+import { MapPinIcon, SquareDashedIcon } from "lucide-react";
 
 import {
   commentsVisibleAtom,
   requestedScreenshotCommentIdAtom,
 } from "@/containers/Build/CommentTool";
+import { getImageAnchor } from "@/containers/Comment/imageAnchor";
 import { DocumentType, graphql } from "@/gql";
 
 import { useBuildDiffState } from "../BuildDiffState";
@@ -21,30 +22,26 @@ const _ScreenshotDiffFragment = graphql(`
 
 type ScreenshotDiff = DocumentType<typeof _ScreenshotDiffFragment>;
 
-/**
- * The comment's anchor as queried on the `Comment.anchor` union. Kept
- * structural (rather than importing a generated type) so the reference renders
- * the same way wherever the union is selected.
- */
-export type CommentAnchor =
-  | { __typename: "CommentPointAnchor"; x: number; y: number }
-  | { __typename: "CommentLinesAnchor"; from: number; to: number };
+const _CommentAnchorFragment = graphql(`
+  fragment CommentScreenshotReference_CommentAnchor on CommentAnchor {
+    ...ImageAnchor_CommentAnchor
+    ... on CommentLinesAnchor {
+      from
+      to
+    }
+  }
+`);
 
-/** Short human label describing where on the diff a comment points. */
-function getAnchorLabel(anchor: CommentAnchor | null): string | null {
-  if (!anchor) {
+type CommentAnchor = DocumentType<typeof _CommentAnchorFragment>;
+
+/** Short human label for a comment on a line range. */
+function getLinesLabel(anchor: CommentAnchor | null): string | null {
+  if (anchor?.__typename !== "CommentLinesAnchor") {
     return null;
   }
-  switch (anchor.__typename) {
-    case "CommentLinesAnchor":
-      return anchor.from === anchor.to
-        ? `Line ${anchor.from}`
-        : `Lines ${anchor.from}–${anchor.to}`;
-    case "CommentPointAnchor":
-      return null;
-    default:
-      return null;
-  }
+  return anchor.from === anchor.to
+    ? `Line ${anchor.from}`
+    : `Lines ${anchor.from}-${anchor.to}`;
 }
 
 /**
@@ -62,7 +59,7 @@ export function useGoToCommentDiff(input: {
   const { allDiffs, setActiveDiff } = useBuildDiffState();
   const setCommentsVisible = useSetAtom(commentsVisibleAtom);
   const requestOpenComment = useSetAtom(requestedScreenshotCommentIdAtom);
-  const isPoint = anchor?.__typename === "CommentPointAnchor";
+  const isOnImage = getImageAnchor(anchor) !== null;
 
   if (!screenshotDiff) {
     return null;
@@ -76,11 +73,11 @@ export function useGoToCommentDiff(input: {
       return;
     }
     setActiveDiff(diff, true);
-    // A point-anchored comment lives as a marker on the image: reveal comments
-    // and ask the screenshot layer to open this one's thread once its diff is
-    // shown. (Line-anchored comments render inline on the diff, so navigating
-    // there already surfaces them.)
-    if (isPoint) {
+    // A comment on a point or an area lives as a marker on the image: reveal
+    // comments and ask the screenshot layer to open this one's thread once its
+    // diff is shown. (Line-anchored comments render inline on the diff, so
+    // navigating there already surfaces them.)
+    if (isOnImage) {
       setCommentsVisible(true);
       requestOpenComment(commentId);
     }
@@ -101,8 +98,8 @@ export function CommentScreenshotReference(props: {
   const { commentId, screenshotDiff, anchor } = props;
   const goToDiff = useGoToCommentDiff({ commentId, screenshotDiff, anchor });
   invariant(goToDiff, "always navigable: screenshotDiff is provided");
-  const linesLabel = getAnchorLabel(anchor);
-  const isPoint = anchor?.__typename === "CommentPointAnchor";
+  const linesLabel = getLinesLabel(anchor);
+  const imageAnchorType = getImageAnchor(anchor)?.type;
 
   return (
     <button
@@ -121,8 +118,14 @@ export function CommentScreenshotReference(props: {
       <span className="min-w-0 flex-1 truncate font-medium">
         {screenshotDiff.name}
       </span>
-      {isPoint ? (
+      {imageAnchorType === "point" ? (
         <MapPinIcon className="size-3.5 shrink-0" aria-label="Pinned comment" />
+      ) : null}
+      {imageAnchorType === "area" ? (
+        <SquareDashedIcon
+          className="size-3.5 shrink-0"
+          aria-label="Comment on an area"
+        />
       ) : null}
       {linesLabel ? (
         <span className="shrink-0 tabular-nums">{linesLabel}</span>

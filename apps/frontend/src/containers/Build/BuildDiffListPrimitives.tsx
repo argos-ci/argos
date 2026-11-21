@@ -4,6 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { Button as BaseButton } from "@base-ui/react/button";
 import { clsx } from "clsx";
 
+import { useLayoutShiftClipUrl } from "@/containers/Build/layoutShift";
 import { useOverlayStyle } from "@/containers/Build/OverlayStyle";
 import { graphql, type DocumentType } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
@@ -19,6 +20,9 @@ const _DiffImageFragment = graphql(`
     height
     status
     url
+    layoutShift {
+      ...LayoutShift_LayoutShift
+    }
     compareScreenshot {
       id
       width
@@ -44,6 +48,7 @@ interface DiffImageProps {
 export const DiffImage = memo(function DiffImage(props: DiffImageProps) {
   const { diff, config } = props;
   const dimensions = getDiffDimensions(diff, config);
+  const clipUrl = useLayoutShiftClipUrl(diff);
 
   switch (diff.status) {
     case ScreenshotDiffStatus.Added:
@@ -77,6 +82,7 @@ export const DiffImage = memo(function DiffImage(props: DiffImageProps) {
           headURL={diff.compareScreenshot.url}
           contentType={diff.compareScreenshot.contentType}
           diffURL={diff.url ?? null}
+          clipUrl={clipUrl}
           dimensions={dimensions}
         />
       );
@@ -95,9 +101,10 @@ function OverlayImage(props: {
   contentType: string;
   headURL: string;
   diffURL: string | null;
+  clipUrl: string | undefined;
   dimensions: Dimensions;
 }) {
-  const { headURL, diffURL, contentType, dimensions } = props;
+  const { headURL, diffURL, clipUrl, contentType, dimensions } = props;
   if (checkIsImageContentType(contentType) && diffURL) {
     const { key: compareKey, ...compareAttrs } = getImgAttributes(headURL);
     const { key: diffKey, ...diffAttrs } = getImgAttributes(
@@ -118,6 +125,7 @@ function OverlayImage(props: {
           <DiffPicture
             key={diffKey}
             {...diffAttrs}
+            clipUrl={clipUrl}
             className="relative z-10 max-h-full w-full"
           />
         </div>
@@ -154,11 +162,17 @@ export function SingleImage(props: {
   );
 }
 
-function DiffPicture(props: ImageKitPictureProps) {
-  const style = useOverlayStyle({ src: props.src });
+function DiffPicture(
+  props: ImageKitPictureProps & { clipUrl: string | undefined },
+) {
+  const { clipUrl, ...pictureProps } = props;
+  const style = useOverlayStyle({ src: props.src, clipUrl });
   return (
     <span className="z-10" style={{ ...style, ...props.style }}>
-      <ImageKitPicture {...props} style={{ opacity: 0, display: "block" }} />
+      <ImageKitPicture
+        {...pictureProps}
+        style={{ opacity: 0, display: "block" }}
+      />
     </span>
   );
 }

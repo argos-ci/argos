@@ -148,7 +148,7 @@ export function StatTile({
           {value === undefined ? (
             <div className="bg-subtle h-[1em] w-24 rounded-sm" />
           ) : value === null ? (
-            <span className="text-low">—</span>
+            <span className="text-low">-</span>
           ) : format === "percent" ? (
             <NumberFlow
               value={value}

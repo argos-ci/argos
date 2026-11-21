@@ -42,7 +42,13 @@ import {
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
-import { getProjectForAuth } from "../auth/project";
+import {
+  findAuthProject,
+  getProjectForAuth,
+  parseProjectPath,
+  resolveAuthProject,
+  throwOutsideScope,
+} from "../auth/project";
 import {
   MediaBranchSchema,
   MediaInputSchema,
@@ -79,12 +85,23 @@ type AnyAuth = AuthProjectPayload | AuthPATPayload | AuthOAuthPayload;
  * own upload has a half-broken feature. Deleting stays `admin` — a share URL may
  * already be pasted somewhere, and removing the media breaks it.
  */
-type MediaAction = "read" | "write" | "destroy";
+type MediaAction = "read" | "write" | "edit" | "destroy";
 
 const MEDIA_ACTION_PERMISSION: Record<MediaAction, ProjectPermission> = {
   read: "view",
   write: "review",
+  edit: "review",
   destroy: "admin",
+};
+
+/**
+ * A tokenless bearer can finish its upload, but not edit or delete media: it
+ * reaches every media of the project, including the ones others uploaded.
+ */
+const TOKENLESS_MEDIA_ACTION_ERRORS: Partial<Record<MediaAction, string>> = {
+  edit: "Tokenless authentication cannot edit media. Use a project token or a personal access token.",
+  destroy:
+    "Tokenless authentication cannot delete media. Use a project token or a personal access token.",
 };
 
 const CreateMediaRequestSchema = MediaInputSchema.extend({
@@ -93,12 +110,12 @@ const CreateMediaRequestSchema = MediaInputSchema.extend({
     .nullish()
     .meta({
       description:
-        "Project to upload to, as `owner/project`. Required with a personal access token; ignored with a project token, which already identifies its project.",
+        "Project to upload to, as `owner/project`. Required with a personal access token, and with a project token linked to several projects.",
       examples: ["acme/web"],
     }),
   prNumber: z.number().int().min(1).nullish().meta({
     description:
-      "Pull request this media belongs to. Argos maintains a single comment on it listing every media uploaded, editing it in place rather than posting a new one each time — attaching a media to a pull request and showing it there are the same act, not two. Also part of the media's identity: uploading the same name again on this pull request adds a version.",
+      "Pull request this media belongs to. Argos maintains a single comment on it listing every media uploaded, editing it in place rather than posting a new one each time. Attaching a media to a pull request and showing it there are the same act, not two. Also part of the media's identity: uploading the same name again on this pull request adds a version.",
   }),
   branch: MediaBranchSchema.nullish(),
 });
@@ -107,7 +124,7 @@ const CreateMediaResponseSchema = z.object({
   media: MediaSchema,
   upload: MediaUploadTargetSchema.nullable().meta({
     description:
-      "Where to send the bytes, or `null` when Argos already holds this exact file — in which case the media is ready and nothing needs uploading.",
+      "Where to send the bytes, or `null` when Argos already holds this exact file, in which case the media is ready and nothing needs uploading.",
   }),
 });
 
@@ -119,13 +136,13 @@ export const createMediaOperation = {
     "",
     "Uploading takes three calls:",
     "",
-    "1. `POST /media` — declare the file and get back an `upload` target.",
+    "1. `POST /media`: declare the file and get back an `upload` target.",
     "2. `POST` the file to `upload.url` as `multipart/form-data`, appending every entry of `upload.fields` **before** the `file` part.",
-    "3. `POST /media/{mediaId}/finalize` — confirm the bytes landed.",
+    "3. `POST /media/{mediaId}/finalize`: confirm the bytes landed.",
     "",
     "When `upload` comes back `null`, Argos already holds this exact file and steps 2 and 3 are unnecessary.",
     "",
-    "Pass `prNumber` when the pull request already exists, or `branch` when it does not. A media uploaded against a branch is **staged**: it has its share URL immediately, and the moment a pull request opens for that branch Argos attaches it and posts the comment — nothing has to come back and connect the two.",
+    "Pass `prNumber` when the pull request already exists, or `branch` when it does not. A media uploaded against a branch is **staged**: it has its share URL immediately, and the moment a pull request opens for that branch Argos attaches it and posts the comment. Nothing has to come back and connect the two.",
     "",
     "The `argos media upload` CLI command does all of this in one step.",
   ].join("\n"),
@@ -351,9 +368,9 @@ export const listMediaVersionsOperation = {
   description: [
     "A media's most recent uploaded versions, newest first, up to 100.",
     "",
-    "A separate call because it is rarely needed: a media usually has one version, and the media itself already carries the newest one flattened onto it. Check `versionCount` first — at 1 there is nothing here you do not already have.",
+    "A separate call because it is rarely needed: a media usually has one version, and the media itself already carries the newest one flattened onto it. Check `versionCount` first: at 1 there is nothing here you do not already have.",
     "",
-    "When you do need it, it is because a comment carries the `mediaVersionId` it was written against. A pin describes a spot on *those* bytes, so feedback written on an earlier upload has to be read against that upload — match the id here to get its file.",
+    "When you do need it, it is because a comment carries the `mediaVersionId` it was written against. A pin describes a spot on *those* bytes, so feedback written on an earlier upload has to be read against that upload. Match the id here to get its file.",
   ].join("\n"),
   tags: ["Media"],
   security: anyTokenOrOAuthAuth(["media:read"]),
@@ -475,7 +492,7 @@ export const listMediaOperation = {
   description: [
     "List the standalone images and videos uploaded to a project, most recent first.",
     "",
-    "`branch` and `prNumber` are what this is usually for: everything uploaded for the work in hand, whether or not a pull request exists yet. `branch` covers both — a media keeps its branch after publishing — so it stays a single query across the moment the pull request opens.",
+    "`branch` and `prNumber` are what this is usually for: everything uploaded for the work in hand, whether or not a pull request exists yet. `branch` covers both (a media keeps its branch after publishing), so it stays a single query across the moment the pull request opens.",
   ].join("\n"),
   tags: ["Media"],
   security: anyTokenOrOAuthAuth(["media:read"]),
@@ -582,7 +599,7 @@ export const updateMediaOperation = {
   description: [
     "Change a staged media's name, description or branch.",
     "",
-    "Staged media only. A media's name and branch are its identity — what decides whether the next upload of that name is a new version or a new media, and which pull request will publish it — and once it is published that identity is what the pull request comment is built from and what a reviewer's comments hang off. Editing it there would rewrite history rather than correct a staged media.",
+    "Staged media only. A media's name and branch are its identity: they decide whether the next upload of that name is a new version or a new media, and which pull request will publish it. Once it is published, that identity is what the pull request comment is built from and what a reviewer's comments hang off. Editing it there would rewrite history rather than correct a staged media.",
     "",
     "Omitted fields are left alone. `description` and `branch` accept `null` to clear them; `name` is required and has no cleared state. Clearing a staged media's branch leaves it attached to nothing, so no pull request will ever publish it.",
   ].join("\n"),
@@ -618,10 +635,7 @@ export const updateMediaHandler: CreateAPIHandler = ({ patch }) => {
     const media = await loadMediaForAuth({
       authPromise: req.ctx.auth(),
       mediaId: req.ctx.params.mediaId,
-      // Editing identity is not something a viewer does, but it is the same
-      // authority as making the upload in the first place — a reviewer has to be
-      // able to correct their own staged media.
-      action: "write",
+      action: "edit",
     });
 
     if (getMediaStage(media) === "published") {
@@ -742,9 +756,9 @@ async function findPullRequestId(args: {
  * Resolve the project a new media belongs to, and its account.
  *
  * Media is project-scoped, so a project is always required. A project token
- * identifies its own; a user token has to name one as `owner/project`, and naming
- * one it cannot reach is a 401 rather than a 404 — which keeps the existence of
- * other projects undisclosed.
+ * linked to a single project identifies it; any other token has to name one as
+ * `owner/project`, and naming one it cannot reach is a 401 rather than a 404 —
+ * which keeps the existence of other projects undisclosed.
  *
  * The account comes along because the plan decides the size cap, the retention
  * and the visibilities allowed.
@@ -757,7 +771,7 @@ async function resolveUploadTarget(args: {
 
   const project = await (async () => {
     if (auth.type === "project") {
-      return auth.project;
+      return resolveAuthProject(auth, projectPath);
     }
     if (!projectPath) {
       throw boom(
@@ -765,10 +779,7 @@ async function resolveUploadTarget(args: {
         "`project` is required when uploading with a personal access token. Pass it as `owner/project`.",
       );
     }
-    const [owner, name] = projectPath.split("/");
-    if (!owner || !name) {
-      throw boom(400, "`project` must be in the `owner/project` format.");
-    }
+    const { owner, name } = parseProjectPath(projectPath);
     // Uploading spends the account's quota and publishes a link under the
     // project's name, so it takes more than read access.
     return getProjectForAuth(
@@ -874,16 +885,22 @@ async function loadMediaForAuth(args: {
   }
 
   if (auth.type === "project") {
-    if (media.projectId !== auth.project.id) {
+    if (!findAuthProject(auth, media.projectId)) {
       throw boom(404, "Media not found");
+    }
+    const tokenlessError = TOKENLESS_MEDIA_ACTION_ERRORS[action];
+    if (auth.source === "github-actions-tokenless" && tokenlessError) {
+      throw boom(403, tokenlessError);
     }
     return media;
   }
 
   invariant(media.project?.account, "Media project account not fetched");
 
-  if (!auth.scope.some((account) => account.id === media.project?.accountId)) {
-    throw boom(404, "Media not found");
+  const isMediaAccount = (account: Account) =>
+    account.id === media.project?.accountId;
+  if (!auth.scope.some(isMediaAccount)) {
+    throwOutsideScope(auth, isMediaAccount, boom(404, "Media not found"));
   }
 
   // The project's own permissions, straight — deliberately *not* through
@@ -896,9 +913,8 @@ async function loadMediaForAuth(args: {
   // the id space and read every public media in every project — including ones
   // they hold nothing on — with the share token's unguessability, the only
   // control the design names, routed around entirely.
-  const membershipPermissions = await media.project.$getMembershipPermissions(
-    auth.user,
-  );
+  const membershipPermissions =
+    await media.project.$getMembershipPermissions(auth);
   const required = MEDIA_ACTION_PERMISSION[action];
   if (!membershipPermissions.includes(required)) {
     throw boom(404, "Media not found");

@@ -8,7 +8,6 @@ import { toast } from "@/ui/Toaster";
 import { useAltKeyHeld } from "@/ui/useAltKeyHeld";
 
 import { CommentPopoverFrame } from "./CommentPopoverFrame";
-import { useMentionableUsers } from "./MentionableUsersContext";
 
 /**
  * The compact floating "Add a comment" prompt shown beside the pin after
@@ -26,7 +25,6 @@ export function CommentDraftPopover(props: {
   ) => Promise<void>;
 }) {
   const { point, canAddToReview, onSubmit } = props;
-  const mentions = useMentionableUsers();
   const altHeld = useAltKeyHeld();
   const [value, setValue] = useState<EditorValue>(null);
   // Remounts the editor to clear it after a successful submit.
@@ -75,7 +73,6 @@ export function CommentDraftPopover(props: {
           key={editorKey}
           onChange={setValue}
           onSubmit={submit}
-          mentions={mentions}
           placeholder="Add a comment"
           disabled={pending}
           autoFocus

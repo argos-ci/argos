@@ -152,6 +152,34 @@ describe("getAccountAnalytics", () => {
     expect(res.body.builds.projects).toEqual([]);
   });
 
+  test("cuts periods in the requested time zone", async ({
+    account,
+    patToken,
+  }) => {
+    const project = await factory.Project.create({ accountId: account.id });
+    // Still Dec 31 in UTC, already Jan 1 in Paris.
+    await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      createdAt: "2020-12-31T23:30:00.000Z",
+      screenshotCount: 2,
+    });
+
+    const res = await request(app)
+      .get("/accounts/acme/analytics")
+      .query({
+        from: "2021-01-01T00:00:00.000+01:00",
+        to: "2021-01-01T23:59:59.999+01:00",
+        groupBy: "day",
+        timeZone: "Europe/Paris",
+      })
+      .set("Authorization", `Bearer ${patToken}`)
+      .expect(200);
+
+    expect(res.body.screenshots.series).toMatchObject([
+      { ts: new Date("2020-12-31T23:00:00.000Z").getTime(), total: 2 },
+    ]);
+  });
+
   test("returns 400 when the date range is invalid", async ({ patToken }) => {
     await request(app)
       .get("/accounts/acme/analytics")
@@ -187,13 +215,16 @@ describe("getAccountAnalytics", () => {
   test("rejects project tokens", async ({ account }) => {
     const project = await factory.Project.create({
       accountId: account.id,
+    });
+    await factory.createProjectToken({
+      projects: [project],
       token: "the-awesome-token",
     });
 
     await request(app)
       .get("/accounts/acme/analytics")
       .query(analyticsQuery)
-      .set("Authorization", `Bearer ${project.token}`)
+      .set("Authorization", "Bearer the-awesome-token")
       .expect(401)
       .expect((res) => {
         expect(res.body.error).toContain(

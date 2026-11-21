@@ -118,7 +118,7 @@ export const createReviewOperation = {
   },
   responses: {
     "200": {
-      description: "Review submitted successfully — returns the review",
+      description: "The submitted review",
       content: {
         "application/json": {
           schema: BuildReviewSchema,

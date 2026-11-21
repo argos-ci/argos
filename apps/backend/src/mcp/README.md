@@ -22,7 +22,9 @@ OpenAPI document and dispatched through the existing API stack:
    using the same predicate, so docs and tools can never disagree.
 2. **Registration** (`server.ts`) — tools are registered on an SDK `McpServer`
    with their Zod schemas; the SDK converts them to JSON Schema for
-   `tools/list` and validates arguments and structured results.
+   `tools/list` and validates arguments and structured results. Tools receive
+   the arguments as the client sent them, not the Zod output: dispatch
+   re-serializes them for the API, which parses them itself.
 3. **Dispatch** (`dispatch.ts`) — a tool call becomes an HTTP request to a
    private loopback server running the `openAPIRouter`, forwarding the
    caller's bearer. Validation, authentication, **scope enforcement**,

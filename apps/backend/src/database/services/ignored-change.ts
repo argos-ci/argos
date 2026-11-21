@@ -1,12 +1,8 @@
 import { UniqueViolationError } from "objection";
 
+import type { AuthViewer } from "@/auth/payload";
 import { knex, transaction } from "@/database";
-import {
-  AuditTrail,
-  IgnoredChange,
-  type Project,
-  type User,
-} from "@/database/models";
+import { AuditTrail, IgnoredChange, type Project } from "@/database/models";
 
 type ChangeIdentity = {
   projectId: string;
@@ -21,16 +17,16 @@ type ChangeIdentity = {
 export type ChangeMutationDenial = "forbidden" | "ignore-disabled";
 
 /**
- * Decide whether `user` may ignore/unignore changes on `project`: they need the
+ * Decide whether `auth` may ignore/unignore changes on `project`: they need the
  * `review` permission and the project's ignore feature must be enabled. Returns
  * the denial reason, or `null` when allowed, leaving each transport (REST/GraphQL)
  * to map the reason onto its own error type.
  */
 export async function getChangeMutationDenial(
   project: Project,
-  user: User | null,
+  auth: AuthViewer | null,
 ): Promise<ChangeMutationDenial | null> {
-  const permissions = await project.$getPermissions(user);
+  const permissions = await project.$getPermissions(auth);
   if (!permissions.includes("review")) {
     return "forbidden";
   }

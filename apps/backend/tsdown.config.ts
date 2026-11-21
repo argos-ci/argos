@@ -13,9 +13,8 @@ export default defineConfig({
   ],
   platform: "node",
   // Dependencies stay external, which is tsdown's default — do not add
-  // `noExternal` to shrink the deploy. `sharp` and `@argos-ci/mask-fingerprint`
-  // ship per-platform `.node` bindings and `odiff-bin` spawns an executable it
-  // locates next to its own package, none of which survives bundling. Sentry
+  // `noExternal` to shrink the deploy. `sharp` and `@argos-ci/iris` ship
+  // per-platform `.node` bindings, which do not survive bundling. Sentry
   // also patches `express`, `pg` and `http` as they load, so inlining them
   // leaves its instrumentation nothing to hook and tracing quietly stops.
   target: "node26",

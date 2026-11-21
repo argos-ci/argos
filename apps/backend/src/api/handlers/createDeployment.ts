@@ -6,7 +6,6 @@ import { invariant } from "@argos/util/invariant";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { BatchGetCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { minimatch } from "minimatch";
 import pRetry from "p-retry";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
@@ -21,10 +20,13 @@ import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { getS3Client } from "@/storage/s3";
 import { boom } from "@/util/error";
 
-import { assertAuthAttributes } from "../auth/project";
+import { assertAuthCanDeploy } from "../auth/deployment";
+import { assertAuthAttributes, resolveAuthProject } from "../auth/project";
 import { GitBranchSchema, GitPRNumberSchema } from "../schema/primitives/git";
+import { TokenProjectPath } from "../schema/primitives/project";
 import { Sha1HashSchema, Sha256HashSchema } from "../schema/primitives/sha";
 import {
+  forbidden,
   invalidParameters,
   serverError,
   unauthorized,
@@ -40,6 +42,7 @@ const FileEntrySchema = z.object({
 });
 
 const RequestBodySchema = z.object({
+  project: TokenProjectPath,
   commit: Sha1HashSchema.meta({ description: "The commit SHA" }),
   branch: GitBranchSchema.meta({ description: "The branch name" }),
   prNumber: GitPRNumberSchema.nullish().meta({
@@ -76,7 +79,7 @@ export const createDeploymentOperation = {
   description:
     "Create a deployment and receive signed upload URLs for the files Argos doesn't already store. Files already present (matched by content hash) are reused and omitted from `uploadFiles`. The environment is inferred from the branch when omitted.",
   tags: ["Deployments"],
-  security: projectTokenAuth,
+  security: projectTokenAuth(["deployments:write"]),
   requestBody: {
     content: {
       "application/json": {
@@ -95,6 +98,7 @@ export const createDeploymentOperation = {
     },
     "400": invalidParameters,
     "401": unauthorized,
+    "403": forbidden,
     "500": serverError,
   },
 } satisfies ZodOpenApiOperationObject;
@@ -238,7 +242,17 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
     const auth = await req.ctx.auth();
     assertAuthAttributes(auth, { sha: body.commit });
 
-    const project = auth.project;
+    const project = await resolveAuthProject(auth, body.project);
+
+    const branch = body.branch;
+    const environment =
+      body.environment ??
+      (await getEnvironmentFromBranch({
+        project,
+        branch,
+      }));
+
+    await assertAuthCanDeploy(auth, { project, environment, branch });
 
     const [pullRequest] = await Promise.all([
       body.prNumber && project.githubRepositoryId
@@ -251,14 +265,6 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
     ]);
 
     invariant(project.account, "Account relation is not loaded");
-
-    const branch = body.branch;
-    const environment =
-      body.environment ??
-      (await getEnvironmentFromBranch({
-        project,
-        branch,
-      }));
 
     // Create the deployment row in PostgreSQL
     const deployment = await Deployment.query().insertAndFetch({
@@ -273,6 +279,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
         projectName: project.name,
       }),
       githubPullRequestId: pullRequest?.id ?? null,
+      authSource: auth.source,
     });
 
     await Promise.all([
@@ -311,7 +318,6 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
           Bucket: bucketName,
           Key: `content/${file.hash}`,
           ContentType: file.contentType,
-          CacheControl: "public, max-age=31536000, immutable",
         });
         const uploadUrl = await getSignedUrl(s3, command, {
           expiresIn: 1800, // 30 minutes
@@ -339,9 +345,7 @@ async function getEnvironmentFromBranch(args: {
   branch: string;
 }): Promise<DeploymentEnvironment> {
   const { project, branch } = args;
-  const glob = await project.$getDeploymentProductionBranchGlob();
-  if (minimatch(branch, glob)) {
-    return "production";
-  }
-  return "preview";
+  const isProductionBranch =
+    await project.$getDeploymentProductionBranchMatcher();
+  return isProductionBranch(branch) ? "production" : "preview";
 }

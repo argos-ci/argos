@@ -5,15 +5,14 @@ import { minimatch } from "minimatch";
 import type {
   JSONSchema,
   Pojo,
-  QueryContext,
   RelationMappings,
   TransactionOrKnex,
 } from "objection";
 import { z } from "zod";
 
+import type { AuthViewer } from "@/auth/payload";
 import config from "@/config";
 
-import { generateRandomString } from "../services/crypto";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { UserLevel, UserLevelJsonSchema } from "../util/user-level";
@@ -23,8 +22,7 @@ import { GithubRepository } from "./GithubRepository";
 import { GitlabProject } from "./GitlabProject";
 import { OriginRepository } from "./OriginRepository";
 import { ProjectUser } from "./ProjectUser";
-import { TeamUser } from "./TeamUser";
-import type { User } from "./User";
+import { Team } from "./Team";
 
 export type ProjectPermission =
   | "admin"
@@ -120,8 +118,6 @@ const ALL_PROJECT_PERMISSIONS: ProjectPermission[] = [
 export class Project extends Model {
   static override tableName = "projects";
 
-  static override deterministicEncryptedAttributes = ["token"];
-
   static override jsonSchema = {
     allOf: [
       timestampsSchema,
@@ -130,7 +126,6 @@ export class Project extends Model {
         required: ["name", "accountId"],
         properties: {
           name: z.toJSONSchema(ProjectNameSchema) as JSONSchema,
-          token: { type: "string" },
           private: { type: ["null", "boolean"] },
           defaultBaseBranch: { type: ["null", "string"] },
           autoApprovedBranchGlob: { type: ["null", "string"] },
@@ -142,6 +137,7 @@ export class Project extends Model {
           gitlabProjectId: { type: ["null", "string"] },
           originRepositoryId: { type: ["null", "string"] },
           prCommentEnabled: { type: "boolean" },
+          githubDeploymentEnabled: { type: "boolean" },
           githubActionsOidcEnabled: { type: "boolean" },
           tokenlessAuthEnabled: { type: "boolean" },
           deploymentEnabled: { type: "boolean" },
@@ -187,7 +183,6 @@ export class Project extends Model {
   };
 
   name!: string;
-  token!: string;
   private!: boolean | null;
   defaultBaseBranch!: string | null;
   autoApprovedBranchGlob!: string | null;
@@ -203,6 +198,7 @@ export class Project extends Model {
   gitlabProjectId!: string | null;
   originRepositoryId!: string | null;
   prCommentEnabled!: boolean;
+  githubDeploymentEnabled!: boolean;
   githubActionsOidcEnabled!: boolean;
   tokenlessAuthEnabled!: boolean;
   deploymentEnabled!: boolean;
@@ -306,14 +302,9 @@ export class Project extends Model {
   gitlabProject?: GitlabProject | null;
   originRepository?: OriginRepository | null;
 
-  override async $beforeInsert(queryContext: QueryContext) {
-    await super.$beforeInsert(queryContext);
-    this.token = this.token || Project.generateToken();
-  }
-
   static async getPermissions(
     project: Project,
-    user: User | null,
+    auth: AuthViewer | null,
   ): Promise<ProjectPermission[]> {
     // A deleted project grants nothing to anyone, and this is where that is
     // enforced for the whole application. Every surface that reaches a project
@@ -328,7 +319,7 @@ export class Project extends Model {
 
     const [isPublic, membershipPermissions] = await Promise.all([
       project.$checkIsPublic(),
-      Project.getMembershipPermissions(project, user),
+      Project.getMembershipPermissions(project, auth),
     ]);
     if (membershipPermissions.length > 0) {
       return membershipPermissions;
@@ -347,7 +338,7 @@ export class Project extends Model {
    */
   static async getMembershipPermissions(
     project: Project,
-    user: User | null,
+    auth: AuthViewer | null,
   ): Promise<ProjectPermission[]> {
     // Repeated rather than left to the caller: this is a public entry point of
     // its own, and a deleted project has no members either.
@@ -356,9 +347,10 @@ export class Project extends Model {
     }
 
     // An anonymous visitor is a member of nothing.
-    if (!user) {
+    if (!auth) {
       return [];
     }
+    const { user } = auth;
 
     // If it's a staff user, they have all permissions.
     if (user.staff) {
@@ -373,25 +365,24 @@ export class Project extends Model {
       return project.account.userId === user.id ? ALL_PROJECT_PERMISSIONS : [];
     }
 
-    const [projectUser, teamUser] = await Promise.all([
+    invariant(project.account.teamId, "Team account has no team");
+    const [projectUser, teamAccess] = await Promise.all([
       ProjectUser.query()
         .select("userLevel")
         .findOne({ projectId: project.id, userId: user.id }),
-      TeamUser.query().select("userLevel").findOne({
-        teamId: project.account.teamId,
-        userId: user.id,
-      }),
+      Team.getAccess(project.account.teamId, auth),
     ]);
 
-    // If the user is not part of the team, they are a member of nothing.
-    if (!teamUser) {
+    // Outside the team, or kept out by its SAML enforcement: a member of
+    // nothing.
+    if (teamAccess.type !== "member") {
       return [];
     }
 
     // If the user is part of the team, we apply permissions based on their level.
-    switch (teamUser.userLevel) {
-      // Owners and members of the team have all permissions.
+    switch (teamAccess.userLevel) {
       case "owner":
+      case "billing":
       case "member":
         return ALL_PROJECT_PERMISSIONS;
 
@@ -420,16 +411,32 @@ export class Project extends Model {
       }
       // eslint-disable-next-line no-fallthrough
       default:
-        assertNever(teamUser.userLevel);
+        assertNever(teamAccess.userLevel);
     }
   }
 
-  async $getPermissions(user: User | null) {
-    return Project.getPermissions(this, user);
+  /**
+   * Throw `SAML_SSO_REQUIRED` when `auth` is a member kept out of the project's
+   * team by its SAML enforcement. See {@link Team.assertSamlSatisfied}.
+   */
+  static async assertSamlSatisfied(
+    project: Project,
+    auth: AuthViewer | null,
+  ): Promise<void> {
+    if (!auth) {
+      return;
+    }
+    await project.$fetchGraph("account", { skipFetched: true });
+    invariant(project.account);
+    await Team.assertSamlSatisfied(project.account.teamId, auth);
   }
 
-  async $getMembershipPermissions(user: User | null) {
-    return Project.getMembershipPermissions(this, user);
+  async $getPermissions(auth: AuthViewer | null) {
+    return Project.getPermissions(this, auth);
+  }
+
+  async $getMembershipPermissions(auth: AuthViewer | null) {
+    return Project.getMembershipPermissions(this, auth);
   }
 
   async $checkIsPublic(trx?: TransactionOrKnex) {
@@ -452,14 +459,6 @@ export class Project extends Model {
 
     // Origin repositories are never public.
     return false;
-  }
-
-  /**
-   * Generate a new token for the project.
-   */
-  static generateToken() {
-    const token = generateRandomString(34);
-    return `argos_${token}`;
   }
 
   /**
@@ -532,6 +531,17 @@ export class Project extends Model {
       return this.deploymentProdBranchGlob;
     }
     return this.$getDefaultGitRepoBranch();
+  }
+
+  /**
+   * Get a function telling whether deployments of a branch are production
+   * deployments.
+   */
+  async $getDeploymentProductionBranchMatcher(): Promise<
+    (branch: string) => boolean
+  > {
+    const glob = await this.$getDeploymentProductionBranchGlob();
+    return (branch) => minimatch(branch, glob);
   }
 
   async getUrl() {

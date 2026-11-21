@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict gmcxLGd4cggGHCd118Wz0JetcpfyTzwJupqLJkVmerBM1NOZhWAI7QncHvekQf1
+\restrict mvLowm4Y3yUVCNcSubZDhdm3nxyVdBJskwbUVDQlwUSnT2rUEtPyfVT3ioARbpB
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -129,6 +129,9 @@ CREATE TABLE public.accounts (
     "originInstallationId" bigint,
     "lastOverageAlertThreshold" integer,
     "lastMonthlyReportAt" timestamp with time zone,
+    "lastPlanLimitAlertLevel" text,
+    "lastPlanLimitAlertAt" timestamp with time zone,
+    CONSTRAINT "accounts_lastPlanLimitAlertLevel_check" CHECK (("lastPlanLimitAlertLevel" = ANY (ARRAY['warning'::text, 'rejected'::text]))),
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
@@ -829,6 +832,9 @@ CREATE TABLE public.deployments (
     slug character varying(255) NOT NULL,
     "githubPullRequestId" bigint,
     "prHeadCommit" character varying(255),
+    "authSource" text,
+    "githubDeploymentId" bigint,
+    CONSTRAINT "deployments_authSource_check" CHECK (("authSource" = ANY (ARRAY['project-token'::text, 'github-actions-oidc'::text, 'github-actions-tokenless'::text]))),
     CONSTRAINT deployments_environment_check CHECK ((environment = ANY (ARRAY['preview'::text, 'production'::text]))),
     CONSTRAINT deployments_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'ready'::text, 'error'::text])))
 );
@@ -1839,7 +1845,8 @@ CREATE TABLE public.oauth_grant_accounts (
     "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "oauthGrantId" bigint NOT NULL,
-    "accountId" bigint NOT NULL
+    "accountId" bigint NOT NULL,
+    "samlAuthorized" boolean DEFAULT false NOT NULL
 );
 
 
@@ -2179,6 +2186,84 @@ ALTER SEQUENCE public.project_domains_id_seq OWNED BY public.project_domains.id;
 
 
 --
+-- Name: project_token_projects; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.project_token_projects (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "projectTokenId" bigint NOT NULL,
+    "projectId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.project_token_projects OWNER TO postgres;
+
+--
+-- Name: project_token_projects_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.project_token_projects_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.project_token_projects_id_seq OWNER TO postgres;
+
+--
+-- Name: project_token_projects_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.project_token_projects_id_seq OWNED BY public.project_token_projects.id;
+
+
+--
+-- Name: project_tokens; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.project_tokens (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "accountId" bigint NOT NULL,
+    name character varying(255) NOT NULL,
+    token character varying(64) NOT NULL,
+    permissions jsonb NOT NULL,
+    "expireAt" timestamp with time zone,
+    "lastUsedAt" timestamp with time zone,
+    "createdById" bigint,
+    "expiryWarnedAt" timestamp with time zone
+);
+
+
+ALTER TABLE public.project_tokens OWNER TO postgres;
+
+--
+-- Name: project_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.project_tokens_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.project_tokens_id_seq OWNER TO postgres;
+
+--
+-- Name: project_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.project_tokens_id_seq OWNED BY public.project_tokens.id;
+
+
+--
 -- Name: project_users; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2225,7 +2310,6 @@ CREATE TABLE public.projects (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
-    token text NOT NULL,
     private boolean,
     "defaultBaseBranch" character varying(255),
     "accountId" bigint NOT NULL,
@@ -2247,6 +2331,7 @@ CREATE TABLE public.projects (
     "deletedAt" timestamp with time zone,
     "awaitingReviewStatus" text DEFAULT 'failure'::text NOT NULL,
     "autoApprovalEnabled" boolean DEFAULT true NOT NULL,
+    "githubDeploymentEnabled" boolean DEFAULT true NOT NULL,
     CONSTRAINT "projects_awaitingReviewStatus_check" CHECK (("awaitingReviewStatus" = ANY (ARRAY['failure'::text, 'pending'::text]))),
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_deploymentAuth_check" CHECK (("deploymentAuth" = ANY (ARRAY['public'::text, 'domain-private'::text, 'private'::text]))),
@@ -2377,7 +2462,8 @@ CREATE TABLE public.screenshot_diffs (
     "testId" bigint,
     "group" character varying(255),
     ignored boolean DEFAULT false NOT NULL,
-    fingerprint character varying(80)
+    fingerprint character varying(80),
+    "layoutShift" jsonb
 );
 
 
@@ -2755,7 +2841,7 @@ CREATE TABLE public.team_invites (
     email character varying(255) NOT NULL,
     "userLevel" text NOT NULL,
     "invitedById" bigint NOT NULL,
-    CONSTRAINT "team_invites_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['owner'::text, 'member'::text, 'contributor'::text])))
+    CONSTRAINT "team_invites_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['owner'::text, 'billing'::text, 'member'::text, 'contributor'::text])))
 );
 
 
@@ -2860,7 +2946,7 @@ CREATE TABLE public.team_scim_users (
     active boolean DEFAULT true NOT NULL,
     role text,
     "userCreated" boolean DEFAULT false NOT NULL,
-    CONSTRAINT team_scim_users_role_check CHECK ((role = ANY (ARRAY['owner'::text, 'member'::text, 'contributor'::text])))
+    CONSTRAINT team_scim_users_role_check CHECK ((role = ANY (ARRAY['owner'::text, 'billing'::text, 'member'::text, 'contributor'::text])))
 );
 
 
@@ -2900,10 +2986,8 @@ CREATE TABLE public.team_users (
     "userLevel" text NOT NULL,
     "ssoSubject" character varying(255),
     "ssoVerifiedAt" timestamp with time zone,
-    "lastAuthMethod" text,
     "monthlyReportOptedOutAt" timestamp with time zone,
-    CONSTRAINT "team_users_lastAuthMethod_check" CHECK (("lastAuthMethod" = ANY (ARRAY['email'::text, 'google'::text, 'github'::text, 'gitlab'::text, 'saml'::text, 'passkey'::text]))),
-    CONSTRAINT "team_users_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['owner'::text, 'member'::text, 'contributor'::text])))
+    CONSTRAINT "team_users_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['owner'::text, 'billing'::text, 'member'::text, 'contributor'::text])))
 );
 
 
@@ -3059,7 +3143,8 @@ CREATE TABLE public.user_access_token_scopes (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "userAccessTokenId" bigint NOT NULL,
-    "accountId" bigint NOT NULL
+    "accountId" bigint NOT NULL,
+    "samlAuthorized" boolean DEFAULT false NOT NULL
 );
 
 
@@ -3239,7 +3324,11 @@ CREATE TABLE public.user_sessions (
     "deviceLabel" character varying(255),
     city character varying(255),
     region character varying(255),
-    country character varying(255)
+    country character varying(255),
+    "authMethod" text,
+    "samlTeamId" bigint,
+    CONSTRAINT "user_sessions_authMethod_check" CHECK (("authMethod" = ANY (ARRAY['email'::text, 'google'::text, 'github'::text, 'gitlab'::text, 'saml'::text, 'passkey'::text]))),
+    CONSTRAINT "user_sessions_samlTeamId_check" CHECK ((("samlTeamId" IS NULL) OR ("authMethod" = 'saml'::text)))
 );
 
 
@@ -3631,6 +3720,20 @@ ALTER TABLE ONLY public.plans ALTER COLUMN id SET DEFAULT nextval('public.plans_
 --
 
 ALTER TABLE ONLY public.project_domains ALTER COLUMN id SET DEFAULT nextval('public.project_domains_id_seq'::regclass);
+
+
+--
+-- Name: project_token_projects id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_token_projects ALTER COLUMN id SET DEFAULT nextval('public.project_token_projects_id_seq'::regclass);
+
+
+--
+-- Name: project_tokens id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tokens ALTER COLUMN id SET DEFAULT nextval('public.project_tokens_id_seq'::regclass);
 
 
 --
@@ -4498,6 +4601,38 @@ ALTER TABLE ONLY public.project_domains
 
 
 --
+-- Name: project_token_projects project_token_projects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_token_projects
+    ADD CONSTRAINT project_token_projects_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_token_projects project_token_projects_projecttokenid_projectid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_token_projects
+    ADD CONSTRAINT project_token_projects_projecttokenid_projectid_unique UNIQUE ("projectTokenId", "projectId");
+
+
+--
+-- Name: project_tokens project_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tokens
+    ADD CONSTRAINT project_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_tokens project_tokens_token_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tokens
+    ADD CONSTRAINT project_tokens_token_unique UNIQUE (token);
+
+
+--
 -- Name: project_users project_users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5022,6 +5157,13 @@ CREATE INDEX builds_externalid_index ON public.builds USING btree ("externalId")
 
 
 --
+-- Name: builds_githubpullrequestid_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_githubpullrequestid_idx ON public.builds USING btree ("githubPullRequestId") WHERE ("githubPullRequestId" IS NOT NULL);
+
+
+--
 -- Name: builds_jobstatus_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5033,6 +5175,13 @@ CREATE INDEX builds_jobstatus_index ON public.builds USING btree ("jobStatus");
 --
 
 CREATE INDEX builds_number_index ON public.builds USING btree (number);
+
+
+--
+-- Name: builds_originpullrequestid_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_originpullrequestid_idx ON public.builds USING btree ("originPullRequestId") WHERE ("originPullRequestId" IS NOT NULL);
 
 
 --
@@ -5201,6 +5350,13 @@ CREATE INDEX github_account_members_githubmemberid_index ON public.github_accoun
 --
 
 CREATE INDEX github_accounts_type_index ON public.github_accounts USING btree (type);
+
+
+--
+-- Name: github_pull_requests_githubrepositoryid_baseref_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX github_pull_requests_githubrepositoryid_baseref_index ON public.github_pull_requests USING btree ("githubRepositoryId", "baseRef") WHERE (state = 'open'::text);
 
 
 --
@@ -5390,6 +5546,13 @@ CREATE INDEX oauth_refresh_tokens_oauthgrantid_index ON public.oauth_refresh_tok
 
 
 --
+-- Name: origin_pull_requests_originrepositoryid_baseref_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX origin_pull_requests_originrepositoryid_baseref_index ON public.origin_pull_requests USING btree ("originRepositoryId", "baseRef") WHERE (state = 'open'::text);
+
+
+--
 -- Name: origin_pull_requests_originrepositoryid_headref_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5422,6 +5585,20 @@ CREATE INDEX project_domains_pending_index ON public.project_domains USING btree
 --
 
 CREATE INDEX project_domains_projectid_index ON public.project_domains USING btree ("projectId");
+
+
+--
+-- Name: project_token_projects_projectid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX project_token_projects_projectid_index ON public.project_token_projects USING btree ("projectId");
+
+
+--
+-- Name: project_tokens_accountid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX project_tokens_accountid_index ON public.project_tokens USING btree ("accountId");
 
 
 --
@@ -5471,13 +5648,6 @@ CREATE INDEX projects_name_index ON public.projects USING btree (name);
 --
 
 CREATE INDEX projects_originrepositoryid_index ON public.projects USING btree ("originRepositoryId");
-
-
---
--- Name: projects_token_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX projects_token_index ON public.projects USING btree (token);
 
 
 --
@@ -6529,6 +6699,38 @@ ALTER TABLE ONLY public.project_domains
 
 
 --
+-- Name: project_token_projects project_token_projects_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_token_projects
+    ADD CONSTRAINT project_token_projects_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_token_projects project_token_projects_projecttokenid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_token_projects
+    ADD CONSTRAINT project_token_projects_projecttokenid_foreign FOREIGN KEY ("projectTokenId") REFERENCES public.project_tokens(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_tokens project_tokens_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tokens
+    ADD CONSTRAINT project_tokens_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_tokens project_tokens_createdbyid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tokens
+    ADD CONSTRAINT project_tokens_createdbyid_foreign FOREIGN KEY ("createdById") REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
 -- Name: project_users project_users_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6897,6 +7099,14 @@ ALTER TABLE ONLY public.user_passkeys
 
 
 --
+-- Name: user_sessions user_sessions_samlteamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_sessions
+    ADD CONSTRAINT user_sessions_samlteamid_foreign FOREIGN KEY ("samlTeamId") REFERENCES public.teams(id) ON DELETE SET NULL;
+
+
+--
 -- Name: user_sessions user_sessions_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6924,7 +7134,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict gmcxLGd4cggGHCd118Wz0JetcpfyTzwJupqLJkVmerBM1NOZhWAI7QncHvekQf1
+\unrestrict mvLowm4Y3yUVCNcSubZDhdm3nxyVdBJskwbUVDQlwUSnT2rUEtPyfVT3ioARbpB
 
 -- Knex migrations
 
@@ -7199,4 +7409,15 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026110
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104100038_prepare-secret-encryption.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104101223_encrypt-existing-secrets.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261104194955_project-awaiting-review-status.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105093315_project-tokens.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105105421_project-token-expiry-warning.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105115241_drop-projects-token.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261105120000_project-auto-approval-enabled.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261110001822_plan-limit-alert.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112120000_user-session-auth-method.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112211844_token-saml-authorization.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261112212900_drop-team-user-last-auth-method.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261116120000_screenshot-diff-layout-shift.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261119120000_deployment-github-deployment.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261119193529_team-billing-role.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261119200000_pull-request-stack-indexes.js', 1, NOW());

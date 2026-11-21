@@ -28,7 +28,6 @@ import { PeriodSelect, usePeriodState } from "@/containers/PeriodSelect";
 import type { DocumentType } from "@/gql";
 import { graphql } from "@/gql";
 import { AccountSubscriptionStatus, SignupSource } from "@/gql/graphql";
-import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
 import {
@@ -58,6 +57,7 @@ import {
   PRO_PLAN_NAME,
   toMonthlyAmount,
 } from "./pricing";
+import { StaffAccessRestricted } from "./StaffAccessRestricted";
 import { StripeCustomerLink } from "./stripe";
 import { getMailtoUrl, getOutreachEmail } from "./Trials.email";
 
@@ -500,7 +500,7 @@ function getPlanHint(input: {
   const { staff, plan, priced } = input;
 
   if (!priced) {
-    return `On ${plan.displayName}, which Argos does not bill by usage — there is no overage of ours to put a figure on.`;
+    return `On ${plan.displayName}, which Argos does not bill by usage. There is no overage of ours to put a figure on.`;
   }
 
   if (staff.flatPrice === null) {
@@ -551,7 +551,7 @@ function EstimatedPriceCell(props: { team: PipelineTeam }) {
   if (price === null) {
     return (
       <div>
-        <span className="text-low">—</span>
+        <span className="text-low">-</span>
         {plan ? (
           <PlanMarker staff={team.staff} plan={plan} priced={false} />
         ) : null}
@@ -573,7 +573,7 @@ function EstimatedPriceCell(props: { team: PipelineTeam }) {
       <Tooltip
         content={
           period?.closed
-            ? "The plan's price, plus the overage of the last billing period that closed — a settled figure, so it does not move with the day it is read on. Read per month, whatever the subscription is billed in."
+            ? "The plan's price, plus the overage of the last billing period that closed. It is a settled figure, so it does not move with the day it is read on. Read per month, whatever the subscription is billed in."
             : "The plan's price, plus the overage accrued so far. No period has closed yet, so this is a floor. A running trial owes the plan's price only: trial usage is never billed."
         }
       >
@@ -882,7 +882,7 @@ function checkIsConverted(team: PipelineTeam) {
 
 function formatShare(value: number, total: number) {
   if (total === 0) {
-    return "—";
+    return "-";
   }
   return `${Math.round((value / total) * 100)}% of ${total}`;
 }
@@ -1064,15 +1064,7 @@ function StaffTrialsList() {
       error.errors.some((error) => error.extensions?.code === "FORBIDDEN");
 
     if (isForbidden) {
-      return (
-        <Alert>
-          <AlertTitle>Access restricted</AlertTitle>
-          <AlertText>This page is only available to staff users.</AlertText>
-          <AlertText>
-            <Link href="/teams">Go to your teams</Link>
-          </AlertText>
-        </Alert>
-      );
+      return <StaffAccessRestricted />;
     }
 
     throw error;

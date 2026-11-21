@@ -60,7 +60,8 @@ export function getPostAuthURL(input: {
   // wrapped it, the team-creation target is buried in a nested `r=` param and
   // this no longer sees it — which sent the user to the welcome page before any
   // team existed, so the domain question could never be asked and `createTeam`
-  // then skipped its own welcome hop.
+  // then skipped its own welcome hop. The auto-invite is not dropped: the
+  // team-creation page offers the matching teams before it creates one.
   if (redirect && checkCreatesTeam(redirect)) {
     return redirect;
   }

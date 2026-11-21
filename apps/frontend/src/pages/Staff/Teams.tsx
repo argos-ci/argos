@@ -1,10 +1,9 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
-import { diffInCalendarDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
-import { CreditCardIcon, SearchIcon } from "lucide-react";
+import { SearchIcon } from "lucide-react";
 import { parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
 import { Helmet } from "react-helmet";
 
@@ -17,8 +16,8 @@ import {
   PlanInterval,
   StaffTeamOrderBy,
 } from "@/gql/graphql";
-import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { Button } from "@/ui/Button";
+import { useDialogValueState } from "@/ui/Dialog";
 import { Heading } from "@/ui/Heading";
 import {
   Page,
@@ -31,6 +30,7 @@ import {
 import { Link } from "@/ui/Link";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { Loader } from "@/ui/Loader";
+import { Modal } from "@/ui/Modal";
 import { PageLoader } from "@/ui/PageLoader";
 import { Select, SelectButton } from "@/ui/Select";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
@@ -38,14 +38,21 @@ import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { getAccountURL } from "../Account/AccountParams";
 import {
+  formatDaysLeft,
   formatPrice,
+  getIntervalUnit,
+  getPeriodAmount,
   getPeriodFlatPrice,
   PRO_PLAN_NAME,
   type PricedPlan,
 } from "./pricing";
+import { StaffAccessRestricted } from "./StaffAccessRestricted";
+import { getStaffTeamURL } from "./StaffParams";
+import { StaffTeamActionsMenu } from "./StaffTeamActionsMenu";
+import { StaffTrialDialog, type StaffTrialMode } from "./StaffTrialDialog";
 import { StripeCustomerLink } from "./stripe";
+import { SubscriptionLabel } from "./SubscriptionLabel";
 
 const StaffTeamsQuery = graphql(`
   query StaffTeams_staffTeams(
@@ -76,6 +83,10 @@ const StaffTeamsQuery = graphql(`
         subscriptionStatus
         stripeCustomerId
         staff {
+          owners {
+            id
+            email
+          }
           flatPrice
           addOns {
             label
@@ -335,36 +346,6 @@ type TeamBilling = {
 };
 
 /**
- * What a team was billed over one period: the invoice the period closed on
- * when there is one, and otherwise the plan's own amount, its add-ons and the
- * screenshots it consumed beyond the quota.
- *
- * Both halves are taken in the period's own unit rather than brought back to a
- * month, unlike the rate the trial pipeline quotes. This column answers what an
- * invoice came to, and a yearly subscription's invoice covers a year — dividing
- * it by twelve would report a figure Stripe never charged, under a header that
- * says otherwise. The plan and the day count next to it say which unit the row
- * is in.
- *
- * No subscription status to check, either. `billingPeriods` only ever holds the
- * periods Stripe actually invoices — trial periods and periods predating the
- * subscription are dropped server side — so a period being there is itself what
- * says it was billed, and a team with none was billed nothing.
- */
-function getPeriodAmount(
-  period: BillingPeriod,
-  staff: TeamItem["staff"],
-  plan: PricedPlan,
-): number {
-  return (
-    period.invoicedAmount ??
-    getPeriodFlatPrice(staff.flatPrice, plan) +
-      staff.addOns.reduce((total, addOn) => total + addOn.monthlyPrice, 0) +
-      period.additionalScreenshotsCost
-  );
-}
-
-/**
  * What the team billed over its last two periods, or null when it bills nothing
  * at all — a team off a usage-based plan, on a granted one, or with no
  * subscription.
@@ -412,7 +393,7 @@ function getAmountHint(
 
   const { plan } = billing;
   const flat = formatPrice(getPeriodFlatPrice(team.staff.flatPrice, plan));
-  const unit = plan.interval === PlanInterval.Year ? "year" : "month";
+  const unit = getIntervalUnit(plan.interval);
   const source =
     team.staff.flatPrice === null
       ? `a ${flat} guess for ${plan.displayName}, whose own amount is not on file`
@@ -442,16 +423,9 @@ function getAmountHint(
  * would rebaseline overnight.
  */
 function PeriodProgress(props: { period: BillingPeriod }) {
-  // Floored: a period read moments past its own end has not rolled over yet,
-  // and a negative count reads as a bug rather than as a boundary.
-  const remaining = Math.max(
-    0,
-    diffInCalendarDays(new Date(props.period.endsAt), new Date()),
-  );
-
   return (
     <div className="text-low text-xs" data-visual-test="transparent">
-      {remaining === 1 ? "1 day left" : `${remaining} days left`}
+      {formatDaysLeft(props.period.endsAt)}
     </div>
   );
 }
@@ -486,7 +460,7 @@ function ScreenshotsCell(props: {
   // Nothing is metered at all: a team on a flat plan, on a granted one, or with
   // no subscription.
   if (!periodUsage) {
-    return <span className="text-low">—</span>;
+    return <span className="text-low">-</span>;
   }
 
   // Usage to read means a usage-based plan was resolved to read it against.
@@ -501,7 +475,7 @@ function ScreenshotsCell(props: {
       : includedScreenshots.toLocaleString();
 
   return (
-    <Tooltip content="Consumed since the running period opened, against what the subscription includes in each one. Everything past the quota is billed as overage — except on a trial, whose usage Stripe never bills.">
+    <Tooltip content="Consumed since the running period opened, against what the subscription includes in each one. Everything past the quota is billed as overage, except on a trial, whose usage Stripe never bills.">
       <div>
         <div className="font-medium">
           {periodUsage.currentPeriodScreenshotsCount.toLocaleString()}
@@ -534,7 +508,7 @@ function BilledAmount(props: {
           <span className="font-medium">{formatPrice(billed.amount)}</span>
         </Tooltip>
       ) : (
-        <span className="text-low">—</span>
+        <span className="text-low">-</span>
       )}
       {footnote}
     </div>
@@ -570,31 +544,6 @@ function BilledPeriodCells(props: {
       </td>
     </>
   );
-}
-
-/**
- * `trialing_with_payment_method` spelled out is far wider than the column, and
- * the only part that adds anything over "trialing" is that a card is on file —
- * which a credit card icon says just as well.
- */
-function SubscriptionLabel(props: { status: string | null | undefined }) {
-  const { status } = props;
-
-  if (status === AccountSubscriptionStatus.TrialingWithPaymentMethod) {
-    return (
-      <span className="whitespace-nowrap">
-        trialing
-        <Tooltip content="Payment method filled">
-          <CreditCardIcon
-            className="text-success-low ml-1 inline-block size-4"
-            aria-label="Payment method filled"
-          />
-        </Tooltip>
-      </span>
-    );
-  }
-
-  return <>{status ? status.replaceAll("_", " ") : "none"}</>;
 }
 
 function StaffMembersPanel(props: { members: TeamMemberItem[] }) {
@@ -644,9 +593,9 @@ function StaffTeamRow(props: {
   isLast: boolean;
   isOpened: boolean;
   toggleMembers: () => void;
+  onTrial: (mode: StaffTrialMode) => void;
 }) {
-  const { team, index, isLast, isOpened, toggleMembers } = props;
-  const teamURL = getAccountURL({ accountSlug: team.slug });
+  const { team, index, isLast, isOpened, toggleMembers, onTrial } = props;
   const billing = getTeamBilling(team);
   const {
     data: membersData,
@@ -682,7 +631,7 @@ function StaffTeamRow(props: {
                 wrapper takes the width the link does not, so the link lands at
                 the same offset on every row whatever the name is. */}
             <Link
-              href={teamURL}
+              href={getStaffTeamURL(team.slug)}
               className="min-w-0 flex-1 truncate font-medium"
             >
               {team.name || team.slug}
@@ -714,9 +663,17 @@ function StaffTeamRow(props: {
         </td>
         <BilledPeriodCells team={team} billing={billing} />
         <td className="p-4 text-right text-sm">
-          <Button variant="secondary" size="small" onClick={toggleMembers}>
-            {isOpened ? "Hide members" : "Show members"}
-          </Button>
+          <div className="flex items-center justify-end gap-1">
+            <Button variant="secondary" size="small" onClick={toggleMembers}>
+              {isOpened ? "Hide members" : "Show members"}
+            </Button>
+            <StaffTeamActionsMenu
+              team={team}
+              owners={team.staff.owners}
+              onTrial={onTrial}
+              triggerVariant="ghost"
+            />
+          </div>
         </td>
       </tr>
       {isOpened ? (
@@ -764,6 +721,10 @@ function StaffTeamsTable(props: {
     isRefreshing,
   } = props;
   const isBusy = useDelayedFlag(isRefreshing, BUSY_DELAY_MS);
+  const trialDialog = useDialogValueState<{
+    team: TeamItem;
+    mode: StaffTrialMode;
+  } | null>(null);
 
   return (
     // The rows stay put while the next page loads — replacing them with a
@@ -800,7 +761,7 @@ function StaffTeamsTable(props: {
                 activeSortKey={sortKey}
                 direction={sortDirection}
                 onSort={onSort}
-                className="w-[26%] text-left"
+                className="w-[23%] text-left"
               />
               <SortHeader
                 label="Created"
@@ -847,7 +808,7 @@ function StaffTeamsTable(props: {
                 onSort={onSort}
                 className="w-[12%] text-right"
               />
-              <th className="w-[14%] px-4 py-3 text-right">Actions</th>
+              <th className="w-[17%] px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -864,11 +825,26 @@ function StaffTeamsTable(props: {
                     [team.id]: !state[team.id],
                   }));
                 }}
+                onTrial={(mode) => trialDialog.open({ team, mode })}
               />
             ))}
           </tbody>
         </table>
       </div>
+      {trialDialog.value ? (
+        <Modal
+          open={trialDialog.isOpen}
+          onOpenChange={trialDialog.onOpenChange}
+        >
+          <StaffTrialDialog
+            teamAccountId={trialDialog.value.team.id}
+            teamName={
+              trialDialog.value.team.name || trialDialog.value.team.slug
+            }
+            mode={trialDialog.value.mode}
+          />
+        </Modal>
+      ) : null}
     </div>
   );
 }
@@ -942,15 +918,7 @@ function StaffTeamsList() {
       error.errors.some((error) => error.extensions?.code === "FORBIDDEN");
 
     if (isForbidden) {
-      return (
-        <Alert>
-          <AlertTitle>Access restricted</AlertTitle>
-          <AlertText>This page is only available to staff users.</AlertText>
-          <AlertText>
-            <Link href="/teams">Go to your teams</Link>
-          </AlertText>
-        </Alert>
-      );
+      return <StaffAccessRestricted />;
     }
 
     throw error;

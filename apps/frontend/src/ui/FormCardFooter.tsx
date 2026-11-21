@@ -23,9 +23,7 @@ export function FormCardFooter<
       <div className="flex items-center justify-end gap-4">
         <FormRootError control={control} />
         {actions}
-        <FormSuccess control={control} isSuccessful={isSuccessful}>
-          Saved
-        </FormSuccess>
+        <FormSuccess isSuccessful={isSuccessful}>Saved</FormSuccess>
         <FormSubmit control={control} disabled={disabled} disableIfPristine />
       </div>
     </CardFooter>

@@ -84,7 +84,7 @@ export const resolvers: IResolvers = {
         // The installation's own token sees every repository it covers, and
         // GitHub cannot tell for whom we ask: the check is ours to make.
         const hasAccessToInstallation =
-          await checkUserAdministersLightInstallation(auth.user, installation);
+          await checkUserAdministersLightInstallation(auth, installation);
         if (!hasAccessToInstallation) {
           throw forbidden("User does not have access to GitHub installation");
         }

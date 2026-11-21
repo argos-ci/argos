@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import type { TransactionOrKnex } from "objection";
 
+import type { AuthViewer } from "@/auth/payload";
 import { sanitizeEmail } from "@/util/email";
 import { boom } from "@/util/error";
 import {
@@ -232,7 +233,7 @@ export async function listTeamDomains(teamId: string): Promise<TeamDomain[]> {
  */
 export async function addTeamDomain(args: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
   domain: string;
 }): Promise<TeamDomain> {
   const teamId = await assertTeamAdmin(args);
@@ -254,7 +255,7 @@ export async function addTeamDomain(args: {
   }
 
   const verifiedEmail = await findVerifiedEmailForDomain({
-    userId: args.user.id,
+    userId: args.auth.user.id,
     domain,
   });
   if (!verifiedEmail) {
@@ -286,7 +287,7 @@ export async function addTeamDomain(args: {
  */
 export async function removeTeamDomain(args: {
   account: Account;
-  user: User;
+  auth: AuthViewer;
   domain: string;
 }): Promise<void> {
   const teamId = await assertTeamAdmin(args);

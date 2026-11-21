@@ -41,7 +41,7 @@ export function createFixFlakinessPrompt(input: {
 
   return `Fix the flaky Argos visual test "${test.name}" in the ${accountSlug}/${projectName} project.
 
-A visual test is flaky when it keeps capturing a different screenshot while nothing in the UI actually changed. What Argos measured over the ${periodLabel} — builds that ran it: ${metrics.total}, changes: ${metrics.changes}, changes seen only once: ${metrics.uniqueChanges}, flakiness score: ${flakinessPercent}%.
+A visual test is flaky when it keeps capturing a different screenshot while nothing in the UI actually changed. Here is what Argos measured over the ${periodLabel}. Builds that ran it: ${metrics.total}, changes: ${metrics.changes}, changes seen only once: ${metrics.uniqueChanges}, flakiness score: ${flakinessPercent}%.
 
 - Test id: ${test.id}
 - Build name: ${test.buildName}
@@ -55,8 +55,8 @@ A visual test is flaky when it keeps capturing a different screenshot while noth
      GET ${testApiUrl}/changes?metricsPeriod=${period}
 2. For the changes with the highest \`occurrences\`, open \`diff.url\`, \`diff.base.url\` and \`diff.head.url\` and look at what actually moves between the baseline and the capture.
 3. Find that test in this repository from its name and its build name, then work out what makes the screenshot non-deterministic: animations or transitions still running, dates and times, random or unordered data, fonts or images not loaded yet, network timing, scrollbars, carets, third-party embeds.
-4. Fix the root cause so the capture is stable — wait for the real end state instead of a fixed delay, freeze the clock and the random source, order the data. Prefer making the UI deterministic over masking the region.
-5. If a change turns out to be noise that genuinely cannot be made deterministic, ignore it in Argos instead, with its \`id\` from step 1 — \`npx @argos-ci/cli change ignore <changeId> --project ${accountSlug}/${projectName}\`, or:
+4. Fix the root cause so the capture is stable: wait for the real end state instead of a fixed delay, freeze the clock and the random source, order the data. Prefer making the UI deterministic over masking the region.
+5. If a change turns out to be noise that genuinely cannot be made deterministic, ignore it in Argos instead, with its \`id\` from step 1: \`npx @argos-ci/cli change ignore <changeId> --project ${accountSlug}/${projectName}\`, or:
    POST ${apiBaseUrl}/projects/${accountSlug}/${projectName}/changes/<changeId>/ignore
 6. Report what was non-deterministic, what you changed, and why the screenshot is stable now.`;
 }

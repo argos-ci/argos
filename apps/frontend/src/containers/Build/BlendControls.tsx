@@ -5,6 +5,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
 import { Slider, SliderThumb, SliderTrack } from "@/ui/Slider";
 import { useEventCallback } from "@/ui/useEventCallback";
+import { clampFraction } from "@/util/fraction";
 
 import { useScaleContext } from "./ScaleContext";
 import { useZoomTransform, ZOOMER_OVERLAY_INTERACTIVE_CLASS } from "./Zoomer";
@@ -141,10 +142,6 @@ export function SwipeDivider(props: {
       </div>
     </div>
   );
-}
-
-function clampFraction(value: number): number {
-  return Math.min(1, Math.max(0, value));
 }
 
 /**

@@ -47,10 +47,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
       invariant(account.teamId);
-      const permissions = await Team.getPermissions(
-        account.teamId,
-        ctx.auth.user,
-      );
+      const permissions = await Team.getPermissions(account.teamId, ctx.auth);
       if (!permissions.includes("admin")) {
         return null;
       }
@@ -69,7 +66,7 @@ export const resolvers: IResolvers = {
         const account = await loadAccountById(args.teamAccountId);
         const token = await generateTeamScimToken({
           account,
-          user: ctx.auth.user,
+          auth: ctx.auth,
         });
         return { token, team: account };
       } catch (error) {
@@ -82,7 +79,7 @@ export const resolvers: IResolvers = {
       }
       try {
         const account = await loadAccountById(args.teamAccountId);
-        await revokeTeamScimToken({ account, user: ctx.auth.user });
+        await revokeTeamScimToken({ account, auth: ctx.auth });
         return account;
       } catch (error) {
         throw toGraphQLError(error);

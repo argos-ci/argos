@@ -103,7 +103,7 @@ export function ChangesChart(props: {
                   .split(" ")
                   .pop(); // Gets "CET" or similar
 
-                return `${datePart} ${startTime} – ${endTime} (${timeZone})`;
+                return `${datePart} ${startTime} to ${endTime} (${timeZone})`;
               }}
             />
           }

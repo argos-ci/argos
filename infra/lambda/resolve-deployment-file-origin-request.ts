@@ -6,11 +6,23 @@ import type {
 } from "aws-lambda";
 
 const STAGE = process.env.STAGE ?? "development";
+const PRIMARY_REGION = "us-east-1";
 
-const baseClient = new DynamoDBClient({ region: "us-east-1" });
-const dynamo = DynamoDBDocumentClient.from(baseClient, {
-  marshallOptions: { removeUndefinedValues: true },
-});
+const replicaByEdgeRegion: Partial<Record<string, string>> = JSON.parse(
+  process.env.DEPLOYMENT_FILES_REPLICA_BY_EDGE_REGION ?? "{}",
+);
+
+function createClient(region: string): DynamoDBDocumentClient {
+  return DynamoDBDocumentClient.from(new DynamoDBClient({ region }), {
+    marshallOptions: { removeUndefinedValues: true },
+  });
+}
+
+const primary = createClient(PRIMARY_REGION);
+
+const edgeRegion = process.env.AWS_REGION;
+const replicaRegion = edgeRegion ? replicaByEdgeRegion[edgeRegion] : undefined;
+const replica = replicaRegion ? createClient(replicaRegion) : null;
 
 function tableName(name: string): string {
   return `${STAGE}_${name}`;
@@ -27,11 +39,12 @@ function notFoundResponse(): CloudFrontRequestResult {
   };
 }
 
-async function lookupFile(
+async function getContentHash(
+  client: DynamoDBDocumentClient,
   deploymentId: string,
   filePath: string,
 ): Promise<string | null> {
-  const result = await dynamo.send(
+  const result = await client.send(
     new GetCommand({
       TableName: tableName("deployment_files"),
       Key: { deployment_id: deploymentId, path: filePath },
@@ -50,6 +63,31 @@ async function lookupFile(
     );
   }
   return result.Item["content_hash"];
+}
+
+async function lookupFile(
+  deploymentId: string,
+  filePath: string,
+): Promise<string | null> {
+  if (replica) {
+    // A miss is not a 404 yet: replication lags by a second or so, and a
+    // visitor can open a deployment right after it is created. An error is
+    // not one either: the replica may still be seeding, or its region down.
+    try {
+      const contentHash = await getContentHash(replica, deploymentId, filePath);
+      if (contentHash) {
+        return contentHash;
+      }
+      console.log(
+        `[replica] ${replicaRegion} missed, reading ${PRIMARY_REGION}`,
+      );
+    } catch (error) {
+      console.error(
+        `[replica] ${replicaRegion} failed, reading ${PRIMARY_REGION}: ${error}`,
+      );
+    }
+  }
+  return getContentHash(primary, deploymentId, filePath);
 }
 
 export const handler = async (

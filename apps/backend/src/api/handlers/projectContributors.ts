@@ -50,7 +50,7 @@ export const listProjectContributorsOperation = {
   operationId: "listProjectContributors",
   summary: "List a project's contributors",
   description:
-    "List the users explicitly granted access to a project, with their level. Team owners and members are not listed — they reach every project through their team role. The authenticated user comes first when they are one of them.",
+    "List the users explicitly granted access to a project, with their level. Team owners and members are not listed: they reach every project through their team role. The authenticated user comes first when they are one of them.",
   tags: ["Projects"],
   security: patOrOAuthAuth(["projects:read"]),
   requestParams: { path: ProjectPathSchema, query: PageParamsSchema },
@@ -110,7 +110,7 @@ export const listProjectContributors: CreateAPIHandler = ({ get }) => {
 const ContributorPathSchema = ProjectPathSchema.extend({
   userId: z.string().meta({
     description:
-      "Identifier of the user — the `user.id` returned by `listAccountMembers` or `listProjectContributors`.",
+      "Identifier of the user: the `user.id` returned by `listAccountMembers` or `listProjectContributors`.",
   }),
 });
 
@@ -153,7 +153,7 @@ export const setProjectContributor: CreateAPIHandler = ({ put }) => {
     // Shared with the GraphQL API — same admin check, same idempotence.
     const projectUser = await addOrUpdateProjectContributor({
       project,
-      user: auth.user,
+      auth,
       userAccountId: req.ctx.params.userId,
       level: req.ctx.body.level,
     });
@@ -176,7 +176,7 @@ export const removeProjectContributorOperation = {
   operationId: "removeProjectContributor",
   summary: "Revoke a contributor's access",
   description:
-    "Revoke a user's access to a project. Requires administrator access to the project, except when removing yourself — a contributor can always walk away from a project.",
+    "Revoke a user's access to a project. Requires administrator access to the project, except when removing yourself: a contributor can always walk away from a project.",
   tags: ["Projects"],
   security: patOrOAuthAuth(["projects:write"]),
   requestParams: { path: ContributorPathSchema },
@@ -201,7 +201,7 @@ export const removeProjectContributorHandler: CreateAPIHandler = ({
 
     await removeProjectContributor({
       project,
-      user: auth.user,
+      auth,
       userAccountId: req.ctx.params.userId,
     });
 

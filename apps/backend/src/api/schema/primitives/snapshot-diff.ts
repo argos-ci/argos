@@ -96,7 +96,7 @@ const Snapshot = z
       description: "Height of the screenshot in pixels",
     }),
     url: z.url().meta({
-      description: "Public URL of the snapshot",
+      description: "Public URL of the snapshot file, as it was uploaded",
     }),
     contentType: z.string().meta({
       description: "Content type of the snapshot file",
@@ -148,7 +148,7 @@ async function serializeSnapshot(
 
   const file = screenshot.file as FileModel | null | undefined;
   const url = file
-    ? await getPublicFileUrl(file)
+    ? await getPublicFileUrl(file, { original: true })
     : await getPublicUrl(screenshot.s3Id);
 
   return {
@@ -168,10 +168,10 @@ async function serializeSnapshot(
 export async function getSnapshotDiffUrl(diff: ScreenshotDiff) {
   const file = diff.file as FileModel | null | undefined;
   if (file) {
-    return getPublicFileUrl(file);
+    return getPublicFileUrl(file, { original: true });
   }
   if (diff.s3Id) {
-    return getImageKitUrl(diff.s3Id);
+    return getImageKitUrl(diff.s3Id, { original: true });
   }
   return null;
 }

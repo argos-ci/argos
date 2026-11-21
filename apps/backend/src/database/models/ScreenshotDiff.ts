@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import { ValidationError } from "objection";
-import type { Pojo, RelationMappings } from "objection";
+import type { JSONSchema, Pojo, RelationMappings } from "objection";
+import { z } from "zod";
 
 import { Model } from "../util/model";
 import type { JobStatus } from "../util/schemas";
@@ -10,8 +11,52 @@ import { File } from "./File";
 import { Screenshot } from "./Screenshot";
 import { Test } from "./Test";
 
+const PixelRectSchema = z.object({
+  x: z.number().int().min(0),
+  y: z.number().int().min(0),
+  width: z.number().int().min(0),
+  height: z.number().int().min(0),
+});
+
+/**
+ * Content that moved rather than changed between the two screenshots, stored
+ * as iris reports it. Coordinates are in the pixel space of the diff mask.
+ */
+const LayoutShiftSchema = z.object({
+  segments: z.array(
+    z.object({
+      x: z.number().int().min(0),
+      width: z.number().int().min(0),
+      baseY: z.number().int().min(0),
+      headY: z.number().int().min(0),
+      height: z.number().int().min(0),
+      dy: z.number().int(),
+      /** Absent from shifts iris 1.0 found: it looked for vertical moves only. */
+      dx: z.number().int().optional(),
+    }),
+  ),
+  inserted: z.array(PixelRectSchema),
+  removed: z.array(PixelRectSchema),
+  /**
+   * Areas of the mask that differ only because content moved. Absent from
+   * shifts iris 1.0 found, where they are derived from the bands.
+   */
+  hidden: z.array(PixelRectSchema).optional(),
+  shiftedPixels: z.number().int().min(0),
+});
+
+export type ScreenshotDiffLayoutShift = z.infer<typeof LayoutShiftSchema>;
+
+const layoutShiftJsonSchema = z.toJSONSchema(LayoutShiftSchema.nullable(), {
+  io: "input",
+}) as JSONSchema;
+
 export class ScreenshotDiff extends Model {
   static override tableName = "screenshot_diffs";
+
+  static override get jsonAttributes() {
+    return ["layoutShift"];
+  }
 
   static override jsonSchema = {
     allOf: [
@@ -31,6 +76,7 @@ export class ScreenshotDiff extends Model {
           testId: { type: ["string", "null"] },
           group: { type: ["string", "null"] },
           ignored: { type: "boolean" },
+          layoutShift: layoutShiftJsonSchema,
         },
       },
     ],
@@ -51,6 +97,11 @@ export class ScreenshotDiff extends Model {
   testId!: string | null;
   group!: string | null;
   ignored!: boolean;
+  /**
+   * Set only when moving content explains part of the mask, so the mask can
+   * be shown without it.
+   */
+  layoutShift!: ScreenshotDiffLayoutShift | null;
 
   static override get relationMappings(): RelationMappings {
     return {

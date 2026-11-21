@@ -4,6 +4,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
+import type { AuthSessionPayload } from "@/auth/payload";
 import { isUniqueViolationError } from "@/database/error";
 import {
   Account,
@@ -16,7 +17,6 @@ import {
   Project,
   ProjectDomain,
   Screenshot,
-  User,
 } from "@/database/models";
 import {
   getProjectBuildNames,
@@ -209,7 +209,6 @@ export const typeDefs = gql`
   type Project implements Node {
     id: ID!
     name: String!
-    token: String
     "Total number of builds for this project"
     buildsCount: Int!
     "Builds associated to the project"
@@ -258,6 +257,8 @@ export const typeDefs = gql`
     deploymentEnabled: Boolean!
     "Deployment authentication policy"
     deploymentAuth: DeploymentAuth!
+    "Whether deployments are reported to GitHub as GitHub deployments"
+    githubDeploymentEnabled: Boolean!
     "Check if the project is public or not"
     public: Boolean!
     "Override repository's Github privacy"
@@ -314,7 +315,7 @@ export const typeDefs = gql`
   enum CustomDomainsAvailability {
     "Usable now"
     available
-    "The team has no active subscription — subscribing unlocks it"
+    "The team has no active subscription: subscribing unlocks it"
     requires_subscription
     "The plan does not include it and cannot be changed without us"
     requires_contact
@@ -399,6 +400,7 @@ export const typeDefs = gql`
     ignoreConfig: IgnoreConfigInput
     deploymentEnabled: Boolean
     deploymentAuth: DeploymentAuth
+    githubDeploymentEnabled: Boolean
     githubActionsOidcEnabled: Boolean
     tokenlessAuthEnabled: Boolean
   }
@@ -481,8 +483,6 @@ export const typeDefs = gql`
     importGitlabProject(input: ImportGitlabProjectInput!): Project!
     "Update Project"
     updateProject(input: UpdateProjectInput!): Project!
-    "Regenerate project token"
-    regenerateProjectToken(id: ID!): Project!
     "Link GitHub Repository"
     linkGithubRepository(input: LinkGithubRepositoryInput!): Project!
     "Unlink GitHub Repository"
@@ -525,8 +525,7 @@ export const typeDefs = gql`
 
 async function importGithubProject(props: {
   accountSlug: string;
-  creator: User;
-  creatorAccount: Account;
+  creator: AuthSessionPayload;
   repo: string;
   owner: string;
   installationId: string;
@@ -546,7 +545,7 @@ async function importGithubProject(props: {
     .throwIfNotFound();
 
   const canUseInstallation = await checkUserCanUseInstallation({
-    userAccount: props.creatorAccount,
+    userAccount: props.creator.account,
     installation,
     account,
   });
@@ -577,7 +576,7 @@ async function importGithubProject(props: {
 
   await notifyProjectCreation({
     project,
-    email: props.creator.email,
+    email: props.creator.user.email,
     account,
     source: "GitHub",
   });
@@ -627,7 +626,7 @@ const getOrCreateGitlabProject = async (props: {
 
 const importGitlabProject = async (props: {
   accountSlug: string;
-  creator: User;
+  creator: AuthSessionPayload;
   gitlabProjectId: string;
 }) => {
   const account = await Account.query()
@@ -659,7 +658,7 @@ const importGitlabProject = async (props: {
 
   await notifyProjectCreation({
     project,
-    email: props.creator.email,
+    email: props.creator.user.email,
     account,
     source: "GitLab",
   });
@@ -693,7 +692,7 @@ async function getAccountOriginRepository(props: {
 
 const importOriginProject = async (props: {
   accountSlug: string;
-  creator: User;
+  creator: AuthSessionPayload;
   originRepositoryId: string;
 }) => {
   const account = await Account.query()
@@ -723,7 +722,7 @@ const importOriginProject = async (props: {
 
   await notifyProjectCreation({
     project,
-    email: props.creator.email,
+    email: props.creator.user.email,
     account,
     source: "Cursor Origin",
   });
@@ -826,16 +825,6 @@ export const resolvers: IResolvers = {
     },
     ignoreConfig: (project) => {
       return project.$getIgnoreConfig();
-    },
-    token: async (project, _args, ctx) => {
-      if (!ctx.auth) {
-        return null;
-      }
-      const permissions = await project.$getPermissions(ctx.auth.user);
-      if (!permissions.includes("review")) {
-        return null;
-      }
-      return project.token;
     },
     latestAutoApprovedBuild: async (project) => {
       const latestAutoApprovedBuild = await Build.query()
@@ -994,7 +983,7 @@ export const resolvers: IResolvers = {
       return availability as ICustomDomainsAvailability;
     },
     permissions: async (project, _args, ctx) => {
-      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
+      const permissions = await project.$getPermissions(ctx.auth);
       return permissions as IProjectPermission[];
     },
     account: async (project, _args, ctx) => {
@@ -1006,7 +995,7 @@ export const resolvers: IResolvers = {
       if (!project.githubRepositoryId) {
         return null;
       }
-      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
+      const permissions = await project.$getPermissions(ctx.auth);
       if (!permissions.includes("view_settings")) {
         return null;
       }
@@ -1132,9 +1121,10 @@ export const resolvers: IResolvers = {
 
       ctx.loaders.Project.prime(project.id, project);
 
-      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
+      const permissions = await project.$getPermissions(ctx.auth);
 
       if (!permissions.includes("view")) {
+        await Project.assertSamlSatisfied(project, ctx.auth);
         return null;
       }
 
@@ -1155,9 +1145,10 @@ export const resolvers: IResolvers = {
 
       ctx.loaders.Project.prime(project.id, project);
 
-      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
+      const permissions = await project.$getPermissions(ctx.auth);
 
       if (!permissions.includes("view")) {
+        await Project.assertSamlSatisfied(project, ctx.auth);
         return null;
       }
 
@@ -1192,7 +1183,7 @@ export const resolvers: IResolvers = {
       try {
         return await createProjectService({
           account,
-          user: ctx.auth.user,
+          auth: ctx.auth,
           name: args.input.name,
           source: null,
         });
@@ -1220,8 +1211,7 @@ export const resolvers: IResolvers = {
         accountSlug: args.input.accountSlug,
         repo: args.input.repo,
         owner: args.input.owner,
-        creator: ctx.auth.user,
-        creatorAccount: ctx.auth.account,
+        creator: ctx.auth,
         installationId: args.input.installationId,
       });
     },
@@ -1235,7 +1225,7 @@ export const resolvers: IResolvers = {
       return importOriginProject({
         accountSlug: args.input.accountSlug,
         originRepositoryId: args.input.originRepositoryId,
-        creator: ctx.auth.user,
+        creator: ctx.auth,
       });
     },
     importGitlabProject: async (_root, args, ctx) => {
@@ -1245,7 +1235,7 @@ export const resolvers: IResolvers = {
       return importGitlabProject({
         accountSlug: args.input.accountSlug,
         gitlabProjectId: args.input.gitlabProjectId,
-        creator: ctx.auth.user,
+        creator: ctx.auth,
       });
     },
     updateProject: async (_root, args, ctx) => {
@@ -1257,7 +1247,7 @@ export const resolvers: IResolvers = {
         // Shared with the REST API — same admin check, same validation.
         return await updateProjectService({
           project,
-          user: ctx.auth.user,
+          auth: ctx.auth,
           input: {
             name: args.input.name ?? undefined,
             defaultBaseBranch: args.input.defaultBaseBranch,
@@ -1282,6 +1272,8 @@ export const resolvers: IResolvers = {
             deploymentAuth: args.input.deploymentAuth
               ? fromGraphQLDeploymentAuth(args.input.deploymentAuth)
               : undefined,
+            githubDeploymentEnabled:
+              args.input.githubDeploymentEnabled ?? undefined,
             githubActionsOidcEnabled:
               args.input.githubActionsOidcEnabled ?? undefined,
             tokenlessAuthEnabled: args.input.tokenlessAuthEnabled ?? undefined,
@@ -1298,7 +1290,7 @@ export const resolvers: IResolvers = {
 
       const project = await getAdminProject({
         id: args.input.projectId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
         withGraphFetched: "account",
       });
 
@@ -1336,7 +1328,7 @@ export const resolvers: IResolvers = {
     unlinkGithubRepository: async (_root, args, ctx) => {
       const project = await getAdminProject({
         id: args.input.projectId,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
 
       return project.$query().patchAndFetch({
@@ -1350,7 +1342,7 @@ export const resolvers: IResolvers = {
 
       const project = await getAdminProject({
         id: args.input.projectId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
         withGraphFetched: "account",
       });
 
@@ -1374,7 +1366,7 @@ export const resolvers: IResolvers = {
     unlinkGitlabProject: async (_root, args, ctx) => {
       const project = await getAdminProject({
         id: args.input.projectId,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
 
       return project.$query().patchAndFetch({
@@ -1391,7 +1383,7 @@ export const resolvers: IResolvers = {
 
       const project = await getAdminProject({
         id: args.input.projectId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
         withGraphFetched: "account",
       });
 
@@ -1411,7 +1403,7 @@ export const resolvers: IResolvers = {
     unlinkOriginRepository: async (_root, args, ctx) => {
       const project = await getAdminProject({
         id: args.input.projectId,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
 
       return project.$query().patchAndFetch({
@@ -1431,7 +1423,7 @@ export const resolvers: IResolvers = {
         // move, same name validation.
         return await transferProjectService({
           project,
-          user: ctx.auth.user,
+          auth: ctx.auth,
           targetAccount,
           name: args.input.name,
         });
@@ -1448,7 +1440,7 @@ export const resolvers: IResolvers = {
       if (!project) {
         return true;
       }
-      await deleteProject({ id: args.id, user: ctx.auth?.user });
+      await deleteProject({ id: args.id, auth: ctx.auth });
       return true;
     },
     updateProjectPrComment: async (_root, args, ctx) => {
@@ -1457,7 +1449,7 @@ export const resolvers: IResolvers = {
       }
       const project = await getAdminProject({
         id: args.input.projectId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
       });
 
       return project
@@ -1473,7 +1465,7 @@ export const resolvers: IResolvers = {
         // Shared with the REST API — same admin check, same idempotence.
         return await addOrUpdateProjectContributor({
           project,
-          user: ctx.auth.user,
+          auth: ctx.auth,
           userAccountId: args.input.userAccountId,
           level: args.input.level,
         });
@@ -1484,7 +1476,7 @@ export const resolvers: IResolvers = {
     updateProjectDomain: async (_root, args, ctx) => {
       const project = await getAdminProject({
         id: args.input.projectId,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
 
       let result;
@@ -1536,7 +1528,7 @@ export const resolvers: IResolvers = {
     addProjectCustomDomain: async (_root, args, ctx) => {
       const project = await getAdminProject({
         id: args.input.projectId,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
 
       await assertCustomDomainsAccess(project, ctx);
@@ -1589,24 +1581,12 @@ export const resolvers: IResolvers = {
         // remove themselves.
         return await removeProjectContributor({
           project,
-          user: ctx.auth.user,
+          auth: ctx.auth,
           userAccountId: args.input.userAccountId,
         });
       } catch (error) {
         throw toGraphQLError(error);
       }
-    },
-    regenerateProjectToken: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-      const project = await getAdminProject({
-        id: args.id,
-        user: ctx.auth.user,
-      });
-
-      const token = Project.generateToken();
-      return project.$query().patchAndFetch({ token });
     },
   },
 };
@@ -1623,7 +1603,7 @@ async function getAdminCustomDomain(
     .throwIfNotFound();
   const project = await getAdminProject({
     id: projectDomain.projectId,
-    user: ctx.auth?.user,
+    auth: ctx.auth,
   });
   return { project, projectDomain };
 }

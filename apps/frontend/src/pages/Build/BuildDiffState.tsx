@@ -17,11 +17,11 @@ import { MatchData, Searcher } from "fast-fuzzy";
 import { useNavigate } from "react-router";
 
 import {
+  ATTENTION_STATUSES,
   checkIsDiffGroupName,
   DIFF_GROUPS,
   getDiffStatusGroup,
   SKIPPED_DIFF_GROUP,
-  type DiffGroup,
   type DiffGroupName,
 } from "@/containers/Build/BuildDiffGroup";
 import { DocumentType, graphql } from "@/gql";
@@ -41,6 +41,7 @@ import {
   getCaptureIndex,
   getVariantSignature,
   resolveJourneyIdentity,
+  resolveTestIdentity,
   type JourneyIdentity,
 } from "./journey-model";
 import { FilterStateContext } from "./metadata/filters/FilterState";
@@ -49,6 +50,12 @@ import {
   useCreateFilterState,
 } from "./metadata/filters/util";
 import { resolveDiffMetadata } from "./metadata/utils";
+import {
+  useSnapshotDisplay,
+  useSnapshotGrouping,
+  type SnapshotDisplay,
+  type SnapshotGrouping,
+} from "./SnapshotListPreferences";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ScreenshotDiffFragment = graphql(`
@@ -75,6 +82,7 @@ const ScreenshotDiffFragment = graphql(`
       metadata {
         url
         previewUrl
+        description
         colorScheme
         mediaType
         automationLibrary {
@@ -140,6 +148,7 @@ const ScreenshotDiffFragment = graphql(`
       metadata {
         url
         previewUrl
+        description
         colorScheme
         mediaType
         automationLibrary {
@@ -203,15 +212,55 @@ export type Diff = ResultOf<typeof ScreenshotDiffFragment>;
 
 export type DiffResult = MatchData<Diff>;
 
+type DiffListGroupBase = {
+  diffs: Diff[];
+  /** Whether the group is open until the reader opens or closes it. */
+  defaultExpanded: boolean;
+};
+
+export type DiffListGroup =
+  | (DiffListGroupBase & { type: "status"; name: DiffGroupName })
+  | (DiffListGroupBase & {
+      type: "test";
+      name: string;
+      /** Null for the group of the snapshots that come from no test. */
+      test: JourneyIdentity | null;
+    });
+
+/**
+ * A request to bring a diff into view in the list. An object rather than the
+ * diff, so asking twice for the same diff still asks twice.
+ */
+type ScrollRequest = {
+  diff: Diff;
+  /**
+   * The list was just regrouped or redrawn at another density: what is on
+   * screen says nothing about where the diff now is, and there is no path to
+   * animate along.
+   */
+  reflowed: boolean;
+};
+
 type BuildDiffContextValue = {
   diffs: Diff[];
   allDiffs: Diff[];
-  groups: DiffGroup<Diff>[];
-  expanded: string[];
+  grouping: SnapshotGrouping;
+  /** Regroups the list, keeping the active diff open and in view. */
+  setGrouping: (grouping: SnapshotGrouping) => void;
+  /** Changes how the list draws diffs, keeping the active one in view. */
+  setDisplay: (display: SnapshotDisplay) => void;
+  groups: DiffListGroup[];
+  /** The groups of the list that are open, and the stacks opened by hand. */
+  expanded: ReadonlySet<string>;
   toggleGroup: (name: string, value?: boolean) => void;
+  /**
+   * Whether the similar diffs of `group` are stacked and closed, so they are
+   * marked and walked past as one. Listed by test, nothing is stacked.
+   */
+  isStackCollapsed: (group: string | null | undefined) => boolean;
   activeDiff: Diff | null;
   setActiveDiff: (diff: Diff, scroll?: boolean) => void;
-  scrolledDiff: Diff | null;
+  scrollRequest: ScrollRequest | null;
   initialDiff: Diff | null;
   firstDiff: Diff | null;
   ready: boolean;
@@ -320,7 +369,7 @@ export function useGetNextDiff(
   options?: UseGetNextDiffOptions,
 ) {
   const { searchMode } = useSearchModeState();
-  const { diffs, activeDiff, expanded } = useBuildDiffState();
+  const { diffs, activeDiff, isStackCollapsed } = useBuildDiffState();
   const activeDiffIndex = useActiveDiffIndex();
   const fromIndex = options?.fromIndex ?? activeDiffIndex;
   return useEventCallback(() => {
@@ -328,16 +377,18 @@ export function useGetNextDiff(
       return null;
     }
 
-    const isGroupExpanded =
-      !activeDiff?.group || expanded.includes(activeDiff.group);
+    const collapsedStack =
+      activeDiff?.group && isStackCollapsed(activeDiff.group) && !searchMode
+        ? activeDiff.group
+        : null;
 
-    if ((isGroupExpanded || searchMode) && !predicate) {
+    if (!collapsedStack && !predicate) {
       return diffs[fromIndex + 1] ?? null;
     }
 
     const offsetIndex = fromIndex + 1;
     const nextDiffIndex = diffs.slice(offsetIndex).findIndex((diff) => {
-      if (!isGroupExpanded && !searchMode && diff.group === activeDiff.group) {
+      if (collapsedStack && diff.group === collapsedStack) {
         return false;
       }
       return predicate ? predicate(diff) : true;
@@ -369,7 +420,7 @@ export function useHasPreviousDiff() {
 
 function useGetPreviousDiff() {
   const { searchMode } = useSearchModeState();
-  const { diffs, expanded } = useBuildDiffState();
+  const { diffs, isStackCollapsed } = useBuildDiffState();
   const activeDiffIndex = useActiveDiffIndex();
   const hasPreviousDiff = useHasPreviousDiff();
   return useEventCallback(() => {
@@ -384,10 +435,7 @@ function useGetPreviousDiff() {
       return null;
     }
 
-    const isGroupExpanded =
-      !previousDiff.group || expanded.includes(previousDiff.group);
-
-    if (isGroupExpanded || searchMode) {
+    if (!isStackCollapsed(previousDiff.group) || searchMode) {
       return previousDiff;
     }
 
@@ -432,27 +480,43 @@ export function useGoToBuildOverview() {
   });
 }
 
-function useExpandedState(initial: string[]) {
-  const [expanded, setExpanded] = useState<string[]>(initial);
-  useEffect(() => {
-    // oxlint-disable-next-line react/react-compiler
-    setExpanded(initial);
-  }, [initial]);
-  const toggleGroup = useCallback((name: string, value?: boolean) => {
-    setExpanded((expanded) => {
-      const included = expanded.includes(name);
-      const expand = value !== undefined ? value : !included;
-      if (expand && included) {
-        return expanded;
-      }
-      if (!expand && !included) {
-        return expanded;
-      }
-      return expand ? [...expanded, name] : expanded.filter((n) => n !== name);
-    });
+/**
+ * The groups the reader opened or closed by hand. A group left alone follows
+ * its `defaultExpanded`, so one that shows up as the diffs load, or as the
+ * list is regrouped, opens or not without undoing what was chosen before.
+ */
+function useGroupToggles() {
+  const [toggles, setToggles] = useState<ReadonlyMap<string, boolean>>(
+    () => new Map(),
+  );
+  const setToggle = useCallback((name: string, expanded: boolean) => {
+    setToggles((toggles) =>
+      toggles.get(name) === expanded
+        ? toggles
+        : new Map(toggles).set(name, expanded),
+    );
   }, []);
+  return { toggles, setToggle };
+}
 
-  return useMemo(() => ({ expanded, toggleGroup }), [expanded, toggleGroup]);
+function getExpandedGroups(
+  groups: DiffListGroup[],
+  toggles: ReadonlyMap<string, boolean>,
+): ReadonlySet<string> {
+  const expanded = new Set<string>();
+  for (const group of groups) {
+    if (toggles.get(group.name) ?? group.defaultExpanded) {
+      expanded.add(group.name);
+    }
+  }
+  // Also the stacks of similar diffs (`diff.group`) opened by hand, which are
+  // not groups of the list.
+  for (const [name, value] of toggles) {
+    if (value) {
+      expanded.add(name);
+    }
+  }
+  return expanded;
 }
 
 const ProjectQuery = graphql(`
@@ -546,38 +610,147 @@ function useDataState(props: {
   return state;
 }
 
-function groupDiffs(
-  diffs: Diff[],
-  reviewStatuses: Record<string, EvaluationStatus>,
+/**
+ * The status group a diff is listed in: its review once it has one, the group
+ * of its own status until then. Null for a diff the list does not show.
+ */
+export function getDiffListStatus(
+  diff: Diff,
+  reviewStatus: EvaluationStatus | null,
   context: { isSubsetBuild: boolean },
-): DiffGroup<Diff>[] {
-  const diffByGroups = diffs.reduce<
-    Partial<Record<DiffGroupName, DiffGroup<Diff>>>
-  >((groups, diff) => {
-    const reviewStatus = reviewStatuses[diff.id] ?? EvaluationStatus.Pending;
-    const diffGroupName =
-      reviewStatus === EvaluationStatus.Pending
-        ? getDiffStatusGroup(diff.status, context)
-        : reviewStatus;
-    if (checkIsDiffGroupName(diffGroupName)) {
-      const group = groups[diffGroupName] ?? {
-        name: diffGroupName,
-        diffs: [],
-      };
-      groups[diffGroupName] = group;
-      group.diffs.push(diff);
+): DiffGroupName | null {
+  const name =
+    reviewStatus && reviewStatus !== EvaluationStatus.Pending
+      ? reviewStatus
+      : getDiffStatusGroup(diff.status, context);
+  return checkIsDiffGroupName(name) ? name : null;
+}
+
+/**
+ * The status, among those given, that comes first in a list grouped by
+ * status: the most pressing one.
+ */
+export function getFirstListedStatus(
+  statuses: ReadonlySet<DiffGroupName>,
+): DiffGroupName {
+  const status = DIFF_GROUPS.find((status) => statuses.has(status));
+  invariant(status, "a group lists at least one diff");
+  return status;
+}
+
+function groupDiffsByStatus(
+  diffs: Diff[],
+  context: {
+    isSubsetBuild: boolean;
+    searchMode: boolean;
+    reviewStatuses: Record<string, EvaluationStatus>;
+  },
+): DiffListGroup[] {
+  const defaultExpanded: readonly DiffGroupName[] = context.searchMode
+    ? SEARCH_EXPANDED
+    : ATTENTION_STATUSES;
+  const diffByGroups = new Map<DiffGroupName, Diff[]>();
+  for (const diff of diffs) {
+    const name = getDiffListStatus(
+      diff,
+      context.reviewStatuses[diff.id] ?? null,
+      context,
+    );
+    if (name) {
+      const groupDiffs = diffByGroups.get(name) ?? [];
+      diffByGroups.set(name, groupDiffs);
+      groupDiffs.push(diff);
     }
-    return groups;
-  }, {});
-  return DIFF_GROUPS.map((groupName) => diffByGroups[groupName] ?? null).filter(
-    (x) => x !== null,
-  );
+  }
+  return DIFF_GROUPS.flatMap((name) => {
+    const groupDiffs = diffByGroups.get(name);
+    return groupDiffs
+      ? [
+          {
+            type: "status" as const,
+            name,
+            diffs: groupDiffs,
+            defaultExpanded: defaultExpanded.includes(name),
+          },
+        ]
+      : [];
+  });
+}
+
+const NO_TEST_GROUP = "no-test";
+
+/**
+ * The name of a test's group. Its key goes behind a prefix: the names of every
+ * grouping share `expanded` with the status names and the stacks of similar
+ * diffs.
+ */
+function getTestGroupName(test: JourneyIdentity | null): string {
+  return test ? `test:${test.key}` : NO_TEST_GROUP;
+}
+
+/**
+ * Groups the diffs by the test they come from, in the order the test took
+ * them. Tests are listed by the most pressing status among their diffs, then
+ * by name, and the ones with a diff to look at start open.
+ *
+ * Built from the statuses the build came with, not from the review: a test
+ * does not move as its diffs are marked, and marking one does not regroup the
+ * build. The header reads the review on its own.
+ */
+function groupDiffsByTest(
+  diffs: Diff[],
+  context: { isSubsetBuild: boolean; searchMode: boolean },
+): DiffListGroup[] {
+  const tests = new Map<
+    string,
+    {
+      test: JourneyIdentity | null;
+      steps: { key: string; captureIndex: number | null; diff: Diff }[];
+      statuses: Set<DiffGroupName>;
+    }
+  >();
+  for (const diff of diffs) {
+    const status = getDiffListStatus(diff, null, context);
+    if (!status) {
+      continue;
+    }
+    const metadata = resolveDiffMetadata(diff);
+    const test = resolveTestIdentity(metadata);
+    const name = getTestGroupName(test);
+    const group = tests.get(name) ?? { test, steps: [], statuses: new Set() };
+    tests.set(name, group);
+    group.steps.push({
+      key: diff.name,
+      captureIndex: getCaptureIndex(metadata),
+      diff,
+    });
+    group.statuses.add(status);
+  }
+  return Array.from(tests, ([name, { test, steps, statuses }]) => ({
+    rank: DIFF_GROUPS.indexOf(getFirstListedStatus(statuses)),
+    group: {
+      type: "test" as const,
+      name,
+      test,
+      diffs: steps.toSorted(compareSteps).map((step) => step.diff),
+      defaultExpanded:
+        context.searchMode ||
+        ATTENTION_STATUSES.some((status) => statuses.has(status)),
+    },
+  }))
+    .toSorted(
+      (a, b) =>
+        a.rank - b.rank ||
+        Number(a.group.test === null) - Number(b.group.test === null) ||
+        a.group.name.localeCompare(b.group.name),
+    )
+    .map(({ group }) => group);
 }
 
 function findDiffGroup(
-  groups: DiffGroup<Diff>[],
+  groups: DiffListGroup[],
   diff: Diff | null,
-): DiffGroup<Diff> | null {
+): DiffListGroup | null {
   if (!diff) {
     return null;
   }
@@ -632,27 +805,15 @@ const _BuildDiffStateFragment = graphql(`
 
 type BuildStats = DocumentType<typeof _BuildDiffStateFragment>["stats"];
 
-const INITIAL_SEARCH_EXPANDED = [
-  ScreenshotDiffStatus.Failure,
-  ScreenshotDiffStatus.Changed,
-  ScreenshotDiffStatus.Added,
-  ScreenshotDiffStatus.Removed,
+/**
+ * The status groups open by default while searching. Out of search, only the
+ * `ATTENTION_STATUSES` are.
+ */
+const SEARCH_EXPANDED: readonly DiffGroupName[] = [
+  ...ATTENTION_STATUSES,
   ScreenshotDiffStatus.Unchanged,
   ScreenshotDiffStatus.RetryFailure,
   SKIPPED_DIFF_GROUP,
-];
-
-const INITIAL_SUBSET_EXPANDED = [
-  ScreenshotDiffStatus.Failure,
-  ScreenshotDiffStatus.Changed,
-  ScreenshotDiffStatus.Added,
-];
-
-const INITIAL_EXPANDED = [
-  ScreenshotDiffStatus.Failure,
-  ScreenshotDiffStatus.Changed,
-  ScreenshotDiffStatus.Added,
-  ScreenshotDiffStatus.Removed,
 ];
 
 /**
@@ -784,14 +945,14 @@ export function useGetNextDiffThroughJourney(
   getListNextDiff: () => Diff | null,
 ) {
   const { visible, listResumeRef } = useJourneyDrawerState();
-  const { activeDiff, allDiffs, diffs, expanded } = useBuildDiffState();
+  const { activeDiff, allDiffs, diffs, isStackCollapsed } = useBuildDiffState();
   return useEventCallback((): Diff | null => {
     const listNextDiff = getListNextDiff();
     if (!activeDiff) {
       return listNextDiff;
     }
     const markedGroup =
-      activeDiff.group && !expanded.includes(activeDiff.group)
+      activeDiff.group && isStackCollapsed(activeDiff.group)
         ? activeDiff.group
         : null;
     const checkIsNext = (diff: Diff) =>
@@ -833,13 +994,11 @@ export function BuildDiffProvider(props: {
   const deferredSearch = useDeferredValue(search);
   const [searchMode, setSearchMode] = useState(false);
   const navigate = useNavigate();
-  const expandedState = useExpandedState(
-    build?.subset ? INITIAL_SUBSET_EXPANDED : INITIAL_EXPANDED,
-  );
-  const searchExpandedState = useExpandedState(INITIAL_SEARCH_EXPANDED);
-  const { expanded, toggleGroup } = searchMode
-    ? searchExpandedState
-    : expandedState;
+  const [grouping, setGroupingPreference] = useSnapshotGrouping();
+  const [, setDisplayPreference] = useSnapshotDisplay();
+  const listToggles = useGroupToggles();
+  const searchToggles = useGroupToggles();
+  const { toggles, setToggle } = searchMode ? searchToggles : listToggles;
 
   const { diffs: allDiffs, hasMore } = useDataState(params);
 
@@ -936,7 +1095,9 @@ export function BuildDiffProvider(props: {
     return children.length === 1 && children[0] ? children[0] : null;
   }, [activeDiff, indices]);
 
-  const [scrolledDiff, setScrolledDiff] = useState<Diff | null>(null);
+  const [scrollRequest, setScrollRequest] = useState<ScrollRequest | null>(
+    null,
+  );
 
   const [drawerVisible, setDrawerVisibleState] = useState<boolean>(
     () => localStorage.getItem(JOURNEY_DRAWER_STORAGE_KEY) === "true",
@@ -955,14 +1116,43 @@ export function BuildDiffProvider(props: {
     [drawerVisible, setDrawerVisible],
   );
 
+  // Out of the memo's dependencies when listed by test, which the review does
+  // not regroup.
+  const groupingReviewStatuses =
+    grouping === "status" ? reviewState?.diffStatuses : undefined;
   const groups = useMemo(() => {
-    return groupDiffs(filteredDiffs, reviewState?.diffStatuses ?? {}, {
-      isSubsetBuild,
-    });
-  }, [filteredDiffs, reviewState?.diffStatuses, isSubsetBuild]);
+    const context = { isSubsetBuild, searchMode };
+    return grouping === "test"
+      ? groupDiffsByTest(filteredDiffs, context)
+      : groupDiffsByStatus(filteredDiffs, {
+          ...context,
+          reviewStatuses: groupingReviewStatuses ?? {},
+        });
+  }, [
+    filteredDiffs,
+    groupingReviewStatuses,
+    isSubsetBuild,
+    searchMode,
+    grouping,
+  ]);
+
+  const expanded = useMemo(
+    () => getExpandedGroups(groups, toggles),
+    [groups, toggles],
+  );
+
+  const toggleGroup = useEventCallback((name: string, value?: boolean) => {
+    setToggle(name, value ?? !expanded.has(name));
+  });
+
+  const isStackCollapsed = useCallback(
+    (group: string | null | undefined) =>
+      Boolean(group && grouping === "status" && !expanded.has(group)),
+    [grouping, expanded],
+  );
 
   const sortedDiffs = useMemo(() => {
-    return groups.flatMap((group) => group.diffs.filter((x) => x !== null));
+    return groups.flatMap((group) => group.diffs);
   }, [groups]);
 
   const getDiffGroup = useEventCallback((diff: Diff | null) =>
@@ -982,11 +1172,39 @@ export function BuildDiffProvider(props: {
 
     if (scroll) {
       startTransition(() => {
-        setScrolledDiff(diff);
+        setScrollRequest({ diff, reflowed: false });
         const group = getDiffGroup(diff);
         invariant(group, "the active diff always belongs to a group");
         toggleGroup(group.name, true);
       });
+    }
+  });
+
+  const setGrouping = useEventCallback((next: SnapshotGrouping) => {
+    setGroupingPreference(next);
+    if (!activeDiff) {
+      return;
+    }
+    // The groups of `next` are only built on the next render, so the one the
+    // active diff lands in is named here, the way they will name it.
+    const name =
+      next === "test"
+        ? getTestGroupName(resolveTestIdentity(resolveDiffMetadata(activeDiff)))
+        : getDiffListStatus(
+            activeDiff,
+            reviewState?.diffStatuses[activeDiff.id] ?? null,
+            { isSubsetBuild },
+          );
+    if (name) {
+      setToggle(name, true);
+    }
+    setScrollRequest({ diff: activeDiff, reflowed: true });
+  });
+
+  const setDisplay = useEventCallback((next: SnapshotDisplay) => {
+    setDisplayPreference(next);
+    if (activeDiff) {
+      setScrollRequest({ diff: activeDiff, reflowed: true });
     }
   });
 
@@ -1003,16 +1221,23 @@ export function BuildDiffProvider(props: {
   );
 
   const [ready, setReady] = useState(false);
+  // A regroup renames the initial diff's group without the diff moving:
+  // `setGrouping` opens the active diff's group instead, and the reader may
+  // have closed this one since.
+  const initialDiffGroupingRef = useRef(grouping);
 
   useLayoutEffect(() => {
     if (initialDiffGroup?.name) {
-      toggleGroup(initialDiffGroup.name, true);
+      if (initialDiffGroupingRef.current === grouping) {
+        toggleGroup(initialDiffGroup.name, true);
+      }
+      initialDiffGroupingRef.current = grouping;
       // oxlint-disable-next-line react/react-compiler
       setReady(true);
     } else if (complete) {
       setReady(true);
     }
-  }, [complete, initialDiffGroup?.name, toggleGroup]);
+  }, [complete, initialDiffGroup?.name, grouping, toggleGroup]);
 
   const searchValue = useMemo(
     (): SearchContextValue => ({ search, setSearch }),
@@ -1033,14 +1258,18 @@ export function BuildDiffProvider(props: {
 
   const value = useMemo(
     (): BuildDiffContextValue => ({
+      grouping,
+      setGrouping,
+      setDisplay,
       groups,
       diffs: sortedDiffs,
       allDiffs: screenshotDiffs,
       expanded,
       toggleGroup,
+      isStackCollapsed,
       activeDiff,
       setActiveDiff,
-      scrolledDiff,
+      scrollRequest,
       initialDiff,
       firstDiff,
       ready,
@@ -1053,14 +1282,18 @@ export function BuildDiffProvider(props: {
       isSubsetBuild,
     }),
     [
+      grouping,
+      setGrouping,
+      setDisplay,
       groups,
       sortedDiffs,
       screenshotDiffs,
       expanded,
       toggleGroup,
+      isStackCollapsed,
       activeDiff,
       setActiveDiff,
-      scrolledDiff,
+      scrollRequest,
       initialDiff,
       firstDiff,
       ready,

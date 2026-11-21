@@ -198,7 +198,7 @@ export const getAutomationRule: CreateAPIHandler = ({ get }) => {
 
       const rule = await getAutomationRuleForAdmin({
         id: req.ctx.params.ruleId,
-        user: auth.user,
+        auth,
         projectId: project.id,
       });
 
@@ -242,7 +242,7 @@ export const createAutomationRule: CreateAPIHandler = ({ post }) => {
     // Shared with the GraphQL API — same admin check, same action resolution.
     const rule = await createRule({
       projectId: project.id,
-      user: auth.user,
+      auth,
       input: req.ctx.body,
     });
 
@@ -286,7 +286,7 @@ export const updateAutomationRule: CreateAPIHandler = ({ put }) => {
 
       const rule = await updateRule({
         id: req.ctx.params.ruleId,
-        user: auth.user,
+        auth,
         projectId: project.id,
         input: req.ctx.body,
       });
@@ -300,7 +300,7 @@ export const deactivateAutomationRuleOperation = {
   operationId: "deactivateAutomationRule",
   summary: "Deactivate an automation rule",
   description:
-    "Stop a rule from firing. Rules are never deleted — a deactivated one keeps its run history, which is what tells you why something fired. Requires administrator access to the project.",
+    "Stop a rule from firing. Rules are never deleted: a deactivated one keeps its run history, which is what tells you why something fired. Requires administrator access to the project.",
   tags: ["Automations"],
   security: patOrOAuthAuth(["projects:write"]),
   requestParams: { path: RulePathSchema },
@@ -328,7 +328,7 @@ export const deactivateAutomationRule: CreateAPIHandler = ({ post }) => {
 
       const rule = await deactivateRule({
         id: req.ctx.params.ruleId,
-        user: auth.user,
+        auth,
         projectId: project.id,
       });
 

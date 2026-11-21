@@ -1,48 +1,79 @@
+import type { ForwardRefExoticComponent, RefAttributes } from "react";
+import { flip, shift } from "@floating-ui/react-dom";
+import { ReactRenderer } from "@tiptap/react";
+import type {
+  SuggestionKeyDownProps,
+  SuggestionOptions,
+  SuggestionProps,
+} from "@tiptap/suggestion";
+
 /** Viewport edge the popup never crosses. */
 const VIEWPORT_MARGIN = 8;
-/** Gap between the caret rect and the popup. */
-const CARET_GAP = 4;
+
+interface SuggestionListHandle {
+  onKeyDown: (event: KeyboardEvent) => boolean;
+}
 
 /**
- * Position a suggestion popup (mention list, slash-command menu) against the
- * caret rect provided by the suggestion plugin. Hides the element when the rect
- * is missing.
+ * The popup of a suggestion menu (mention list, slash-command menu), to spread
+ * into a tiptap `suggestion` config. It renders `Component` with the
+ * suggestion props, and the plugin's `mount` keeps it against the caret.
  *
  * Below the caret by default, flipped above it when there is no room — an
  * editor at the bottom of a sidebar would otherwise push its menu off screen —
- * and clamped horizontally so a caret near the right edge doesn't take the
- * menu with it.
+ * and shifted so a caret near the right edge doesn't take the menu with it.
  */
-export function positionSuggestionPopup(
-  popup: HTMLElement,
-  getRect: (() => DOMRect | null) | null | undefined,
+export function suggestionPopup<P extends Record<string, unknown>>(
+  Component: ForwardRefExoticComponent<P & RefAttributes<SuggestionListHandle>>,
 ) {
-  const rect = getRect?.();
-  if (!rect) {
-    popup.style.display = "none";
-    return;
-  }
-  popup.style.display = "block";
-  popup.style.position = "fixed";
-  // Keep the suggestions above every overlay so they stay visible and clickable
-  // when the editor is rendered inside one (e.g. the review submission popover).
-  // The popup is appended to `document.body`, and react-aria gives its
-  // popovers/modals an inline `z-index: 100000`, so this must clear that layer.
-  popup.style.zIndex = "300000";
+  return {
+    // The plugin's own flip has no padding, so it would let the menu touch the
+    // viewport edge.
+    flip: false,
+    floatingUi: {
+      strategy: "fixed",
+      middleware: [
+        flip({ padding: VIEWPORT_MARGIN }),
+        shift({ padding: VIEWPORT_MARGIN }),
+      ],
+    },
+    render: () => {
+      let component: ReactRenderer<SuggestionListHandle, P> | null = null;
+      let unmount: (() => void) | null = null;
 
-  // Measured after `display` is restored, so a just-reshown popup has a size.
-  const { width, height } = popup.getBoundingClientRect();
+      const destroy = () => {
+        unmount?.();
+        component?.destroy();
+        unmount = null;
+        component = null;
+      };
 
-  const left = Math.max(
-    VIEWPORT_MARGIN,
-    Math.min(rect.left, window.innerWidth - width - VIEWPORT_MARGIN),
-  );
-  const fitsBelow =
-    rect.bottom + CARET_GAP + height <= window.innerHeight - VIEWPORT_MARGIN;
-  const top = fitsBelow
-    ? rect.bottom + CARET_GAP
-    : Math.max(VIEWPORT_MARGIN, rect.top - CARET_GAP - height);
-
-  popup.style.left = `${left}px`;
-  popup.style.top = `${top}px`;
+      return {
+        onStart: (props: SuggestionProps) => {
+          component = new ReactRenderer(Component, {
+            props,
+            editor: props.editor,
+          });
+          // Keep the suggestions above every overlay so they stay visible and
+          // clickable when the editor is rendered inside one (e.g. the review
+          // submission popover). The popup is appended to `document.body`, and
+          // react-aria gives its popovers/modals an inline `z-index: 100000`,
+          // so this must clear that layer.
+          component.element.style.zIndex = "300000";
+          unmount = props.mount(component.element);
+        },
+        onUpdate: (props: SuggestionProps) => {
+          component?.updateProps(props);
+        },
+        onKeyDown: ({ event }: SuggestionKeyDownProps) => {
+          if (event.key === "Escape") {
+            destroy();
+            return true;
+          }
+          return component?.ref?.onKeyDown(event) ?? false;
+        },
+        onExit: destroy,
+      };
+    },
+  } satisfies Partial<SuggestionOptions>;
 }

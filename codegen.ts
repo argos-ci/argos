@@ -51,6 +51,7 @@ const config: CodegenConfig = {
           Build: "../../database/models/index.js#Build",
           BuildReview: "../../database/models/index.js#BuildReview",
           Comment: "../../database/models/index.js#Comment",
+          CommentAnchor: "../../database/models/index.js#CommentAnchor",
           CommentReactionGroup:
             "../../comment/reactions.js#CommentReactionGroup",
           Deployment: "../../database/models/index.js#Deployment",
@@ -91,8 +92,10 @@ const config: CodegenConfig = {
           TeamStaffInfo: "../../database/models/index.js#Account",
           TeamStaffPeriodUsage: "../../database/models/index.js#Account",
           TeamStaffContact: "../../database/models/index.js#StaffTeamContact",
+          TeamStaffMember: "../../database/models/index.js#TeamUser",
           StaffCancellation: "../../database/models/index.js#Subscription",
           Project: "../../database/models/index.js#Project",
+          ProjectToken: "../../database/models/index.js#ProjectToken",
           ProjectCustomDomain: "../../database/models/index.js#ProjectDomain",
           Team: "../../database/models/index.js#Account",
           TeamDomain: "../../database/models/index.js#TeamDomain",

@@ -6,9 +6,12 @@ import * as comment_replied from "./comment_replied";
 import * as email_added from "./email_added";
 import * as email_removed from "./email_removed";
 import * as github_ip_allow_list from "./github_ip_allow_list";
+import * as gitlab_status_forbidden from "./gitlab_status_forbidden";
 import * as invalid_gitlab_token from "./invalid_gitlab_token";
 import * as overage_alert from "./overage_alert";
+import * as plan_limit from "./plan_limit";
 import * as project_deleted from "./project_deleted";
+import * as project_token_expiration from "./project_token_expiration";
 import * as review_dismissed from "./review_dismissed";
 import * as review_requested from "./review_requested";
 import * as review_submitted from "./review_submitted";
@@ -26,9 +29,12 @@ export const notificationHandlers = [
   email_added.handler,
   email_removed.handler,
   github_ip_allow_list.handler,
+  gitlab_status_forbidden.handler,
   invalid_gitlab_token.handler,
   overage_alert.handler,
+  plan_limit.handler,
   project_deleted.handler,
+  project_token_expiration.handler,
   review_dismissed.handler,
   review_requested.handler,
   review_submitted.handler,

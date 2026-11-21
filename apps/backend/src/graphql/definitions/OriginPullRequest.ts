@@ -23,6 +23,7 @@ export const typeDefs = gql`
     draft: Boolean
     url: String!
     date: DateTime
+    repository: Repository!
   }
 `;
 
@@ -51,6 +52,13 @@ export const resolvers: IResolvers = {
         name: repository.name,
         number: pullRequest.number,
       });
+    },
+    repository: async (pullRequest, _args, ctx) => {
+      const repository = await ctx.loaders.OriginRepository.load(
+        pullRequest.originRepositoryId,
+      );
+      invariant(repository, "Repository not found");
+      return repository;
     },
   },
 };

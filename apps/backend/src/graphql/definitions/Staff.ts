@@ -1,12 +1,17 @@
 import { ADD_ONS } from "@argos/schemas/add-ons";
+import { checkHasSubscriptionStatus } from "@argos/schemas/subscription-status";
+import { addDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
+import { captureException } from "@sentry/node";
 import gqlTag from "graphql-tag";
 
+import config from "@/config";
 import {
   Account,
   StaffTeamContact,
   Subscription,
   type StripeInvoice,
+  type TeamUser,
 } from "@/database/models";
 import type { AccountSubscriptionStatus } from "@/database/models/Account";
 import {
@@ -15,6 +20,13 @@ import {
   type AccountBilling,
 } from "@/database/services/period-usage";
 import { getStaffCancellations } from "@/database/services/staff-cancellations";
+import { getStaffTrialSubscriber } from "@/database/services/staff-trial";
+import { formatDiscordLink, notifyDiscord } from "@/discord";
+import {
+  createStripeTrialSubscription,
+  extendStripeTrial,
+  getCustomerIdFromUserAccount,
+} from "@/stripe";
 import {
   getStaffRevenue,
   getInvoiceRevenue,
@@ -33,6 +45,7 @@ import type { Context } from "../context";
 import type { AccountActivation } from "../loaders";
 import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
+import { teamMemberResolvers } from "./Team";
 
 /** Every staff entry point opens with this — the check lives in one place. */
 function assertStaff(ctx: Context): asserts ctx is Context & {
@@ -72,8 +85,80 @@ const { gql } = gqlTag;
  */
 const MAX_TRIAL_PIPELINE_DAYS = 365;
 
+/** How the staff team page lists members: owners first. */
+const LEVEL_ORDER: Record<TeamUser["userLevel"], number> = {
+  owner: 0,
+  billing: 1,
+  member: 2,
+  contributor: 3,
+};
+
 /** Upper bound on the cancellations window, which reads the invoice mirror. */
 const MAX_CANCELLATIONS_DAYS = 365;
+
+/**
+ * How far out staff may set a trial's end, counted from today whether the
+ * trial is started or extended. Stripe's own bound is 730 days.
+ */
+const MAX_STAFF_TRIAL_DAYS = 365;
+
+/** The end of a running trial, null when the subscription is not one. */
+function getRunningTrialEnd(subscription: Subscription | null): Date | null {
+  if (subscription?.status !== "trialing" || !subscription.trialEndDate) {
+    return null;
+  }
+  return new Date(subscription.trialEndDate);
+}
+
+/**
+ * Refuse days a staff trial cannot be given: none at all, or so many that the
+ * trial would end past `MAX_STAFF_TRIAL_DAYS` from today.
+ */
+function assertStaffTrialDays(args: { from: Date; days: number }) {
+  const { from, days } = args;
+  if (days < 1) {
+    throw badUserInput("Add at least one day.", { field: "days" });
+  }
+  if (addDays(from, days) > addDays(new Date(), MAX_STAFF_TRIAL_DAYS)) {
+    throw badUserInput(
+      `A trial can end at most ${MAX_STAFF_TRIAL_DAYS} days from today.`,
+      { field: "days" },
+    );
+  }
+}
+
+/** The team a staff trial mutation acts on. */
+async function getStaffTrialTeamAccount(
+  teamAccountId: string,
+): Promise<Account> {
+  const teamAccount = await Account.query()
+    .findById(teamAccountId)
+    .throwIfNotFound();
+  if (!teamAccount.teamId) {
+    throw badUserInput("Account is not a team.");
+  }
+  return teamAccount;
+}
+
+/**
+ * Tell Discord, where every other subscription event of the team lands, that
+ * staff changed its trial — Stripe's own events do not say who did it.
+ */
+async function notifyStaffTrial(args: {
+  teamAccount: Account;
+  staffEmail: string | null;
+  action: string;
+}) {
+  const { teamAccount, staffEmail, action } = args;
+  const teamUrl = new URL(`/${teamAccount.slug}`, config.get("server.url"))
+    .href;
+  const team = formatDiscordLink(teamAccount.displayName, teamUrl);
+  await notifyDiscord({
+    content: `${action} for ${team} by staff (${staffEmail ?? "unknown email"})`,
+  }).catch((error) => {
+    captureException(error);
+  });
+}
 
 /**
  * Upper bound on a directory page.
@@ -258,6 +343,20 @@ export const typeDefs = gql`
     signupSourceDetail: String
   }
 
+  "A member of a team, with what staff reads to tell who is active."
+  type TeamStaffMember {
+    id: ID!
+    user: User!
+    level: TeamUserLevel!
+    "When the user joined the team."
+    joinedAt: DateTime!
+    """
+    When the user last used the web app, to within ten minutes. Null when they
+    have not signed in since sessions were introduced, in June 2026.
+    """
+    lastSeenAt: DateTime
+  }
+
   "Trace of a staff member reaching out to a team."
   type TeamStaffContact {
     id: ID!
@@ -329,8 +428,8 @@ export const typeDefs = gql`
     "False while the period is still accumulating usage."
     closed: Boolean!
     """
-    Screenshots consumed over the period — Storybook ones included, and the
-    units standalone media uploads are billed as. So it runs above the sum of
+    Screenshots consumed over the period (Storybook ones included, and the
+    units standalone media uploads are billed as). So it runs above the sum of
     the period's buckets on a project that records video.
     """
     screenshotsCount: Int!
@@ -363,7 +462,7 @@ export const typeDefs = gql`
     Screenshots consumed since the current period opened, billed or not.
 
     Apart from \`billingPeriods\` because it answers a different question: that
-    list is what Stripe invoices, so it is empty on a trial — and a trial is
+    list is what Stripe invoices, so it is empty on a trial, and a trial is
     precisely when what a team consumes is worth watching.
     """
     currentPeriodScreenshotsCount: Int!
@@ -391,11 +490,13 @@ export const typeDefs = gql`
     "When the team got its first build compared to a baseline"
     firstComparisonAt: DateTime
     owners: [TeamStaffOwner!]!
+    "Every member of the team, owners first, then by the date they joined."
+    members: [TeamStaffMember!]!
     "When a staff member reached out to the team, null if never"
     contact: TeamStaffContact
     """
     The plan the team is on, granted plans included. Null when it has no
-    subscription at all — which is most of a trial pipeline.
+    subscription at all, which is most of a trial pipeline.
     """
     plan: Plan
     """
@@ -419,6 +520,13 @@ export const typeDefs = gql`
     includedScreenshots: Int
     "Billing usage. Null when the team is not on a usage-based plan."
     periodUsage: TeamStaffPeriodUsage
+    """
+    When the running trial ends. Null when the team is not on a trial.
+
+    A query per team, so meant to be read for one team rather than across the
+    directory.
+    """
+    trialEndsAt: DateTime
   }
 
   extend type Team {
@@ -434,6 +542,18 @@ export const typeDefs = gql`
   input SetStaffCancellationContactInput {
     subscriptionId: ID!
     contacted: Boolean!
+  }
+
+  input StartStaffTrialInput {
+    teamAccountId: ID!
+    "How long the trial lasts, in days."
+    days: Int!
+  }
+
+  input ExtendStaffTrialInput {
+    teamAccountId: ID!
+    "Days added to the end of the running trial."
+    days: Int!
   }
 
   "How the team directory can be ordered."
@@ -472,13 +592,13 @@ export const typeDefs = gql`
   What Argos invoiced over one calendar month.
 
   Read from the Stripe invoices themselves rather than recomputed from usage, so
-  the amounts carry what Stripe actually charged — negotiated prices, coupons,
-  credit notes — instead of a second pricing engine of ours that would have to
+  the amounts carry what Stripe actually charged (negotiated prices, coupons,
+  credit notes) instead of a second pricing engine of ours that would have to
   agree with the first. Amounts exclude tax, are net of credit notes, and are
   stated in euros, dollars converted at a fixed rate.
   """
   type StaffRevenueMonth {
-    "The first instant of the month, in UTC — what names it on screen."
+    "The first instant of the month, in UTC: what names it on screen."
     month: DateTime!
     "The three splits below, added up."
     revenue: Float!
@@ -489,7 +609,7 @@ export const typeDefs = gql`
     monthlyPlans: StaffRevenueSplit!
     """
     What the annual contracts contributed to the month: their invoices
-    amortized, day by day, over the stretch each one pays for — the monthly
+    amortized, day by day, over the stretch each one pays for: the monthly
     equivalent of the annual book. A renewal weighs on the twelve months it
     covers, an upsell on the stretch it was sold for, and a month's figure
     never moves once written.
@@ -499,7 +619,7 @@ export const typeDefs = gql`
     What GitHub Marketplace brought in over the month: the subscriptions
     running then, at their plans' list prices, each earning the share of the
     month it was subscribed for. Billed by GitHub rather than invoiced by
-    Argos, and counted in \`revenue\` like the two above it — the figure states
+    Argos, and counted in \`revenue\` like the two above it. The figure states
     what the month was worth, whoever raised the bill.
     """
     githubPlans: StaffRevenueSplit!
@@ -531,7 +651,7 @@ export const typeDefs = gql`
     stripeCustomerId: String!
     "What the invoices add up to, in \`currency\`."
     amount: Float!
-    "The currency the team is invoiced in — null when a month mixes several."
+    "The currency the team is invoiced in. Null when a month mixes several."
     currency: String
     "In euros, like the split it sums into."
     revenue: Float!
@@ -542,7 +662,7 @@ export const typeDefs = gql`
     """
     screenshotsCount: Int!
     """
-    What the plan itself costs over a period, before any usage — null when the
+    What the plan itself costs over a period, before any usage. Null when the
     subscription carries no amount, or when the team is no longer billed.
 
     This and the two below describe the subscription as it stands today, not as
@@ -562,7 +682,7 @@ export const typeDefs = gql`
     null on every line read from a real invoice.
 
     Such a line is an estimate read off the usage so far, and it is left out of
-    the month's own figures — they report what was invoiced.
+    the month's own figures: they report what was invoiced.
     """
     estimatedAt: DateTime
   }
@@ -571,7 +691,7 @@ export const typeDefs = gql`
   type StaffContractInvoice {
     "Net of tax and credit notes, in the currency it was raised in."
     amount: Float!
-    "The currency it was raised in — the contract's total converts it."
+    "The currency it was raised in. The contract's total converts it."
     currency: String!
     "True while it is raised but not yet cleared."
     awaitingPayment: Boolean!
@@ -588,7 +708,7 @@ export const typeDefs = gql`
 
   The term rather than the month: a yearly quota resets once a year, so what
   says whether a contract is about to be re-priced is the whole year against
-  the whole quota — the question a renewal is negotiated on.
+  the whole quota: the question a renewal is negotiated on.
   """
   type StaffContractUsage {
     "The term the figures below are read over, and the day it renews on."
@@ -601,14 +721,14 @@ export const typeDefs = gql`
     "What the overage run up so far comes to, in euros."
     additionalCost: Float!
     """
-    That same overage in the currency Stripe prices it in — what the contract's
+    That same overage in the currency Stripe prices it in: what the contract's
     own column adds it to, where the euro figure above is what the page's
     monthly rate is built from.
     """
     additionalPrice: StaffRevenuePrice!
     """
     That same overage averaged over the months of the term that have gone by,
-    in euros — what a month of the contract's usage has been worth.
+    in euros: what a month of the contract's usage has been worth.
 
     A mean rather than the month's own: the quota is crossed once somewhere in
     the year and every month after it bills, so a term two months in reads
@@ -625,7 +745,7 @@ export const typeDefs = gql`
   One annual contract in force, and the invoices its rate is read from: the
   latest annual bill plus whatever was sold on top of it since.
 
-  Listed so the yearly figure can be audited contract by contract — including
+  Listed so the yearly figure can be audited contract by contract, including
   the contracts that contributed nothing, which the total alone would hide.
   """
   type StaffYearlyContract {
@@ -637,7 +757,7 @@ export const typeDefs = gql`
     stripeCustomerId: String!
     """
     The invoices below added up, in euros. Null when the team is billed yearly
-    but no invoice of its contract could be found — an anomaly worth seeing
+    but no invoice of its contract could be found, an anomaly worth seeing
     rather than hiding.
     """
     amount: Float
@@ -646,13 +766,13 @@ export const typeDefs = gql`
     "The invoices the contract is worth, newest first."
     invoices: [StaffContractInvoice!]!
     """
-    True when any invoice found is still awaiting payment — the unpaid
+    True when any invoice found is still awaiting payment. The unpaid
     renewal beside a settled upsell is exactly the one worth watching.
     Counted all the same: a contract invoice raised is money on its way.
     """
     awaitingPayment: Boolean!
     """
-    What the team's running term has consumed, and where it lands — null when
+    What the team's running term has consumed, and where it lands. Null when
     no yearly subscription of the team's can be read for it: one no longer
     billed, one on a plan nothing is metered against, or a contract invoiced
     by hand with no subscription behind it.
@@ -680,7 +800,7 @@ export const typeDefs = gql`
     """
     The part of \`monthlyPlans\` no invoice exists for: what the subscriptions
     still to be billed have run up so far, which is a floor rather than a
-    forecast — their usage keeps accruing until the cycle closes.
+    forecast: their usage keeps accruing until the cycle closes.
     """
     estimated: Float!
   }
@@ -711,8 +831,8 @@ export const typeDefs = gql`
     screenshot the year produced.
 
     They sum to that month's \`monthlyPlans\`, except on the running month,
-    which also carries the bills its cycles have not raised yet — marked by
-    \`estimatedAt\`, and in no figure the month reports.
+    which also carries the bills its cycles have not raised yet (marked by
+    \`estimatedAt\`, and in no figure the month reports).
     """
     staffRevenueMonthTeams(
       "Any instant of the month; the month it falls in is what is read."
@@ -754,7 +874,7 @@ export const typeDefs = gql`
     made of (staff only).
 
     Read from the \`stripe_invoices\` mirror, which the Stripe webhooks keep
-    current and a reconciliation sweep backs up — a window the mirror was
+    current and a reconciliation sweep backs up. A window the mirror was
     never backfilled for is refused rather than reported as zeros. The staff
     revenue page is the only consumer today.
     """
@@ -771,6 +891,14 @@ export const typeDefs = gql`
     setStaffCancellationContact(
       input: SetStaffCancellationContactInput!
     ): StaffCancellation!
+    """
+    Put a team that holds no subscription back on a trial of the Pro plan, in
+    the name of one of its owners (staff only). Like any trial, it is canceled
+    at the end unless a payment method was added.
+    """
+    startStaffTrial(input: StartStaffTrialInput!): Team!
+    "Push back the end of a team's running trial (staff only)."
+    extendStaffTrial(input: ExtendStaffTrialInput!): Team!
   }
 `;
 
@@ -794,6 +922,19 @@ export const resolvers: IResolvers = {
     owners: async (account, _args, ctx) => {
       invariant(account.teamId, "not a team account");
       return ctx.loaders.TeamOwnersByTeamId.load(account.teamId);
+    },
+    members: async (account, _args, ctx) => {
+      invariant(account.teamId, "not a team account");
+      const members = await ctx.loaders.TeamMembersByTeamId.load(
+        account.teamId,
+      );
+      return members.toSorted(
+        (left, right) =>
+          LEVEL_ORDER[left.userLevel] - LEVEL_ORDER[right.userLevel] ||
+          new Date(left.createdAt).getTime() -
+            new Date(right.createdAt).getTime() ||
+          Number(left.id) - Number(right.id),
+      );
     },
     contact: async (account, _args, ctx) => {
       invariant(account.teamId, "not a team account");
@@ -831,6 +972,18 @@ export const resolvers: IResolvers = {
         await ctx.loaders.AccountBillingByAccountId.load(account.id);
       return usage ? account : null;
     },
+    trialEndsAt: async (account) => {
+      const subscription = await account
+        .$getSubscriptionManager()
+        .getActiveSubscription();
+      return getRunningTrialEnd(subscription);
+    },
+  },
+  TeamStaffMember: {
+    ...teamMemberResolvers,
+    joinedAt: (teamUser) => new Date(teamUser.createdAt),
+    lastSeenAt: (teamUser, _args, ctx) =>
+      ctx.loaders.UserLastSeenAtByUserId.load(teamUser.userId),
   },
   TeamStaffPeriodUsage: {
     currentPeriodScreenshotsCount: async (account, _args, ctx) => {
@@ -1113,6 +1266,89 @@ export const resolvers: IResolvers = {
       }
 
       return subscription.$query();
+    },
+    startStaffTrial: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      const { teamAccountId, days } = args.input;
+      assertStaffTrialDays({ from: new Date(), days });
+      const teamAccount = await getStaffTrialTeamAccount(teamAccountId);
+
+      // The rule checkout applies, so the menu that offers this and the guard
+      // that honors it agree.
+      const status = await teamAccount
+        .$getSubscriptionManager()
+        .getSubscriptionStatus();
+      if (checkHasSubscriptionStatus(status)) {
+        throw badUserInput("This team already has a subscription.");
+      }
+
+      const subscriber = await getStaffTrialSubscriber(teamAccount);
+      if (!subscriber) {
+        throw badUserInput("This team has no owner to start the trial for.");
+      }
+      invariant(subscriber.userId, "subscriber is not a user account");
+
+      // The team's own customer when it has one, so the trial lands beside its
+      // previous invoices rather than on the owner's personal customer.
+      const stripeCustomerId =
+        teamAccount.stripeCustomerId ??
+        (await getCustomerIdFromUserAccount(subscriber));
+      if (!stripeCustomerId) {
+        throw badUserInput(
+          "This team has no Stripe customer, and its owner has no email to create one.",
+        );
+      }
+      if (!teamAccount.stripeCustomerId) {
+        await teamAccount.$query().patch({ stripeCustomerId });
+      }
+
+      await createStripeTrialSubscription({
+        teamAccount,
+        subscriberId: subscriber.userId,
+        stripeCustomerId,
+        days,
+      });
+
+      await notifyStaffTrial({
+        teamAccount,
+        staffEmail: ctx.auth.user.email,
+        action: `Trial of ${days} days started`,
+      });
+
+      return teamAccount.$query();
+    },
+    extendStaffTrial: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      const { teamAccountId, days } = args.input;
+      const teamAccount = await getStaffTrialTeamAccount(teamAccountId);
+      const subscription = await teamAccount
+        .$getSubscriptionManager()
+        .getActiveSubscription();
+      const trialEnd = getRunningTrialEnd(subscription);
+
+      if (!subscription || !trialEnd) {
+        throw badUserInput("This team is not on a trial.");
+      }
+      invariant(
+        subscription.stripeSubscriptionId,
+        "a trial is a Stripe subscription",
+      );
+      assertStaffTrialDays({ from: trialEnd, days });
+
+      await extendStripeTrial({
+        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        days,
+      });
+
+      await notifyStaffTrial({
+        teamAccount,
+        staffEmail: ctx.auth.user.email,
+        action: `Trial extended by ${days} days`,
+      });
+
+      return teamAccount.$query();
     },
   },
 };

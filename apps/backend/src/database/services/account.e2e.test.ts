@@ -87,7 +87,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
       invariant(userAccount.userId, "user account has no user");
       await addEmail({ account: userAccount, verified: true });
 
-      const account = await getOrCreateUserAccountFromSaml({
+      const { account, creation } = await getOrCreateUserAccountFromSaml({
         email: EMAIL,
         teamAccount,
         ssoSubject: SSO_SUBJECT,
@@ -95,6 +95,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
       });
 
       expect(account.id).toBe(userAccount.id);
+      expect(creation).toBe(false);
       expect(
         await findTeamUser({ teamAccount, userId: userAccount.userId }),
       ).toMatchObject({ ssoSubject: SSO_SUBJECT });
@@ -129,7 +130,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
           });
 
           if (links) {
-            expect((await result).id).toBe(userAccount.id);
+            expect((await result).account.id).toBe(userAccount.id);
           } else {
             await expect(result).rejects.toMatchObject({
               code: "SAML_ACCOUNT_LINK_REQUIRED",
@@ -146,7 +147,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
       invariant(userAccount.userId, "user account has no user");
       await addEmail({ account: userAccount, verified: false });
 
-      const account = await getOrCreateUserAccountFromSaml({
+      const { account, creation } = await getOrCreateUserAccountFromSaml({
         email: EMAIL,
         teamAccount,
         ssoSubject: SSO_SUBJECT,
@@ -154,6 +155,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
       });
 
       expect(account.id).not.toBe(userAccount.id);
+      expect(creation).toBe(true);
       invariant(account.userId, "account has no user");
       expect(
         await findTeamUser({ teamAccount, userId: userAccount.userId }),
@@ -179,7 +181,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
         expiresAt: addDays(new Date(), 1).toISOString(),
       });
 
-      const account = await getOrCreateUserAccountFromSaml({
+      const { account } = await getOrCreateUserAccountFromSaml({
         email: EMAIL,
         teamAccount,
         ssoSubject: SSO_SUBJECT,

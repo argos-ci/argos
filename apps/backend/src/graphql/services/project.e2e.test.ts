@@ -18,7 +18,7 @@ import {
   Test,
   User,
 } from "@/database/models";
-import { factory, setupDatabase } from "@/database/testing";
+import { factory, sessionViewer, setupDatabase } from "@/database/testing";
 import { deleteDomainTenant } from "@/deployment/cloudfront";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import {
@@ -314,7 +314,7 @@ describe("deleteProject", () => {
       }),
     ]);
 
-    await deleteProject({ id: project.id, user: owner });
+    await deleteProject({ id: project.id, auth: sessionViewer(owner) });
 
     expect(mockSendNotification).toHaveBeenCalledTimes(1);
     expect(mockSendNotification).toHaveBeenCalledWith({
@@ -339,7 +339,9 @@ describe("deleteProject", () => {
     // The one thing a soft delete still drops for real: a tenant is billed for
     // as long as it exists, and the domain has to be free for another project.
     const account = await factory.UserAccount.create();
-    const owner = await User.query().findById(account.userId!);
+    const owner = await User.query()
+      .findById(account.userId!)
+      .throwIfNotFound();
     const project = await factory.Project.create({ accountId: account.id });
     const projectDomain = await factory.ProjectDomain.create({
       projectId: project.id,
@@ -348,7 +350,7 @@ describe("deleteProject", () => {
       cloudfrontTenantId: "dt-tenant-1",
     });
 
-    await deleteProject({ id: project.id, user: owner });
+    await deleteProject({ id: project.id, auth: sessionViewer(owner) });
 
     expect(deleteDomainTenant).toHaveBeenCalledWith("dt-tenant-1");
     await expect(
@@ -362,7 +364,9 @@ describe("deleteProject", () => {
     // `deployments`' cascade; the soft delete keeps the deployments, so an
     // alias left behind made the domain unclaimable by anyone, forever.
     const account = await factory.UserAccount.create();
-    const owner = await User.query().findById(account.userId!);
+    const owner = await User.query()
+      .findById(account.userId!)
+      .throwIfNotFound();
     const project = await factory.Project.create({ accountId: account.id });
     const projectDomain = await factory.ProjectDomain.create({
       projectId: project.id,
@@ -381,7 +385,7 @@ describe("deleteProject", () => {
       type: "domain",
     });
 
-    await deleteProject({ id: project.id, user: owner });
+    await deleteProject({ id: project.id, auth: sessionViewer(owner) });
 
     await expect(
       ProjectDomain.query().findById(projectDomain.id),
@@ -397,14 +401,16 @@ describe("deleteProject", () => {
 
   test("sends a notification to the personal account owner", async () => {
     const account = await factory.UserAccount.create();
-    const owner = await User.query().findById(account.userId!);
+    const owner = await User.query()
+      .findById(account.userId!)
+      .throwIfNotFound();
     expect(owner).toBeTruthy();
 
     const project = await factory.Project.create({
       accountId: account.id,
     });
 
-    await deleteProject({ id: project.id, user: owner });
+    await deleteProject({ id: project.id, auth: sessionViewer(owner) });
 
     expect(mockSendNotification).toHaveBeenCalledTimes(1);
     expect(mockSendNotification).toHaveBeenCalledWith({

@@ -12,12 +12,12 @@
  */
 import type { QueryBuilder } from "objection";
 
+import type { AuthViewer } from "@/auth/payload";
 import { boom } from "@/util/error";
 
 import { Account } from "../models/Account";
 import type { Project } from "../models/Project";
 import { ProjectUser } from "../models/ProjectUser";
-import type { User } from "../models/User";
 import { isValidPgBigInt } from "../util/biginteger";
 import type { UserLevel } from "../util/user-level";
 import { assertProjectAdmin } from "./project";
@@ -65,7 +65,7 @@ async function getUserIdFromAccountId(userAccountId: string): Promise<string> {
  */
 export async function addOrUpdateProjectContributor(args: {
   project: Project;
-  user: User;
+  auth: AuthViewer;
   userAccountId: string;
   level: ProjectUserLevel;
 }): Promise<ProjectUser> {
@@ -99,13 +99,13 @@ export async function addOrUpdateProjectContributor(args: {
  */
 export async function removeProjectContributor(args: {
   project: Project;
-  user: User;
+  auth: AuthViewer;
   /** Public account id of the contributor to remove. */
   userAccountId: string;
 }): Promise<{ projectContributorId: string }> {
   const userId = await getUserIdFromAccountId(args.userAccountId);
 
-  if (userId !== args.user.id) {
+  if (userId !== args.auth.user.id) {
     await assertProjectAdmin(args);
   }
 

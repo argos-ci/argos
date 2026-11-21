@@ -5,6 +5,7 @@ import gqlTag from "graphql-tag";
 
 import { getAvatarColor } from "@/account/avatar";
 import { startSession } from "@/auth/login";
+import { checkAuthSatisfiesTeamSaml, type AuthViewer } from "@/auth/payload";
 import {
   checkHasAccessToSAML,
   getTeamSamlPublicValues,
@@ -73,6 +74,7 @@ import {
   getStripeProPlanOrThrow,
   getSubscriptionData,
   stripe,
+  TRIAL_DAYS,
 } from "@/stripe";
 import { sanitizeEmail } from "@/util/email";
 
@@ -80,9 +82,14 @@ import {
   ITeamMembersOrderBy,
   type IResolvers,
   type ITeamDefaultUserLevel,
+  type ITeamMemberResolvers,
   type ITeamUserLevel,
 } from "../__generated__/resolver-types";
-import { deleteAccount, getAdminAccount } from "../services/account";
+import {
+  deleteAccount,
+  getAccountWithPermission,
+  getAdminAccount,
+} from "../services/account";
 import {
   checkUserHasAccessToInstallation,
   getOrCreateGithubAccount,
@@ -185,6 +192,8 @@ export const typeDefs = gql`
     ssoGithubAccount: GithubAccount
     samlSso: TeamSamlConfig
     samlPurchased: Boolean!
+    "Whether the current session was opened by a login through this team's SAML identity provider"
+    viewerSignedInWithSaml: Boolean!
     "Whether Argos reaches GitHub from its static IP addresses for this team"
     staticIpEnabled: Boolean!
     "Argos's static IP addresses, for the team to add to its GitHub IP allow list"
@@ -236,6 +245,8 @@ export const typeDefs = gql`
 
   enum TeamUserLevel {
     owner
+    "A member who also manages billing"
+    billing
     member
     contributor
   }
@@ -250,8 +261,7 @@ export const typeDefs = gql`
     user: User!
     level: TeamUserLevel!
     fromSSO: Boolean!
-    lastAuthMethod: String
-    "Whether the member has the monthly report on. It is only sent to the owners of a team on an annual plan."
+    "Whether the member has the monthly report on. It is only sent to the owners and billing members of a team on a usage-based plan."
     receivesMonthlyReport: Boolean!
   }
 
@@ -337,6 +347,12 @@ export const typeDefs = gql`
     redirectUrl: String!
   }
 
+  type JoinTeamResult {
+    team: Team!
+    "Path to send the user to once they have joined: the team, or the welcome page first."
+    redirectPath: String!
+  }
+
   input EnableGitHubSSOOnTeamInput {
     teamAccountId: ID!
     ghInstallationId: Int!
@@ -420,7 +436,7 @@ export const typeDefs = gql`
       input: RemoveUserFromTeamInput!
     ): RemoveUserFromTeamPayload!
     "Join a team (if the user has an invite)"
-    joinTeam(teamAccountId: ID!): Team!
+    joinTeam(teamAccountId: ID!): JoinTeamResult!
     "Accept an invite"
     acceptInvite(secret: String!): AcceptInvitePayload!
     "Accept a team invite"
@@ -471,17 +487,28 @@ export const typeDefs = gql`
 `;
 
 /**
- * URL of the welcome page for a team that was just created, sending the user on
- * to the team once the questions are answered or skipped.
+ * Where a user lands on entering a team they just created or joined: the team,
+ * or the welcome page first when they have not been through it yet.
  *
- * The slug is carried explicitly so the page knows which team to offer
- * email-domain auto-join for, rather than guessing from the user's memberships.
+ * `offerAutoJoin` names the team in the welcome URL so the page offers to open
+ * that one to the user's email domain, rather than guessing from their
+ * memberships. Only a team's creator is asked.
  */
-function getWelcomeUrl(input: { teamSlug: string }): string {
-  const url = new URL("/~/welcome", config.get("server.url"));
-  url.searchParams.set("team", input.teamSlug);
-  url.searchParams.set("r", `/${input.teamSlug}`);
-  return url.href;
+function getTeamEntryPath(input: {
+  user: User;
+  teamSlug: string;
+  offerAutoJoin: boolean;
+}): string {
+  const teamPath = `/${input.teamSlug}`;
+  if (input.user.signupSourceAskedAt) {
+    return teamPath;
+  }
+  const searchParams = new URLSearchParams();
+  if (input.offerAutoJoin) {
+    searchParams.set("team", input.teamSlug);
+  }
+  searchParams.set("r", teamPath);
+  return `/~/welcome?${searchParams}`;
 }
 
 /**
@@ -557,8 +584,8 @@ async function removeStripeProductFromSubscription(input: {
  * A team is reachable from any of its public projects, so who belongs to it is
  * only listed to its own members.
  */
-async function assertTeamMember(account: Account, user: User) {
-  const permissions = await account.$getPermissions(user);
+async function assertTeamMember(account: Account, auth: AuthViewer) {
+  const permissions = await account.$getPermissions(auth);
   if (!permissions.includes("view")) {
     throw forbidden();
   }
@@ -577,6 +604,19 @@ function fromGraphQLTeamMembersOrderBy(
   }
 }
 
+/** What `TeamStaffMember` reads off the same membership row, resolved alike. */
+export const teamMemberResolvers: Pick<ITeamMemberResolvers, "user" | "level"> =
+  {
+    user: async (teamUser, _args, ctx) => {
+      const account = await ctx.loaders.AccountFromRelation.load({
+        userId: teamUser.userId,
+      });
+      invariant(account, "account not found");
+      return account;
+    },
+    level: (teamUser) => teamUser.userLevel as ITeamUserLevel,
+  };
+
 export const resolvers: IResolvers = {
   TeamGithubMember: {
     githubAccount: async (githubAccountMember, _args, ctx) => {
@@ -591,14 +631,7 @@ export const resolvers: IResolvers = {
     },
   },
   TeamMember: {
-    user: async (teamUser, _args, ctx) => {
-      const account = await ctx.loaders.AccountFromRelation.load({
-        userId: teamUser.userId,
-      });
-      invariant(account, "account not found");
-      return account;
-    },
-    level: (teamUser) => teamUser.userLevel as ITeamUserLevel,
+    ...teamMemberResolvers,
     fromSSO: async (teamUser, _args, ctx) => {
       const [team, userAccount] = await Promise.all([
         ctx.loaders.Team.load(teamUser.teamId),
@@ -648,6 +681,15 @@ export const resolvers: IResolvers = {
 
       return teamUser;
     },
+    viewerSignedInWithSaml: (account, _args, ctx) => {
+      invariant(account.teamId, "not a team account");
+
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      return checkAuthSatisfiesTeamSaml(ctx.auth, account.teamId);
+    },
     members: async (account, args, ctx) => {
       invariant(account.teamId, "not a team account");
 
@@ -655,7 +697,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      await assertTeamMember(account, ctx.auth.user);
+      await assertTeamMember(account, ctx.auth);
 
       const { first, after, levels, search } = args;
 
@@ -697,7 +739,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      await assertTeamMember(account, ctx.auth.user);
+      await assertTeamMember(account, ctx.auth);
 
       const { first, after, search } = args;
 
@@ -757,7 +799,7 @@ export const resolvers: IResolvers = {
       invariant(account.teamId);
       const [team, permissions] = await Promise.all([
         ctx.loaders.Team.load(account.teamId),
-        Team.getPermissions(account.teamId, ctx.auth.user),
+        Team.getPermissions(account.teamId, ctx.auth),
       ]);
 
       if (!permissions.includes("admin")) {
@@ -774,10 +816,7 @@ export const resolvers: IResolvers = {
       }
 
       invariant(account.teamId, "not a team account");
-      const permissions = await Team.getPermissions(
-        account.teamId,
-        ctx.auth.user,
-      );
+      const permissions = await Team.getPermissions(account.teamId, ctx.auth);
       if (!permissions.includes("admin")) {
         return [];
       }
@@ -805,10 +844,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
       invariant(account.teamId);
-      const permissions = await Team.getPermissions(
-        account.teamId,
-        ctx.auth.user,
-      );
+      const permissions = await Team.getPermissions(account.teamId, ctx.auth);
       if (!permissions.includes("admin")) {
         return null;
       }
@@ -891,10 +927,7 @@ export const resolvers: IResolvers = {
       }
 
       invariant(account.teamId);
-      const permissions = await Team.getPermissions(
-        account.teamId,
-        ctx.auth.user,
-      );
+      const permissions = await Team.getPermissions(account.teamId, ctx.auth);
 
       if (!permissions.includes("admin")) {
         return null;
@@ -1027,12 +1060,14 @@ export const resolvers: IResolvers = {
 
       const teamUrl = new URL(`/${teamAccount.slug}`, config.get("server.url"))
         .href;
-      // A user who has not been through the welcome page yet lands there first:
-      // it asks how they found Argos and offers to open the team to their email
-      // domain, which needs the team to exist already.
-      const doneUrl = auth.user.signupSourceAskedAt
-        ? teamUrl
-        : getWelcomeUrl({ teamSlug: teamAccount.slug });
+      const doneUrl = new URL(
+        getTeamEntryPath({
+          user: auth.user,
+          teamSlug: teamAccount.slug,
+          offerAutoJoin: true,
+        }),
+        config.get("server.url"),
+      ).href;
 
       const redirectToStripe = async ({ trial }: { trial: boolean }) => {
         const session = await createStripeCheckoutSession({
@@ -1074,7 +1109,7 @@ export const resolvers: IResolvers = {
         customer: stripeCustomerId,
         items,
         ...getSubscriptionData({
-          trial: true,
+          trialDays: TRIAL_DAYS,
           accountId: teamAccount.id,
           subscriberId: auth.user.id,
         }),
@@ -1099,9 +1134,10 @@ export const resolvers: IResolvers = {
       }
 
       const [teamAccount, plan] = await Promise.all([
-        getAdminAccount({
+        getAccountWithPermission({
           id: args.teamAccountId,
-          user: auth.user,
+          auth,
+          permission: "billing",
         }),
         getStripeProPlanOrThrow(),
       ]);
@@ -1140,7 +1176,7 @@ export const resolvers: IResolvers = {
         customer: stripeCustomerId,
         items,
         ...getSubscriptionData({
-          trial: true,
+          trialDays: TRIAL_DAYS,
           accountId: teamAccount.id,
           subscriberId: auth.user.id,
         }),
@@ -1202,7 +1238,7 @@ export const resolvers: IResolvers = {
         const account = await loadAccountById(args.input.teamAccountId);
         return await removeTeamMember({
           account,
-          user: ctx.auth.user,
+          auth: ctx.auth,
           userAccountId: args.input.userAccountId,
         });
       } catch (error) {
@@ -1294,7 +1330,12 @@ export const resolvers: IResolvers = {
         });
 
         invariant(ctx.req && ctx.res, "Login is only available over HTTP");
-        await startSession(ctx.req, ctx.res, user.id);
+        // The invite link was mailed to this address, so holding it proves the
+        // email the same way a login code does.
+        await startSession(ctx.req, ctx.res, {
+          userId: user.id,
+          method: "email",
+        });
         return { team: teamAccount };
       }
 
@@ -1386,7 +1427,14 @@ export const resolvers: IResolvers = {
         await Promise.all(mutations);
       });
 
-      return teamAccount;
+      return {
+        team: teamAccount,
+        redirectPath: getTeamEntryPath({
+          user: auth.user,
+          teamSlug: teamAccount.slug,
+          offerAutoJoin: false,
+        }),
+      };
     },
     setTeamMemberLevel: async (_root, args, ctx) => {
       if (!ctx.auth) {
@@ -1396,7 +1444,7 @@ export const resolvers: IResolvers = {
         const account = await loadAccountById(args.input.teamAccountId);
         return await setTeamMemberLevel({
           account,
-          user: ctx.auth.user,
+          auth: ctx.auth,
           userAccountId: args.input.userAccountId,
           level: args.input.level,
         });
@@ -1405,7 +1453,7 @@ export const resolvers: IResolvers = {
       }
     },
     deleteTeam: async (_root, args, ctx) => {
-      await deleteAccount({ id: args.input.accountId, user: ctx.auth?.user });
+      await deleteAccount({ id: args.input.accountId, auth: ctx.auth });
       return true;
     },
     enableGitHubSSOOnTeam: async (_root, args, ctx) => {
@@ -1425,7 +1473,7 @@ export const resolvers: IResolvers = {
           ),
           getAdminAccount({
             id: args.input.teamAccountId,
-            user: ctx.auth.user,
+            auth: ctx.auth,
             withGraphFetched: "githubLightInstallation",
           }),
         ]);
@@ -1521,7 +1569,7 @@ export const resolvers: IResolvers = {
 
       const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
       });
 
       invariant(teamAccount.teamId, "Account teamId is undefined");
@@ -1549,7 +1597,7 @@ export const resolvers: IResolvers = {
 
       const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
       });
 
       const { teamId } = teamAccount;
@@ -1600,7 +1648,7 @@ export const resolvers: IResolvers = {
 
       const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
       });
 
       invariant(teamAccount.teamId, "Account teamId is undefined");
@@ -1642,7 +1690,7 @@ export const resolvers: IResolvers = {
 
       const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
       });
 
       const { teamId } = teamAccount;
@@ -1689,7 +1737,7 @@ export const resolvers: IResolvers = {
 
       const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
       });
 
       const { teamId } = teamAccount;
@@ -1718,7 +1766,7 @@ export const resolvers: IResolvers = {
         const account = await loadAccountById(args.input.teamAccountId);
         return await setTeamDefaultUserLevel({
           account,
-          user: ctx.auth.user,
+          auth: ctx.auth,
           level: args.input.level,
         });
       } catch (error) {
@@ -1731,7 +1779,7 @@ export const resolvers: IResolvers = {
       }
       try {
         const account = await loadAccountById(args.input.teamAccountId);
-        await resetTeamInviteLink({ account, user: ctx.auth.user });
+        await resetTeamInviteLink({ account, auth: ctx.auth });
         return account;
       } catch (error) {
         throw toGraphQLError(error);
@@ -1748,7 +1796,7 @@ export const resolvers: IResolvers = {
         const account = await loadAccountById(args.input.teamAccountId);
         return await inviteTeamMembers({
           account,
-          user: auth.user,
+          auth,
           actorAccount: auth.account,
           members: args.input.members,
           requestLocation: ctx.requestLocation,
@@ -1779,7 +1827,7 @@ export const resolvers: IResolvers = {
         // rules.
         await addTeamDomain({
           account,
-          user: ctx.auth.user,
+          auth: ctx.auth,
           domain: args.input.domain,
         });
         return account;
@@ -1809,7 +1857,7 @@ export const resolvers: IResolvers = {
       try {
         await removeTeamDomain({
           account: teamAccount,
-          user: ctx.auth.user,
+          auth: ctx.auth,
           domain: teamDomain.domain,
         });
       } catch (error) {
@@ -1825,7 +1873,7 @@ export const resolvers: IResolvers = {
 
       const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
       });
 
       if (!(await checkHasAccessToSAML(teamAccount))) {
@@ -1890,7 +1938,7 @@ export const resolvers: IResolvers = {
 
       const teamAccount = await getAdminAccount({
         id: args.teamAccountId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
       });
 
       await TeamSamlConfig.query()
@@ -1908,7 +1956,7 @@ export const resolvers: IResolvers = {
 
       const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
       });
 
       if (!(await checkHasAccessToSAML(teamAccount))) {
@@ -1958,7 +2006,7 @@ export const resolvers: IResolvers = {
       try {
         await cancelTeamInvite({
           account: teamAccount,
-          user: ctx.auth.user,
+          auth: ctx.auth,
           inviteId: args.teamInviteId,
         });
       } catch (error) {

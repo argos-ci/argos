@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useSearchParams } from "react-router";
 import z from "zod";
 
+import { TeamMemberLabel } from "@/containers/UserList";
 import { TeamUserLevel } from "@/gql/graphql";
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { Select, SelectButton, SelectValue } from "@/ui/Select";
@@ -10,6 +11,7 @@ const FilterUserLevelSchema = z.enum([
   "all",
   TeamUserLevel.Contributor,
   TeamUserLevel.Member,
+  TeamUserLevel.Billing,
   TeamUserLevel.Owner,
 ]);
 
@@ -54,9 +56,7 @@ export function useFilterUserLevelParam(options: {
 /** What each role is called, so the trigger can name the chosen one. */
 const FilterUserLevelLabels: Record<FilterUserLevel, string> = {
   all: "All roles",
-  [TeamUserLevel.Contributor]: "Contributor",
-  [TeamUserLevel.Member]: "Member",
-  [TeamUserLevel.Owner]: "Owner",
+  ...TeamMemberLabel,
 };
 
 export function MemberLevelFilter(props: {
@@ -82,6 +82,7 @@ export function MemberLevelFilter(props: {
           <ListBoxItem value="contributor">Contributor</ListBoxItem>
         )}
         <ListBoxItem value="member">Member</ListBoxItem>
+        <ListBoxItem value="billing">Billing</ListBoxItem>
         <ListBoxItem value="owner">Owner</ListBoxItem>
       </ListBox>
     </Select>

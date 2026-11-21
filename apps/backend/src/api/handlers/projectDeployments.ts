@@ -37,7 +37,7 @@ export const listProjectDeploymentsOperation = {
   operationId: "listProjectDeployments",
   summary: "List a project's deployments",
   description:
-    'List a project\'s deployments, most recent first. Use `environment` to keep only the production ones — the deployments that answer "what is live right now?".',
+    'List a project\'s deployments, most recent first. Use `environment` to keep only the production ones: the deployments that answer "what is live right now?".',
   tags: ["Deployments"],
   security: anyTokenOrOAuthAuth(["projects:read"]),
   requestParams: {
@@ -161,7 +161,7 @@ export const updateProjectDomainOperation = {
         schema: z.object({
           domain: z.string().min(1).meta({
             description:
-              "The full domain to serve production deployments on, under the Argos deployments domain — e.g. `acme-web.argos-ci.live`.",
+              "The full domain to serve production deployments on, under the Argos deployments domain (e.g. `acme-web.argos-ci.live`).",
             example: "acme-web.argos-ci.live",
           }),
         }),

@@ -2,8 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 
 import type { FileHandle } from "./FileHandle";
-import { getImageMetadata, resizeImage } from "./sharp";
-import { tmpName } from "./tmp";
+import { getImageMetadata } from "./sharp";
 
 export interface Dimensions {
   width: number;
@@ -51,41 +50,9 @@ export class ImageHandle {
   }
 
   /**
-   * Enlarge the image to the target dimensions if needed.
+   * Path of the image file on disk, downloaded first when it lives elsewhere.
    */
-  async enlarge(targetDimensions: Dimensions): Promise<string> {
-    return Sentry.startSpan(
-      {
-        name: "ImageHandle.enlarge",
-        attributes: {
-          "argos.image.target_width": targetDimensions.width,
-          "argos.image.target_height": targetDimensions.height,
-        },
-      },
-      async () => {
-        const [dimensions, filepath] = await Promise.all([
-          this.getDimensions(),
-          this.#fileHandle.getFilepath(),
-        ]);
-
-        if (
-          (dimensions.height === targetDimensions.height &&
-            dimensions.width === targetDimensions.width) ||
-          dimensions.width > targetDimensions.width ||
-          dimensions.height > targetDimensions.height
-        ) {
-          return filepath;
-        }
-
-        const resultFilepath = await tmpName({ postfix: ".png" });
-        await resizeImage({
-          inputPath: filepath,
-          outputPath: resultFilepath,
-          width: targetDimensions.width,
-          height: targetDimensions.height,
-        });
-        return resultFilepath;
-      },
-    );
+  getFilepath(): Promise<string> {
+    return this.#fileHandle.getFilepath();
   }
 }

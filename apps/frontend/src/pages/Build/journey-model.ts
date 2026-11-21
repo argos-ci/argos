@@ -33,6 +33,26 @@ export type JourneyIdentity = {
 export function resolveJourneyIdentity(
   metadata: JourneyMetadata,
 ): JourneyIdentity | null {
+  const test = resolveTestIdentity(metadata);
+  // The title path is the same in every Playwright project, and the SDK
+  // numbers the captures of each run from 0: two runs under one key
+  // interleave, desktop and mobile alternating. Playwright and Vitest derive
+  // the test id from the project; Cypress sends none.
+  const runId = metadata?.story?.id ? null : metadata?.test?.id;
+  if (!test || !runId) {
+    return test;
+  }
+  return { ...test, key: `${test.key}#${runId}` };
+}
+
+/**
+ * The test a screenshot comes from, whichever run took it: the journey with
+ * its runs merged, so the snapshot list shows a test run by a `desktop` and a
+ * `mobile` project once, with the screenshots of both.
+ */
+export function resolveTestIdentity(
+  metadata: JourneyMetadata,
+): JourneyIdentity | null {
   // Story first: Storybook runs through a Playwright test runner, so its
   // screenshots may carry test metadata too — but the journey users care
   // about is the component (one step per story), not the runner's test.
@@ -48,23 +68,15 @@ export function resolveJourneyIdentity(
   const titlePath = metadata?.test?.titlePath
     ?.map((segment) => segment.trim())
     .filter(Boolean);
-  if (titlePath && titlePath.length > 0) {
-    const title = titlePath.at(-1);
-    if (!title) {
-      return null;
-    }
-    // The title path is the same in every Playwright project, and the SDK
-    // numbers the captures of each run from 0: two runs under one key
-    // interleave, desktop and mobile alternating. Playwright and Vitest
-    // derive the test id from the project; Cypress sends none.
-    const runId = metadata?.test?.id;
-    return {
-      key: runId ? `${titlePath.join(" › ")}#${runId}` : titlePath.join(" › "),
-      prefix: titlePath.slice(0, -1).join(" › "),
-      title,
-    };
+  const title = titlePath?.at(-1);
+  if (!titlePath || !title) {
+    return null;
   }
-  return null;
+  return {
+    key: titlePath.join(" › "),
+    prefix: titlePath.slice(0, -1).join(" › "),
+    title,
+  };
 }
 
 /** Short display label for a step, from its key. */

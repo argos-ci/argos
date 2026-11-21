@@ -4,7 +4,7 @@ import express from "express";
 
 import { sessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
-import { getAdminAccount } from "@/graphql/services/account";
+import { getAccountWithPermission } from "@/graphql/services/account";
 import parentLogger from "@/logger";
 import {
   createStripeCheckoutSession,
@@ -68,7 +68,6 @@ router.use(
   express.json(),
   asyncHandler(async (req, res) => {
     const auth = await sessionAuthFromExpressReq(req);
-    const { user } = auth;
 
     try {
       const { stripeCustomerId, accountId } = req.body;
@@ -76,9 +75,10 @@ router.use(
       invariant(stripeCustomerId, "Stripe customer id missing");
       invariant(accountId, "account id missing");
 
-      const account = await getAdminAccount({
+      const account = await getAccountWithPermission({
         id: accountId,
-        user,
+        auth,
+        permission: "billing",
       });
 
       invariant(
@@ -120,7 +120,11 @@ router.use(
       invariant(accountId, "accountId missing");
 
       const [teamAccount, proPlan, noTrial] = await Promise.all([
-        getAdminAccount({ id: accountId, user: auth.user }),
+        getAccountWithPermission({
+          id: accountId,
+          auth,
+          permission: "billing",
+        }),
         getStripeProPlanOrThrow(),
         auth.account.$checkHasSubscribedToTrial(),
       ]);

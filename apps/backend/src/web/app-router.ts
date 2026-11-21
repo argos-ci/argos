@@ -6,13 +6,11 @@ import { invariant } from "@argos/util/invariant";
 import express, { Router, static as serveStatic } from "express";
 import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
-import { z } from "zod";
 
 import { revokeSessionByToken } from "@/auth/session";
 import { clearSessionCookies, readSessionCookie } from "@/auth/session-cookie";
 import config from "@/config";
 import { checkIsCustomDomainsConfigured } from "@/deployment/cloudfront";
-import { getGoogleAuthUrl } from "@/google";
 import { apolloServer, createApolloMiddleware } from "@/graphql";
 import { mountOAuthServer } from "@/oauth/router";
 import { installSkillsRoutes } from "@/skills/router";
@@ -24,6 +22,7 @@ import { createRedisStore } from "@/util/rate-limit";
 import { getEmailPreviewMiddleware } from "../email/express";
 import { getNotificationPreviewMiddleware } from "../notification/express";
 import { installAgentDiscoveryRoutes } from "./agent-discovery";
+import oauthAuthRouter from "./auth-oauth";
 import samlAuthRouter from "./auth-saml";
 import deploymentAccessRouter from "./deployment-access";
 import invoiceDocumentsRouter from "./invoice-documents";
@@ -57,20 +56,11 @@ export const installAppRouter = async (app: express.Application) => {
     releaseVersion: config.get("releaseVersion"),
     contactEmail: config.get("contactEmail"),
     github: {
-      appUrl: config.get("github.appUrl"),
       clientId: config.get("github.clientId"),
-      // Built here rather than defaulted in the config: a convict default is
-      // evaluated at module load, so reading the client id from `process.env`
-      // there wrote the string "undefined" into the URL whenever the variable
-      // was absent — a self-hosted install, `dev:prod-ro`, the E2E server.
-      loginUrl: `https://github.com/login/oauth/authorize?scope=user:email&client_id=${config.get("github.clientId")}`,
       marketplaceUrl: config.get("github.marketplaceUrl"),
     },
     githubLight: {
       appUrl: config.get("githubLight.appUrl"),
-    },
-    gitlab: {
-      loginUrl: `https://gitlab.com/oauth/authorize?scope=read_user&response_type=code&client_id=${config.get("gitlab.appId")}`,
     },
     stripe: {
       pricingTableId: config.get("stripe.pricingTableId"),
@@ -199,27 +189,7 @@ export const installAppRouter = async (app: express.Application) => {
     }),
   );
 
-  const OAuthQueryParamsSchema = z.object({
-    state: z.string(),
-    redirect_uri: z.string(),
-  });
-
-  router.get("/auth/google/login", (req, res) => {
-    const parsed = OAuthQueryParamsSchema.safeParse(req.query);
-    if (!parsed.success) {
-      res.redirect("/");
-      return;
-    }
-    const { state, redirect_uri: redirectUri } = parsed.data;
-    res.redirect(
-      getGoogleAuthUrl({
-        clientId: config.get("google.clientId"),
-        clientSecret: config.get("google.clientSecret"),
-        redirectUri,
-        state,
-      }),
-    );
-  });
+  router.use(oauthAuthRouter);
 
   router.use(samlAuthRouter);
 

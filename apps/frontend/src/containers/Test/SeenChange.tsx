@@ -47,7 +47,7 @@ export function SeenChange(props: {
           </HeadlessLink>
         </div>
       ) : (
-        <div className="text-low text-xs">—</div>
+        <div className="text-low text-xs">-</div>
       )}
     </div>
   );

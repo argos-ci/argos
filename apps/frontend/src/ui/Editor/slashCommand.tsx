@@ -1,14 +1,7 @@
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { PluginKey } from "@tiptap/pm/state";
-import {
-  Extension,
-  ReactRenderer,
-  type Editor as TiptapEditor,
-} from "@tiptap/react";
-import Suggestion, {
-  type SuggestionKeyDownProps,
-  type SuggestionProps,
-} from "@tiptap/suggestion";
+import { Extension, type Editor as TiptapEditor } from "@tiptap/react";
+import Suggestion from "@tiptap/suggestion";
 import { clsx } from "clsx";
 import {
   Heading1Icon,
@@ -26,7 +19,7 @@ import { popupSurfaceClassName } from "@/ui/popupSurface";
 import { Shortcut } from "@/ui/Shortcut";
 import { ALT, MOD, SHIFT } from "@/util/os";
 
-import { positionSuggestionPopup } from "./suggestionPopup";
+import { suggestionPopup } from "./suggestionPopup";
 
 /** Range of the document the slash trigger spans (`/query`), to be replaced. */
 interface SlashRange {
@@ -255,9 +248,8 @@ const SlashCommandPluginKey = new PluginKey("slashCommand");
  * already exposed in the toolbar (headings, lists, code block, blockquote);
  * selecting one replaces the `/query` and applies the block.
  *
- * Built on `@tiptap/suggestion`, mirroring the mention extension's popup
- * rendering. It introduces no new node types, so the backend schema is
- * unaffected.
+ * Built on `@tiptap/suggestion`, with the same popup as the mention extension.
+ * It introduces no new node types, so the backend schema is unaffected.
  */
 export const SlashCommand = Extension.create({
   name: "slashCommand",
@@ -275,44 +267,7 @@ export const SlashCommand = Extension.create({
         command: ({ editor, range, props }) => {
           props.run({ editor, range });
         },
-        render: () => {
-          let component: ReactRenderer<SlashCommandListHandle> | null = null;
-          let popup: HTMLDivElement | null = null;
-
-          const destroy = () => {
-            popup?.remove();
-            component?.destroy();
-            popup = null;
-            component = null;
-          };
-
-          return {
-            onStart: (props: SuggestionProps<SlashCommandItem>) => {
-              component = new ReactRenderer(SlashCommandList, {
-                props,
-                editor: props.editor,
-              });
-              popup = document.createElement("div");
-              popup.append(component.element);
-              document.body.append(popup);
-              positionSuggestionPopup(popup, props.clientRect);
-            },
-            onUpdate: (props: SuggestionProps<SlashCommandItem>) => {
-              component?.updateProps(props);
-              if (popup) {
-                positionSuggestionPopup(popup, props.clientRect);
-              }
-            },
-            onKeyDown: (props: SuggestionKeyDownProps) => {
-              if (props.event.key === "Escape") {
-                destroy();
-                return true;
-              }
-              return component?.ref?.onKeyDown(props.event) ?? false;
-            },
-            onExit: destroy,
-          };
-        },
+        ...suggestionPopup(SlashCommandList),
       }),
     ];
   },

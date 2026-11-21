@@ -43,6 +43,9 @@ export type MenuItemVariant = "default" | "danger";
 /**
  * A row in one of those lists.
  *
+ * Its vertical padding is `--menu-item-py`, for what has to reach the row's
+ * edge from inside it.
+ *
  * @param variant - `danger` for a destructive action.
  * @param interactive - a row that navigates takes the pointer; one that acts
  *   keeps the arrow, the way a native menu does.
@@ -53,7 +56,7 @@ export function getMenuItemClassName(options?: {
 }) {
   const { variant = "default", interactive = false } = options ?? {};
   return clsx(
-    "group/menu-item text-menu flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left font-[450] outline-hidden pointer-coarse:py-2.5",
+    "group/menu-item text-menu flex w-full items-center gap-2 rounded-lg px-2.5 py-(--menu-item-py) text-left font-[450] outline-hidden [--menu-item-py:--spacing(1.5)] pointer-coarse:[--menu-item-py:--spacing(2.5)]",
     interactive ? "cursor-pointer" : "cursor-default",
     variant === "danger"
       ? clsx("text-danger-low/90", activeDangerRowSelectors)

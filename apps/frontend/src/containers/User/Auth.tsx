@@ -144,8 +144,8 @@ function RevokeSessionDialog(props: { session: Session }) {
 
   const details: { label: string; value: React.ReactNode }[] = [
     { label: "Device", value: getDeviceName(session) },
-    { label: "IP address", value: session.ip ?? "—" },
-    { label: "Last location", value: session.location ?? "—" },
+    { label: "IP address", value: session.ip ?? "Unknown" },
+    { label: "Last location", value: session.location ?? "Unknown" },
     {
       label: "Original sign in",
       value: <Time date={session.createdAt} format="date" tooltip="none" />,

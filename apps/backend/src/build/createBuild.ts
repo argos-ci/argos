@@ -14,6 +14,7 @@ import {
 import { subscribeBuildPullRequestCreator } from "@/database/services/build-notification-subscription";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
+import { sendPlanLimitAlert } from "@/notification/plan-limit";
 import {
   getOrCreateOriginPullRequest,
   resolveOriginPullRequestNumber,
@@ -59,6 +60,8 @@ export async function createBuild(params: {
       `Build rejected: subscribe to a Pro plan to use Team features.`,
     );
   }
+
+  void sendPlanLimitAlert(account);
 
   switch (outOfCapacityReason) {
     case null: {

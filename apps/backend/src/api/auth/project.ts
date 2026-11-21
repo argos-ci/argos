@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import type { Request } from "express";
 
 import {
@@ -24,7 +25,7 @@ import {
   type Account,
   type ProjectPermission,
 } from "@/database/models";
-import { boom } from "@/util/error";
+import { boom, type HTTPError } from "@/util/error";
 
 /**
  * Optional caller-asserted attributes that must match the token's bound
@@ -71,7 +72,7 @@ export function assertProjectAccess(
 ) {
   switch (auth.type) {
     case "project": {
-      if (auth.project.id !== params.projectId) {
+      if (!findAuthProject(auth, params.projectId)) {
         throw boom(401);
       }
       break;
@@ -83,22 +84,113 @@ export function assertProjectAccess(
       // PAT/OAuth scopes are stored as accounts, but callers may identify the
       // authorized account either with its public slug or with an internal
       // identifier field that is already slug-shaped.
-      if (
-        !auth.scope.some((account) => {
-          if ("slug" in params.account) {
-            return account.slug === params.account.slug;
-          }
-          if ("id" in params.account) {
-            return account.slug === params.account.id;
-          }
-          return false;
-        })
-      ) {
-        throw boom(401);
+      const isRouted = (account: Account) => {
+        if ("slug" in params.account) {
+          return account.slug === params.account.slug;
+        }
+        if ("id" in params.account) {
+          return account.slug === params.account.id;
+        }
+        return false;
+      };
+      if (!auth.scope.some(isRouted)) {
+        throwOutsideScope(auth, isRouted, boom(401));
       }
       break;
     }
   }
+}
+
+/**
+ * Throw for an account a token's scope does not reach: a 403 that says so when
+ * it is a team enforcing SAML the token was not issued through, `otherwise`
+ * when it is out of the scope altogether.
+ */
+export function throwOutsideScope(
+  auth: AuthPATPayload | AuthOAuthPayload,
+  isAccount: (account: Account) => boolean,
+  otherwise: HTTPError,
+): never {
+  const account = auth.samlRequiredScope.find(isAccount);
+  if (account) {
+    throw boom(
+      403,
+      `The team "${account.slug}" requires SAML Single Sign-On, and this token was not issued from a session signed in with it. Sign in to Argos with SSO, then create a new token or authorize the application again.`,
+      { code: "SAML_SSO_REQUIRED" },
+    );
+  }
+  throw otherwise;
+}
+
+/**
+ * Split a `project` request parameter in the `owner/project` format.
+ */
+export function parseProjectPath(projectPath: string): {
+  owner: string;
+  name: string;
+} {
+  const [owner, name, ...rest] = projectPath.split("/");
+  if (!owner || !name || rest.length > 0) {
+    throw boom(400, "`project` must be in the `owner/project` format.");
+  }
+  return { owner, name };
+}
+
+/**
+ * The project a project token reaches by id, or `undefined`, for a resource
+ * that names its own project (a build, a deployment, a media).
+ */
+export function findAuthProject(
+  auth: AuthProjectPayload,
+  projectId: string | null,
+): Project | undefined {
+  return auth.projects.find((project) => project.id === projectId);
+}
+
+/**
+ * Resolve the project a project token acts on, for the endpoints that are not
+ * addressed by project (creating a build, a deployment…).
+ *
+ * A token linked to a single project acts on it whatever `project` says: the
+ * released SDK sends `ARGOS_PROJECT` with any token, and a stale value (a
+ * renamed or transferred project) used to be ignored. A token linked to
+ * several has to name one as `owner/project`. Naming one the token cannot
+ * reach is a 401 rather than a 404, which keeps the existence of other
+ * projects undisclosed.
+ */
+export async function resolveAuthProject(
+  auth: AuthProjectPayload,
+  projectPath: string | null | undefined,
+): Promise<Project> {
+  const [single, ...others] = auth.projects;
+  invariant(single, "A project auth payload has at least one project");
+  if (others.length === 0) {
+    return single;
+  }
+
+  if (!projectPath) {
+    throw boom(
+      400,
+      "This project token is linked to several projects. Pass `project` as `owner/project` (`ARGOS_PROJECT` in the SDK) to choose one.",
+    );
+  }
+
+  const { owner, name } = parseProjectPath(projectPath);
+  for (const project of auth.projects) {
+    if (project.name !== name) {
+      continue;
+    }
+    await project.$fetchGraph("account", { skipFetched: true });
+    invariant(project.account, "Project account not found");
+    if (project.account.slug === owner) {
+      return project;
+    }
+  }
+
+  throw boom(
+    401,
+    `This project token does not have access to the project "${projectPath}".`,
+  );
 }
 
 export async function getAuthPayloadFromExpressReq(
@@ -166,8 +258,8 @@ export async function assertProjectPermission(
     return;
   }
   const permissions = access.membership
-    ? await project.$getMembershipPermissions(auth.user)
-    : await project.$getPermissions(auth.user);
+    ? await project.$getMembershipPermissions(auth)
+    : await project.$getPermissions(auth);
   if (!permissions.includes(access.permission)) {
     throw boom(403, access.message);
   }
@@ -231,11 +323,16 @@ export function getAccountForAuth(
   if (auth.type !== "pat" && auth.type !== "oauth") {
     throw boom(401);
   }
-  const account = auth.scope.find((account) => account.slug === params.slug);
+  const isRouted = (account: Account) => account.slug === params.slug;
+  const account = auth.scope.find(isRouted);
   if (!account) {
-    throw boom(
-      401,
-      "You do not have access to this account. Check that your personal access token is scoped to it.",
+    throwOutsideScope(
+      auth,
+      isRouted,
+      boom(
+        401,
+        "You do not have access to this account. Check that your personal access token is scoped to it.",
+      ),
     );
   }
   return account;

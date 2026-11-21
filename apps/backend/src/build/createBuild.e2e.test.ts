@@ -1,7 +1,13 @@
+import { PLAN_LIMIT_WARNING_RATIO } from "@argos/schemas/plan-limit";
 import type Stripe from "stripe";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { Project, Subscription } from "@/database/models";
+import {
+  FLAT_RATE_MAX_CONSUMPTION_RATIO,
+  NotificationWorkflowRecipient,
+  type Project,
+  type Subscription,
+} from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import * as notification from "@/notification";
 import { stripe } from "@/stripe";
@@ -25,6 +31,29 @@ describe("build", () => {
 
   describe("createBuild", () => {
     let project: Project;
+
+    function createMainBuild(buildProject: Project) {
+      return createBuild({
+        project: buildProject,
+        prHeadCommit: null,
+        prNumber: null,
+        argosSdk: "@argos-ci/core@3.2.0",
+        baseBranch: "main",
+        baseCommit: null,
+        commit: "7c96c8120dc539201c9ef3e2db8a1671585ac69e",
+        branch: "main",
+        runAttempt: null,
+        runId: null,
+        ciProvider: "github-actions",
+        mode: "ci",
+        buildName: null,
+        parallel: null,
+        parentCommits: null,
+        skipped: null,
+        mergeQueue: false,
+        subset: false,
+      });
+    }
 
     beforeEach(async () => {
       const plan = await factory.Plan.create({});
@@ -79,29 +108,6 @@ describe("build", () => {
         });
       });
 
-      function createTrialBuild() {
-        return createBuild({
-          project: trialProject,
-          prHeadCommit: null,
-          prNumber: null,
-          argosSdk: "@argos-ci/core@3.2.0",
-          baseBranch: "main",
-          baseCommit: null,
-          commit: "7c96c8120dc539201c9ef3e2db8a1671585ac69e",
-          branch: "main",
-          runAttempt: null,
-          runId: null,
-          ciProvider: "github-actions",
-          mode: "ci",
-          buildName: null,
-          parallel: null,
-          parentCommits: null,
-          skipped: null,
-          mergeQueue: false,
-          subset: false,
-        });
-      }
-
       it("ends the trial and creates the build", async () => {
         vi.spyOn(stripe.subscriptions, "retrieve").mockResolvedValue(
           TRIALING_STRIPE_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,
@@ -115,7 +121,7 @@ describe("build", () => {
           .spyOn(notification, "sendNotification")
           .mockResolvedValue(undefined);
 
-        const build = await createTrialBuild();
+        const build = await createMainBuild(trialProject);
 
         expect(build.id).toBeDefined();
         expect(update).toHaveBeenCalledWith(TRIAL_STRIPE_SUBSCRIPTION_ID, {
@@ -139,11 +145,85 @@ describe("build", () => {
         );
         await trialSubscription.$query().patch({ paymentMethodFilled: false });
 
-        await expect(createTrialBuild()).rejects.toThrow(
+        await expect(createMainBuild(trialProject)).rejects.toThrow(
           "You have reached the maximum screenshot capacity",
         );
         expect(update).not.toHaveBeenCalled();
       });
+    });
+
+    it("rejects the build of a flat-rate plan out of capacity and alerts its owners", async () => {
+      const [team, owner, member, plan] = await Promise.all([
+        factory.Team.create(),
+        factory.User.create(),
+        factory.User.create(),
+        factory.Plan.create({ usageBased: false, includedScreenshots: 10 }),
+      ]);
+      const account = await factory.TeamAccount.create({ teamId: team.id });
+      await factory.TeamUser.createMany(2, [
+        { teamId: team.id, userId: owner.id, userLevel: "owner" },
+        { teamId: team.id, userId: member.id, userLevel: "member" },
+      ]);
+      await factory.Subscription.create({
+        accountId: account.id,
+        planId: plan.id,
+        provider: "github",
+      });
+      const fullProject = await factory.Project.create({
+        accountId: account.id,
+        githubRepositoryId: null,
+      });
+      await factory.ScreenshotBucket.create({
+        projectId: fullProject.id,
+        complete: true,
+        screenshotCount: Math.round(10 * FLAT_RATE_MAX_CONSUMPTION_RATIO) + 1,
+      });
+
+      await expect(createMainBuild(fullProject)).rejects.toThrow(
+        "You have reached the maximum screenshot capacity",
+      );
+
+      // The alert runs in the background of the rejected build.
+      await vi.waitFor(async () => {
+        const recipients = await NotificationWorkflowRecipient.query()
+          .joinRelated("workflow")
+          .where("workflow.type", "plan_limit");
+        expect(recipients.map((recipient) => recipient.userId)).toEqual([
+          owner.id,
+        ]);
+      });
+    });
+
+    it("creates the build of a team left without an owner past the warning", async () => {
+      const [team, member, plan] = await Promise.all([
+        factory.Team.create(),
+        factory.User.create(),
+        factory.Plan.create({ usageBased: false, includedScreenshots: 10 }),
+      ]);
+      const account = await factory.TeamAccount.create({ teamId: team.id });
+      await factory.TeamUser.create({
+        teamId: team.id,
+        userId: member.id,
+        userLevel: "member",
+      });
+      await factory.Subscription.create({
+        accountId: account.id,
+        planId: plan.id,
+        provider: "github",
+      });
+      const nearlyFullProject = await factory.Project.create({
+        accountId: account.id,
+        githubRepositoryId: null,
+      });
+      await factory.ScreenshotBucket.create({
+        projectId: nearlyFullProject.id,
+        complete: true,
+        screenshotCount: Math.round(10 * PLAN_LIMIT_WARNING_RATIO),
+      });
+
+      const build = await createMainBuild(nearlyFullProject);
+
+      expect(build.id).toBeDefined();
     });
 
     it("creates a build", async () => {

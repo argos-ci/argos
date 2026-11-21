@@ -3,7 +3,13 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
-import { completeLogin, startSession, type AuthMethod } from "@/auth/login";
+import {
+  EXPIRED_LOGIN_MESSAGE,
+  getCallbackUrl,
+  requireCallbackState,
+  type OAuthProvider,
+} from "@/auth/callback-binding";
+import { completeLogin, type AuthPayload } from "@/auth/login";
 import type { AuthSessionPayload } from "@/auth/payload";
 import { consumeSamlAuthCode } from "@/auth/saml";
 import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
@@ -57,7 +63,7 @@ type OAuthResult = {
  * Create an OAuth handler.
  */
 function withOAuth(
-  method: AuthMethod,
+  method: OAuthProvider,
   retrieveAccount: (
     body: OAuthBody,
     auth: AuthSessionPayload | null,
@@ -68,6 +74,7 @@ function withOAuth(
     allowOnlyPost,
     requireCsrf,
     express.json(),
+    requireCallbackState(method),
     asyncHandler(async (req, res) => {
       const auth = await safeSessionAuthFromExpressReq(req);
       try {
@@ -77,6 +84,13 @@ function withOAuth(
           auth ?? null,
         );
         invariant(account.userId, "Expected account to have userId");
+        if (auth) {
+          // The provider was linked to the signed-in account. That is no
+          // signup, and the session stays the one it was linked from, with the
+          // method that opened it: replacing it would drop a SAML login.
+          res.send({ creation, hasAutoInvite: false } satisfies AuthPayload);
+          return;
+        }
         res.send(
           await completeLogin({
             req,
@@ -84,7 +98,6 @@ function withOAuth(
             userId: account.userId,
             method,
             creation,
-            alreadySignedIn: Boolean(auth),
           }),
         );
       } catch (error) {
@@ -105,7 +118,7 @@ router.use(
       clientId: config.get("github.clientId"),
       clientSecret: config.get("github.clientSecret"),
       code: body.code,
-      redirectUri: `${config.get("server.url")}/auth/github/callback`,
+      redirectUri: getCallbackUrl("github"),
     });
 
     const octokit = getTokenOctokit({
@@ -145,7 +158,7 @@ router.use(
       clientId: config.get("gitlab.appId"),
       clientSecret: config.get("gitlab.appSecret"),
       code: body.code,
-      redirectUri: `${config.get("server.url")}/auth/gitlab/callback`,
+      redirectUri: getCallbackUrl("gitlab"),
     });
 
     const api = getGitlabClient({ accessToken: response.access_token });
@@ -173,7 +186,7 @@ router.use(
       code: body.code,
       clientId: config.get("google.clientId"),
       clientSecret: config.get("google.clientSecret"),
-      redirectUri: `${config.get("server.url")}/auth/google/callback`,
+      redirectUri: getCallbackUrl("google"),
     });
     const profile = await getGoogleUserProfile({ client });
     const googleUser = await getOrCreateGoogleUser(profile, {
@@ -194,34 +207,35 @@ router.use(
   allowOnlyPost,
   requireCsrf,
   express.json(),
+  requireCallbackState("saml"),
   asyncHandler(async (req, res) => {
     const parsed = SamlBodySchema.parse(req.body);
     const payload = await consumeSamlAuthCode(parsed.code);
     if (!payload) {
-      res.status(401).send({
-        error: {
-          message: "Invalid or expired SAML auth code.",
-        },
-      });
+      res.status(401).send({ error: { message: EXPIRED_LOGIN_MESSAGE } });
       return;
     }
     const [auth, teamAccount] = await Promise.all([
       safeSessionAuthFromExpressReq(req),
       AccountModel.query().findById(payload.teamAccountId).throwIfNotFound(),
     ]);
-    const account = await getOrCreateUserAccountFromSaml({
+    const { account, creation } = await getOrCreateUserAccountFromSaml({
       email: payload.email,
       teamAccount,
       ssoSubject: payload.ssoSubject,
       signedInUserId: auth?.user.id ?? null,
     });
     invariant(account.userId, "Expected account to have userId");
-    // Not `completeLogin`: SAML answers with a redirect rather than an
-    // AuthPayload, and `getOrCreateUserAccountFromSaml` already recorded
-    // `lastAuthMethod` as "saml".
-    await startSession(req, res, account.userId);
-    res.send({
-      redirect: payload.redirect,
-    });
+    invariant(teamAccount.teamId, "SAML is only available for team accounts");
+    res.send(
+      await completeLogin({
+        req,
+        res,
+        userId: account.userId,
+        method: "saml",
+        samlTeamId: teamAccount.teamId,
+        creation,
+      }),
+    );
   }),
 );

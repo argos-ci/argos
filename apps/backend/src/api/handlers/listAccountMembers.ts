@@ -110,7 +110,7 @@ export const listAccountMembers: CreateAPIHandler = ({ get }) => {
     });
 
     // Shared with the GraphQL API — same admin check, same filters, same order.
-    const teamId = await assertTeamAdmin({ account, user: auth.user });
+    const teamId = await assertTeamAdmin({ account, auth });
     const team = await Team.query().findById(teamId);
     invariant(team, "team not found");
 

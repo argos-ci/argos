@@ -172,7 +172,7 @@ export function BuildSummaryDescription({
           the changes won't be meaningful.
         </Paragraph>
         <Paragraph>
-          The failure screenshots below reveal what went wrong — fix the
+          The failure screenshots below reveal what went wrong. Fix the
           underlying issues and re-run your tests to get a build worth
           comparing.
         </Paragraph>

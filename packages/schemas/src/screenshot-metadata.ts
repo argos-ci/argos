@@ -155,6 +155,10 @@ export const ScreenshotMetadataSchema = z
     previewUrl: z.string().nullish().meta({
       description: "An URL to an accessible preview of the screenshot",
     }),
+    description: z.string().nullish().meta({
+      description:
+        "What the screenshot shows, displayed next to it in the build review",
+    }),
     viewport: ViewportSchema.nullish(),
     colorScheme: z
       .enum(["light", "dark"])

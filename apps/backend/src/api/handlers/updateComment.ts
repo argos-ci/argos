@@ -55,9 +55,7 @@ export const updateBuildCommentOperation = {
     }),
   },
   requestBody,
-  responses: commentResponses(
-    "Comment updated successfully — returns the comment",
-  ),
+  responses: commentResponses("The updated comment"),
 } satisfies ZodOpenApiOperationObject;
 
 export const updateTestCommentOperation = {
@@ -76,9 +74,7 @@ export const updateTestCommentOperation = {
     }),
   },
   requestBody,
-  responses: commentResponses(
-    "Comment updated successfully — returns the comment",
-  ),
+  responses: commentResponses("The updated comment"),
 } satisfies ZodOpenApiOperationObject;
 
 export const updateMediaCommentOperation = {
@@ -95,9 +91,7 @@ export const updateMediaCommentOperation = {
     }),
   },
   requestBody,
-  responses: commentResponses(
-    "Comment updated successfully — returns the comment",
-  ),
+  responses: commentResponses("The updated comment"),
 } satisfies ZodOpenApiOperationObject;
 
 /** Shared by the build- and test-scoped update endpoints. */

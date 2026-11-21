@@ -10,13 +10,19 @@ import { Link } from "@/ui/Link";
 
 import { DeploymentAuthentication } from "./DeploymentAuthentication";
 import { Domains } from "./Domains";
+import { GitHubDeployments } from "./GitHubDeployments";
 import { ProductionDeploymentBranch } from "./ProductionDeploymentBranch";
 
 const _ProjectFragment = graphql(`
   fragment ProjectDeployments_Project on Project {
     id
     deploymentEnabled
+    repository {
+      __typename
+      id
+    }
     ...DeploymentAuthentication_Project
+    ...GitHubDeployments_Project
     ...Domains_Project
     ...ProductionDeploymentBranch_Project
   }
@@ -49,6 +55,9 @@ export function ProjectDeployments(props: {
           <DeploymentAuthentication project={project} isTeam={isTeam} />
           <Domains project={project} />
           <ProductionDeploymentBranch project={project} />
+          {project.repository?.__typename === "GithubRepository" && (
+            <GitHubDeployments project={project} />
+          )}
         </>
       )}
     </>

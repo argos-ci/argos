@@ -15,6 +15,7 @@ import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
 import { AccountCursorOrigin } from "@/containers/Account/CursorOrigin";
 import { AccountGitLab } from "@/containers/Account/GitLab";
 import { AccountInvoices } from "@/containers/Account/Invoices";
+import { AccountProjectTokens } from "@/containers/Account/ProjectTokens";
 import { useAuth } from "@/containers/Auth";
 import { SettingsLayout, SettingsNav, SettingsPage } from "@/containers/Layout";
 import { useOriginEnabled } from "@/containers/Origin";
@@ -100,6 +101,7 @@ const AccountQuery = graphql(`
       ...UserEmail_Account
       ...UserNotificationPreferences_Account
       ...UserAccessTokens_Account
+      ...AccountProjectTokens_Account
       ...OAuthApps_Account
     }
   }
@@ -168,13 +170,14 @@ function PageContent() {
   }
 
   const hasAdminPermission = permissions.includes(AccountPermission.Admin);
+  const canManageBilling = permissions.includes(AccountPermission.Billing);
   const isTeam = account.__typename === "Team";
   // Without a Stripe customer there is no invoice to read, ever — a free
   // account, or a team GitHub Marketplace bills. A yearly plan is a negotiated
   // contract, invoiced by the sales side rather than read here; it is the same
   // line the add-ons draw between self-serve and contract.
   const showInvoices =
-    hasAdminPermission &&
+    canManageBilling &&
     Boolean(account.stripeCustomerId) &&
     account.plan?.interval !== PlanInterval.Year;
   const isUser = account.__typename === "User";
@@ -230,15 +233,15 @@ function PageContent() {
       slug: "billing",
       element: (
         <>
-          {hasAdminPermission && <PlanCard account={account} />}
+          {canManageBilling && <PlanCard account={account} />}
           {isTeam && hasAdminPermission && <TeamAddOns team={account} />}
           {isTeam && account.subscription ? (
             <TeamSpendManagement account={account} />
           ) : null}
-          {isTeam && hasAdminPermission ? (
+          {isTeam && canManageBilling ? (
             <TeamMonthlyReport team={account} />
           ) : null}
-          {isTeam && hasAdminPermission ? (
+          {isTeam && canManageBilling ? (
             <PlanCancellationCard account={account} />
           ) : null}
         </>
@@ -276,8 +279,11 @@ function PageContent() {
     {
       name: "Tokens",
       slug: "tokens",
-      element: isUser && hasAdminPermission && (
-        <UserAccessTokens account={account} />
+      element: hasAdminPermission && (
+        <>
+          {isUser && <UserAccessTokens account={account} />}
+          <AccountProjectTokens account={account} />
+        </>
       ),
     },
     {

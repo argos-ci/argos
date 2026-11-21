@@ -66,7 +66,7 @@ export const listTeamDomainsHandler: CreateAPIHandler = ({ get }) => {
       slug: req.ctx.params.accountSlug,
     });
 
-    const teamId = await assertTeamAdmin({ account, user: auth.user });
+    const teamId = await assertTeamAdmin({ account, auth });
     const domains = await listTeamDomains(teamId);
 
     res.send(
@@ -82,7 +82,7 @@ export const addTeamDomainOperation = {
   operationId: "addTeamDomain",
   summary: "Open a team to an email domain",
   description:
-    "Add an email domain to a team, so anyone signing up with a verified address on it joins automatically. Requires administrator access to the team, and you must yourself hold a verified address on the domain — a team can only be opened to a domain its administrator demonstrably belongs to. Public email providers are refused.",
+    "Add an email domain to a team, so anyone signing up with a verified address on it joins automatically. Requires administrator access to the team, and you must yourself hold a verified address on the domain. A team can only be opened to a domain its administrator demonstrably belongs to. Public email providers are refused.",
   tags: ["Members"],
   security: patOrOAuthAuth(["account:admin"]),
   requestParams: { path: AccountPathSchema },
@@ -122,7 +122,7 @@ export const addTeamDomainHandler: CreateAPIHandler = ({ post }) => {
     // rules.
     const teamDomain = await addTeamDomain({
       account,
-      user: auth.user,
+      auth,
       domain: req.ctx.body.domain,
     });
 
@@ -166,7 +166,7 @@ export const removeTeamDomainHandler: CreateAPIHandler = ({ delete: del }) => {
 
     await removeTeamDomain({
       account,
-      user: auth.user,
+      auth,
       domain: req.ctx.params.domain,
     });
 

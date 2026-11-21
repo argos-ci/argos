@@ -1,15 +1,15 @@
-import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import type { Request } from "express";
 
 import { waitUntil } from "@/api/request-context";
-import { Account, OAuthAccessToken, OAuthGrant } from "@/database/models";
+import { OAuthAccessToken, OAuthGrant } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { getClientKnownApp } from "@/oauth/known-apps";
 import { getApiResourceUrl, normalizeResource } from "@/oauth/metadata";
 
 import { boom } from "../util/error";
 import type { AuthOAuthPayload } from "./payload";
+import { resolveTokenScope } from "./token-scope";
 
 /**
  * Request-scoped marker listing the resource identifiers (RFC 8707 audiences)
@@ -73,7 +73,7 @@ export async function getAuthPayloadFromOAuthAccessToken(
   const accessToken = await OAuthAccessToken.query()
     .findOne({ tokenHash: hashToken(token) })
     .withGraphFetched(
-      "grant.[user.[account,teams],grantAccounts.account,client]",
+      "grant.[user.[account,teams],grantAccounts.account.teamSamlConfig,client]",
     );
 
   if (!accessToken) {
@@ -108,34 +108,15 @@ export async function getAuthPayloadFromOAuthAccessToken(
 
   const { user, grantAccounts, client } = grant;
   invariant(user?.account);
-  invariant(user.teams);
   invariant(grantAccounts);
   invariant(client);
 
-  const userTeamIds = new Set(user.teams.map((team) => team.id));
-  const scopeAccounts = grantAccounts.reduce<Account[]>((accounts, entry) => {
-    invariant(entry.account);
-    switch (entry.account.type) {
-      case "team": {
-        invariant(entry.account.teamId);
-        if (userTeamIds.has(entry.account.teamId)) {
-          accounts.push(entry.account);
-        }
-        return accounts;
-      }
-      case "user": {
-        invariant(entry.account.userId);
-        if (entry.account.userId === grant.userId) {
-          accounts.push(entry.account);
-        }
-        return accounts;
-      }
-      default:
-        assertNever(entry.account.type);
-    }
-  }, []);
+  const tokenScope = await resolveTokenScope(user, grantAccounts);
 
-  if (scopeAccounts.length === 0) {
+  if (
+    tokenScope.scope.length === 0 &&
+    tokenScope.samlRequiredScope.length === 0
+  ) {
     throw boom(
       401,
       "This authorization has no valid scope, probably because you are no longer in the granted organization. Re-authorize the application.",
@@ -160,7 +141,7 @@ export async function getAuthPayloadFromOAuthAccessToken(
     type: "oauth",
     account: user.account,
     user,
-    scope: scopeAccounts,
+    ...tokenScope,
     oauthScopes: accessToken.scopes,
     clientId: client.clientId,
     knownAppId: getClientKnownApp(client)?.id ?? null,

@@ -79,7 +79,7 @@ export const transferProject: CreateAPIHandler = ({ post }) => {
     // Shared with the GraphQL API — same admin checks on both sides.
     const transferred = await transferProjectService({
       project,
-      user: auth.user,
+      auth,
       targetAccount,
       name: req.ctx.body.name ?? project.name,
     });

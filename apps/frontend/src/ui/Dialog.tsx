@@ -162,15 +162,21 @@ export function DialogActionButton(
   const { onAsyncAction, ...rest } = props;
   const actionContext = use(ModalActionContext);
   invariant(actionContext, "DialogActionButton must be used within a Modal");
+  // The modal's pending flag is shared, so a dialog offering two actions
+  // spins only the one that runs and disables the other.
+  const [isRunning, setIsRunning] = useState(false);
   return (
     <Button
       {...rest}
-      pending={actionContext.isPending ?? undefined}
+      pending={isRunning}
+      disabled={rest.disabled || (actionContext.isPending && !isRunning)}
       onAsyncAction={async () => {
+        setIsRunning(true);
         actionContext.setIsPending(true);
         try {
           await onAsyncAction();
         } finally {
+          setIsRunning(false);
           actionContext.setIsPending(false);
         }
       }}

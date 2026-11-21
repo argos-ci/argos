@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
+import type { AuthViewer } from "@/auth/payload";
 import { getOrCreatePendingBuildReview } from "@/build/pendingReview";
 import { isReviewableBuildStatus } from "@/build/reviewableStatus";
 import { addCommentReaction } from "@/comment/addCommentReaction";
@@ -37,7 +38,6 @@ import {
   type CommentAnchor,
 } from "@/database/models/Comment";
 import { ScreenshotDiff } from "@/database/models/ScreenshotDiff";
-import type { User } from "@/database/models/User";
 import {
   subscribeUserToCommentThread,
   unsubscribeUserFromCommentThread,
@@ -47,16 +47,20 @@ import { resolveCommentMediaVersionId } from "@/media/version";
 import {
   ICommentChangeType,
   type ICommentAnchorInput,
-  type ICommentLinesAnchor,
   type ICommentPermission,
-  type ICommentPointAnchor,
   type IResolvers,
 } from "../__generated__/resolver-types";
 import { assertCanViewBuild } from "../buildAccess";
 import type { Context } from "../context";
 import { getMediaForUser } from "../mediaAccess";
 import { getTestForUser } from "../testAccess";
-import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
+import {
+  badUserInput,
+  forbidden,
+  notFound,
+  toGraphQLError,
+  unauthenticated,
+} from "../util";
 import { resolveAgent } from "./Agent";
 
 const { gql } = gqlTag;
@@ -67,15 +71,17 @@ const { gql } = gqlTag;
  * model's {@link CommentAnchorSchema}.
  */
 function commentAnchorFromInput(input: ICommentAnchorInput): CommentAnchor {
-  const { point, lines } = input;
-  if (Number(point != null) + Number(lines != null) !== 1) {
+  const candidates = [
+    input.point ? { type: "point", ...input.point } : null,
+    input.area ? { type: "area", ...input.area } : null,
+    input.lines ? { type: "lines", ...input.lines } : null,
+  ].filter((candidate) => candidate !== null);
+  const [candidate] = candidates;
+  if (!candidate || candidates.length > 1) {
     throw badUserInput(
-      "A comment anchor must set exactly one of point or lines",
+      "A comment anchor must set exactly one of point, area or lines",
     );
   }
-  const candidate = point
-    ? { type: "point", x: point.x, y: point.y }
-    : { type: "lines", from: lines!.from, to: lines!.to };
   const result = CommentAnchorSchema.safeParse(candidate);
   if (!result.success) {
     throw badUserInput(
@@ -83,6 +89,20 @@ function commentAnchorFromInput(input: ICommentAnchorInput): CommentAnchor {
     );
   }
   return result.data;
+}
+
+/**
+ * The service rejects a bad comment (empty, too large, lines on a media) with a
+ * 400, which Apollo would otherwise report as a server error.
+ */
+async function createCommentFromResolver(
+  input: Parameters<typeof createComment>[0],
+): Promise<void> {
+  try {
+    await createComment(input);
+  } catch (error) {
+    throw toGraphQLError(error);
+  }
 }
 
 /**
@@ -111,11 +131,11 @@ async function getCommentByGraphqlId(id: string): Promise<Comment> {
  */
 async function assertCanReactToComment(
   comment: Comment,
-  user: User,
+  auth: AuthViewer,
 ): Promise<void> {
   const target = await resolveCommentTarget(comment);
   const project = await getCommentTargetProject(target);
-  const permissions = await project.$getPermissions(user);
+  const permissions = await project.$getPermissions(auth);
   if (!permissions.includes("review")) {
     throw forbidden("You cannot react to this comment");
   }
@@ -137,10 +157,10 @@ async function getCommentThreadByGraphqlId(id: string): Promise<Comment> {
 
 async function assertCanAccessCommentThread(input: {
   thread: Comment;
-  user: User;
+  auth: AuthViewer;
   permission: "view" | "review";
 }): Promise<void> {
-  const { thread, user, permission } = input;
+  const { thread, auth, permission } = input;
   const target = await resolveCommentTarget(thread);
   const project = await getCommentTargetProject(target);
   // Membership permissions for a media, the same rule the REST comment helper
@@ -152,8 +172,8 @@ async function assertCanAccessCommentThread(input: {
   // subscriber receives every later comment by email.
   const permissions =
     target.type === "media"
-      ? await project.$getMembershipPermissions(user)
-      : await project.$getPermissions(user);
+      ? await project.$getMembershipPermissions(auth)
+      : await project.$getPermissions(auth);
   if (!permissions.includes(permission)) {
     throw forbidden("You cannot access this thread");
   }
@@ -166,7 +186,7 @@ async function assertCanAccessCommentThread(input: {
  */
 async function getCommentThreadForUser(input: {
   id: string;
-  user: User;
+  auth: AuthViewer;
   permission: "view" | "review";
   target?: CommentTarget;
 }): Promise<Comment> {
@@ -176,7 +196,7 @@ async function getCommentThreadForUser(input: {
   }
   await assertCanAccessCommentThread({
     thread,
-    user: input.user,
+    auth: input.auth,
     permission: input.permission,
   });
   return thread;
@@ -203,13 +223,24 @@ export const typeDefs = gql`
   }
 
   """
-  A point on a screenshot diff, in normalized coordinates (0–1 of the image's
+  A point on a screenshot diff, in normalized coordinates (0-1 of the image's
   width/height). The baseline and compare sides render at the same scale, so a
   single coordinate applies to both.
   """
   type CommentPointAnchor {
     x: Float!
     y: Float!
+  }
+
+  """
+  A rectangle on a screenshot diff or a media, in normalized coordinates (0-1
+  of the image's width/height). \`x\`/\`y\` is its top-left corner.
+  """
+  type CommentAreaAnchor {
+    x: Float!
+    y: Float!
+    width: Float!
+    height: Float!
   }
 
   "A 1-based inclusive line range on a textual snapshot."
@@ -222,7 +253,10 @@ export const typeDefs = gql`
   Where on the referenced screenshot diff a comment points. A null anchor on a
   comment that has a screenshotDiff means it refers to the whole diff.
   """
-  union CommentAnchor = CommentPointAnchor | CommentLinesAnchor
+  union CommentAnchor =
+    | CommentPointAnchor
+    | CommentAreaAnchor
+    | CommentLinesAnchor
 
   """
   A comment posted on a build or on a test.
@@ -272,6 +306,13 @@ export const typeDefs = gql`
     y: Float!
   }
 
+  input CommentAreaAnchorInput {
+    x: Float!
+    y: Float!
+    width: Float!
+    height: Float!
+  }
+
   input CommentLinesAnchorInput {
     from: Int!
     to: Int!
@@ -283,6 +324,7 @@ export const typeDefs = gql`
   """
   input CommentAnchorInput {
     point: CommentPointAnchorInput
+    area: CommentAreaAnchorInput
     lines: CommentLinesAnchorInput
   }
 
@@ -363,7 +405,7 @@ export const typeDefs = gql`
     addBuildComment(input: AddBuildCommentInput!): Build!
     "Post a comment on a test"
     addTestComment(input: AddTestCommentInput!): Test!
-    "Post a comment on an uploaded media, optionally pinned to a point on it"
+    "Post a comment on an uploaded media, optionally pinned to a point or an area of it"
     addMediaComment(input: AddMediaCommentInput!): Media!
     "Update an existing comment"
     updateComment(input: UpdateCommentInput!): Comment!
@@ -468,13 +510,7 @@ export const resolvers: IResolvers = {
       }
       return ctx.loaders.ScreenshotDiff.load(comment.screenshotDiffId);
     },
-    // The stored anchor is structurally the union the schema exposes; only its
-    // `side` differs nominally (model string-union vs generated enum), so cast.
-    anchor: (comment) =>
-      (comment.anchor ?? null) as
-        | ICommentPointAnchor
-        | ICommentLinesAnchor
-        | null,
+    anchor: (comment) => comment.anchor,
     threadSubscribed: async (comment, _args, ctx) => {
       if (!ctx.auth) {
         return false;
@@ -505,9 +541,11 @@ export const resolvers: IResolvers = {
   },
   CommentAnchor: {
     __resolveType: (anchor) => {
-      switch ((anchor as CommentAnchor).type) {
+      switch (anchor.type) {
         case "point":
           return "CommentPointAnchor";
+        case "area":
+          return "CommentAreaAnchor";
         case "lines":
           return "CommentLinesAnchor";
         default:
@@ -549,7 +587,7 @@ export const resolvers: IResolvers = {
 
       invariant(build.project?.account);
 
-      const permissions = await build.project.$getPermissions(auth.user);
+      const permissions = await build.project.$getPermissions(auth);
 
       if (!permissions.includes("review")) {
         throw forbidden("You cannot comment on this build");
@@ -560,7 +598,7 @@ export const resolvers: IResolvers = {
       const thread = input.threadId
         ? await getCommentThreadForUser({
             id: input.threadId,
-            user: auth.user,
+            auth,
             permission: "review",
             target,
           })
@@ -623,7 +661,7 @@ export const resolvers: IResolvers = {
         }
       }
 
-      await createComment({
+      await createCommentFromResolver({
         target,
         userId: auth.user.id,
         body: input.body as JSONContent,
@@ -646,7 +684,7 @@ export const resolvers: IResolvers = {
 
       const test = await getTestForUser({
         id: input.testId,
-        user: auth.user,
+        auth,
         permission: "review",
         message: "You cannot comment on this test",
       });
@@ -656,13 +694,13 @@ export const resolvers: IResolvers = {
       const thread = input.threadId
         ? await getCommentThreadForUser({
             id: input.threadId,
-            user: auth.user,
+            auth,
             permission: "review",
             target,
           })
         : null;
 
-      await createComment({
+      await createCommentFromResolver({
         target,
         userId: auth.user.id,
         body: input.body as JSONContent,
@@ -681,7 +719,7 @@ export const resolvers: IResolvers = {
 
       const media = await getMediaForUser({
         id: input.mediaId,
-        user: auth.user,
+        auth,
         permission: "review",
         message: "You cannot comment on this media",
       });
@@ -698,7 +736,7 @@ export const resolvers: IResolvers = {
       const thread = input.threadId
         ? await getCommentThreadForUser({
             id: input.threadId,
-            user: auth.user,
+            auth,
             permission: "review",
             target,
           })
@@ -711,12 +749,7 @@ export const resolvers: IResolvers = {
 
       const anchor = input.anchor ? commentAnchorFromInput(input.anchor) : null;
 
-      // A line range describes a textual snapshot; an image has no lines.
-      if (anchor && anchor.type !== "point") {
-        throw badUserInput("A media comment can only be anchored to a point");
-      }
-
-      await createComment({
+      await createCommentFromResolver({
         target,
         userId: auth.user.id,
         body: input.body as JSONContent,
@@ -775,7 +808,7 @@ export const resolvers: IResolvers = {
 
       const comment = await getCommentByGraphqlId(input.commentId);
 
-      await assertCanReactToComment(comment, auth.user);
+      await assertCanReactToComment(comment, auth);
 
       return addCommentReaction({
         comment,
@@ -793,7 +826,7 @@ export const resolvers: IResolvers = {
 
       const comment = await getCommentByGraphqlId(input.commentId);
 
-      await assertCanReactToComment(comment, auth.user);
+      await assertCanReactToComment(comment, auth);
 
       return removeCommentReaction({
         comment,
@@ -808,7 +841,7 @@ export const resolvers: IResolvers = {
       }
       const thread = await getCommentThreadForUser({
         id: args.input.commentId,
-        user: auth.user,
+        auth,
         permission: "view",
       });
       await subscribeUserToCommentThread({
@@ -824,7 +857,7 @@ export const resolvers: IResolvers = {
       }
       const thread = await getCommentThreadForUser({
         id: args.input.commentId,
-        user: auth.user,
+        auth,
         permission: "view",
       });
       await unsubscribeUserFromCommentThread({
@@ -840,7 +873,7 @@ export const resolvers: IResolvers = {
       }
       const thread = await getCommentThreadForUser({
         id: args.input.commentId,
-        user: auth.user,
+        auth,
         permission: "review",
       });
       return resolveCommentThread({ thread });
@@ -852,7 +885,7 @@ export const resolvers: IResolvers = {
       }
       const thread = await getCommentThreadForUser({
         id: args.input.commentId,
-        user: auth.user,
+        auth,
         permission: "review",
       });
       return unresolveCommentThread({ thread });
@@ -863,7 +896,7 @@ export const resolvers: IResolvers = {
       // Authorize before opening the stream so an unpermitted subscription is
       // rejected upfront rather than after the first event.
       subscribe: async (_root, args, ctx) => {
-        await assertCanViewBuild(args.buildId, ctx.auth?.user ?? null);
+        await assertCanViewBuild(args.buildId, ctx.auth);
         return mapCommentChanges(
           subscribeToBuildCommentChanges(args.buildId),
           ctx.loaders,
@@ -875,7 +908,7 @@ export const resolvers: IResolvers = {
       subscribe: async (_root, args, ctx) => {
         const test = await getTestForUser({
           id: args.testId,
-          user: ctx.auth?.user ?? null,
+          auth: ctx.auth,
           permission: "view",
           message: "You cannot view this test",
         });

@@ -12,15 +12,18 @@ import { ensureProductionInternalProjectDomain } from "@/database/services/proje
 import { pushDeploymentNotification } from "@/deployment-notification";
 import { getDeploymentAliases } from "@/deployment/alias";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
+import { githubDeploymentJob } from "@/github-deployment/job";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
 
-import { assertAuthAttributes } from "../auth/project";
+import { assertAuthCanDeploy } from "../auth/deployment";
+import { assertAuthAttributes, findAuthProject } from "../auth/project";
 import {
   DeploymentSchema,
   serializeDeployment,
 } from "../schema/primitives/deployment";
 import {
+  forbidden,
   invalidParameters,
   notFound,
   serverError,
@@ -139,15 +142,18 @@ async function registerFileHashes(
 }
 
 /**
- * Update the deployment_aliases table with the current deployment.
- * Returns the aliases.
+ * Point the aliases of the deployment at it. Returns the aliases, and the
+ * deployments that held them before.
  */
 async function updateDeploymentAliases(input: {
   deployment: Deployment;
   project: Project;
   account: Account;
   projectDomains: ProjectDomain[];
-}): Promise<ReturnType<typeof getDeploymentAliases>> {
+}): Promise<{
+  aliases: ReturnType<typeof getDeploymentAliases>;
+  previousDeploymentIds: string[];
+}> {
   const { deployment, project, account, projectDomains } = input;
   const aliases = getDeploymentAliases({
     accountSlug: account.slug,
@@ -155,6 +161,13 @@ async function updateDeploymentAliases(input: {
     deployment,
     projectDomains,
   });
+  const previousAliases = await DeploymentAlias.query()
+    .distinct("deploymentId")
+    .whereIn(
+      "alias",
+      aliases.map((alias) => alias.alias),
+    )
+    .whereNot("deploymentId", deployment.id);
   const now = new Date().toISOString();
   await DeploymentAlias.query()
     .insert(
@@ -173,7 +186,10 @@ async function updateDeploymentAliases(input: {
       updatedAt: now,
     });
 
-  return aliases;
+  return {
+    aliases,
+    previousDeploymentIds: previousAliases.map((alias) => alias.deploymentId),
+  };
 }
 
 export const finalizeDeploymentOperation = {
@@ -182,7 +198,7 @@ export const finalizeDeploymentOperation = {
   description:
     "Mark a deployment as ready once all of its files have been uploaded. Argos assigns the deployment's aliases and starts serving it.",
   tags: ["Deployments"],
-  security: projectTokenAuth,
+  security: projectTokenAuth(["deployments:write"]),
   requestParams: {
     path: z.object({
       deploymentId: z.string().meta({ description: "The deployment ID" }),
@@ -199,6 +215,7 @@ export const finalizeDeploymentOperation = {
     },
     "400": invalidParameters,
     "401": unauthorized,
+    "403": forbidden,
     "404": notFound,
     "500": serverError,
   },
@@ -211,18 +228,22 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
       req.ctx.auth(),
       Deployment.query().findById(deploymentId),
     ]);
-    const { project } = auth;
-
     let deployment = initialDeployment;
     if (!deployment) {
       throw boom(404, "Deployment not found");
     }
 
-    if (deployment.projectId !== auth.project.id) {
+    const project = findAuthProject(auth, deployment.projectId);
+    if (!project) {
       throw boom(401, "Unauthorized");
     }
 
     assertAuthAttributes(auth, { sha: deployment.commitSha });
+    await assertAuthCanDeploy(auth, {
+      project,
+      environment: deployment.environment,
+      branch: deployment.branch,
+    });
 
     if (deployment.status !== "pending") {
       throw boom(400, "Deployment is not in pending status");
@@ -259,7 +280,7 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
         )
       : [];
 
-    const aliases = await updateDeploymentAliases({
+    const { aliases, previousDeploymentIds } = await updateDeploymentAliases({
       deployment,
       project,
       account,
@@ -276,6 +297,7 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
         deploymentId: deployment.id,
         type: "success",
       }),
+      githubDeploymentJob.push(...previousDeploymentIds),
     ]);
 
     res.send(serializeDeployment(deployment));

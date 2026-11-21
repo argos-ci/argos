@@ -41,15 +41,32 @@ function getPixelsInFile(file: FileModel) {
   return null;
 }
 
-export function getImageKitUrl(key: string) {
-  return new URL(key, config.get("s3.publicImageBaseUrl")).href;
+type ImageUrlOptions = {
+  /**
+   * Serve the image exactly as it was uploaded. ImageKit otherwise picks the
+   * format of each response itself, so a small PNG can come back as a JPEG:
+   * fine for a browser, wrong for an API client that saves or compares the
+   * file.
+   */
+  original?: boolean;
+};
+
+export function getImageKitUrl(key: string, options?: ImageUrlOptions) {
+  const url = new URL(key, config.get("s3.publicImageBaseUrl"));
+  if (options?.original) {
+    url.searchParams.set("tr", "orig-true");
+  }
+  return url.href;
 }
 
-export async function getPublicImageFileUrl(file: FileModel) {
+export async function getPublicImageFileUrl(
+  file: FileModel,
+  options?: ImageUrlOptions,
+) {
   if (config.get("s3.publicImageBaseUrl")) {
     const pixels = getPixelsInFile(file);
     if (pixels !== null && pixels < IMAGEKIT_PIXELS_LIMIT) {
-      return getImageKitUrl(file.key);
+      return getImageKitUrl(file.key, options);
     }
   }
 
@@ -64,9 +81,12 @@ export async function getPublicImageFileUrl(file: FileModel) {
  * attacker-controlled content cannot be rendered as active content on the
  * storage origin.
  */
-export async function getPublicFileUrl(file: FileModel) {
+export async function getPublicFileUrl(
+  file: FileModel,
+  options?: ImageUrlOptions,
+) {
   if (file.isImage()) {
-    return getPublicImageFileUrl(file);
+    return getPublicImageFileUrl(file, options);
   }
   return getPublicUrl(file.key, { download: true });
 }

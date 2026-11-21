@@ -51,7 +51,7 @@ export const listBuildDiffsOperation = {
   operationId: "listBuildDiffs",
   summary: "List a build's screenshot diffs",
   description:
-    "List the screenshot diffs of a build, with pagination. Each diff compares a baseline screenshot to the one captured by the build. Each diff also carries its test's flakiness metrics and, when it is a change, its ignore state and occurrence count — so you can tell whether a change is worth reviewing or is just a flaky one. Use `needsReview` to return only the diffs that require review.",
+    "List the screenshot diffs of a build, with pagination. Each diff compares a baseline screenshot to the one captured by the build. Each diff also carries its test's flakiness metrics and, when it is a change, its ignore state and occurrence count, so you can tell whether a change is worth reviewing or is just a flaky one. Use `needsReview` to return only the diffs that require review.",
   tags: ["Builds"],
   security: anyTokenOrOAuthAuth(["projects:read"]),
   requestParams: {

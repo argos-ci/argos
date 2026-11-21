@@ -568,13 +568,9 @@ function MediaPane(props: {
             "relative flex min-h-0 flex-1 transition-opacity",
             // Both marks appear only with the crosshair, and answer exactly the
             // question it raises: a ring that is always on reads as "selected"
-            // and says nothing about where a click goes.
-            //
-            // Inset so it draws over the pixels rather than in the gap between
-            // the panes, which is where the eye is already looking.
-            pinState === "target" && "ring-primary-active ring-2 ring-inset",
-            // The other half recedes: naming the target is only half the answer
-            // if the pane beside it looks just as clickable.
+            // and says nothing about where a click goes. The other half
+            // recedes: naming the target is only half the answer if the pane
+            // beside it looks just as clickable.
             pinState === "excluded" && "opacity-50",
           )}
         >
@@ -636,6 +632,13 @@ function MediaPane(props: {
               startLabel="Before"
               endLabel="After"
             />
+          ) : null}
+          {pinState === "target" ? (
+            // Inset so it draws over the pixels rather than in the gap between
+            // the panes, which is where the eye is already looking. A layer of
+            // its own, last: a ring on the well itself is a box-shadow, painted
+            // under the well's content, so an image filling the pane hid it.
+            <div className="ring-primary-active pointer-events-none absolute inset-0 rounded-[inherit] ring-2 ring-inset" />
           ) : null}
         </MediaWell>
       </div>

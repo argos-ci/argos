@@ -73,7 +73,7 @@ loggedTest("media share page", async ({ team, page, auth, project }) => {
     page.getByText("The primary button is misaligned here."),
   ).toBeVisible();
   await expect(
-    page.getByText("Agreed — it should align with the input above."),
+    page.getByText("Agreed, it should align with the input above."),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: /^Open comment from/ }),
@@ -201,14 +201,16 @@ loggedTest(
 
     await page.getByRole("button", { name: "Comment tool" }).click();
     await expect(
-      page.getByText("Click the spot on the image you want to comment on."),
+      page.getByText(
+        "Click a spot on the image, or drag over an area, to comment on it.",
+      ),
     ).toBeVisible();
 
     // The pin lands wherever the reviewer points, stored as a fraction of the
     // media's own box, and the composer floats right beside it — the same
     // flow as the build's screenshot comments.
     await page
-      .getByRole("button", { name: "Pick the spot to comment on" })
+      .getByRole("button", { name: "Pick a spot or an area to comment on" })
       .click({ position: { x: 200, y: 150 } });
 
     const draftDialog = page.getByRole("dialog", { name: "Add a comment" });
@@ -228,6 +230,73 @@ loggedTest(
       page.getByRole("button", { name: /^Open comment from/ }),
     ).toHaveCount(2);
     await expect(page.getByText("pinned on the image")).toHaveCount(2);
+  },
+);
+
+loggedTest(
+  "mentions a teammate from the activity composer",
+  async ({ page, project }) => {
+    const media = await createMediaScenario({ projectId: project.id });
+
+    await page.goto(`/m/${media.after.shareToken}`);
+
+    const composer = page.getByLabel("Add a comment");
+    await composer.click();
+    await composer.pressSequentially("Over to you @Kyle");
+
+    // The composer sits at the right edge of the page, so the list has to shift
+    // to stay in view.
+    const suggestion = page.getByRole("button", { name: /Kyle Bertolino/ });
+    await expect(suggestion).toBeInViewport({ ratio: 1 });
+    await suggestion.click();
+    await page.getByRole("button", { name: "Submit the comment" }).click();
+
+    await expect(page.getByText("@Kyle Bertolino")).toBeVisible();
+  },
+);
+
+loggedTest(
+  "pins a comment to an area of the image",
+  async ({ team, page, auth, project }) => {
+    const media = await createMediaScenario({
+      projectId: project.id,
+      commentAuthorId: auth.user.id,
+    });
+
+    await page.goto(`/m/${media.after.shareToken}`);
+    await page.getByRole("button", { name: "Comment tool" }).click();
+
+    // With the comment tool, a drag draws the area rather than panning. The
+    // image is centered in its pane, so the pane's center is on it.
+    const box = await page
+      .getByRole("button", { name: "Pick a spot or an area to comment on" })
+      .boundingBox();
+    if (!box) {
+      throw new Error("The comment layer has no box");
+    }
+    const centerX = box.x + box.width / 2;
+    const centerY = box.y + box.height / 2;
+    await page.mouse.move(centerX - 60, centerY - 80);
+    await page.mouse.down();
+    await page.mouse.move(centerX + 60, centerY + 80, { steps: 10 });
+    await page.mouse.up();
+
+    const draftDialog = page.getByRole("dialog", { name: "Add a comment" });
+    const editor = draftDialog.getByLabel("Add a comment");
+    await editor.click();
+    await editor.fill("This whole block needs more room.");
+    await draftDialog
+      .getByRole("button", { name: "Submit the comment" })
+      .click();
+
+    // The thread opens beside the area's pin, with the area outlined.
+    await expect(
+      page.getByRole("dialog", { name: /^Comment from/ }),
+    ).toContainText("This whole block needs more room.");
+    await expect(
+      page.getByText("This whole block needs more room."),
+    ).toHaveCount(2);
+    await screenshot(page, "media-area-comment", maskTeamSlug(team));
   },
 );
 
@@ -298,7 +367,7 @@ loggedTest(
 
     await page.getByRole("button", { name: "Comment tool" }).click();
     await page
-      .getByRole("button", { name: "Pick the spot to comment on" })
+      .getByRole("button", { name: "Pick a spot or an area to comment on" })
       .click({ position: { x: 200, y: 150 } });
 
     const draftDialog = page.getByRole("dialog", { name: "Add a comment" });
@@ -432,11 +501,15 @@ loggedTest(
     await after.click();
     await page.getByRole("button", { name: "Comment tool" }).click();
     await expect(
-      page.getByText("Click the spot on the image you want to comment on."),
+      page.getByText(
+        "Click a spot on the image, or drag over an area, to comment on it.",
+      ),
     ).toBeVisible();
     await page.keyboard.press("ArrowLeft");
     await expect(
-      page.getByText("Click the spot on the image you want to comment on."),
+      page.getByText(
+        "Click a spot on the image, or drag over an area, to comment on it.",
+      ),
     ).toBeHidden();
   },
 );
@@ -498,7 +571,7 @@ loggedTest(
     const tool = page.getByRole("button", { name: "Comment tool" });
     await expect(tool).toBeVisible();
     const instruction = page.getByText(
-      "Click the spot on the image you want to comment on.",
+      "Click a spot on the image, or drag over an area, to comment on it.",
     );
     await page.keyboard.press("KeyC");
     await expect(instruction).toBeVisible();

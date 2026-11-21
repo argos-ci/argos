@@ -38,9 +38,43 @@ const noModuleRelativePaths = {
   },
 };
 
+const DASH_IN_COPY_MESSAGE =
+  'Copy has no em or en dashes. Use a period, a colon, a comma or parentheses, and a hyphen or "to" for a range.';
+
+const DASH_PATTERN = /[\u2013\u2014]/;
+
+/**
+ * Enforces the dash ban from the Copy section of AGENTS.md. It reads every
+ * string the code can show, not only JSX text: toasts, emails, API and MCP
+ * descriptions and error messages are all string literals.
+ */
+const noDashesInCopy = {
+  create(context) {
+    function check(node, text) {
+      if (DASH_PATTERN.test(text)) {
+        context.report({ node, message: DASH_IN_COPY_MESSAGE });
+      }
+    }
+    return {
+      JSXText(node) {
+        check(node, node.value);
+      },
+      Literal(node) {
+        if (typeof node.value === "string") {
+          check(node, node.value);
+        }
+      },
+      TemplateElement(node) {
+        check(node, node.value.cooked ?? node.value.raw);
+      },
+    };
+  },
+};
+
 export default {
   meta: { name: "argos" },
   rules: {
+    "no-dashes-in-copy": noDashesInCopy,
     "no-module-relative-paths": noModuleRelativePaths,
   },
 };

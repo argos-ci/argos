@@ -39,7 +39,7 @@ export const listTestsOperation = {
   operationId: "listTests",
   summary: "List a project's tests",
   description:
-    "List the tests currently running in a project, flakiest first. A test is listed when it appeared in the latest reference build of its build name — tests that were deleted, renamed or skipped drop out. Use it to find what to stabilise: the first page is the project's flakiness backlog.",
+    "List the tests currently running in a project, flakiest first. A test is listed when it appeared in the latest reference build of its build name. Tests that were deleted, renamed or skipped drop out. Use it to find what to stabilise: the first page is the project's flakiness backlog.",
   tags: ["Tests"],
   security: anyTokenOrOAuthAuth(["projects:read"]),
   requestParams: {

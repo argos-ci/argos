@@ -4,7 +4,6 @@ import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { EyeOffIcon } from "lucide-react";
 
-import { useMentionableUsers } from "@/containers/Comment/MentionableUsersContext";
 import { DocumentType, graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { type EditorValue } from "@/ui/Editor/Editor";
@@ -99,7 +98,6 @@ export function AddCommentForm(props: {
   build: DocumentType<typeof _BuildFragment>;
 }) {
   const { build } = props;
-  const mentions = useMentionableUsers();
   const projectParams = useProjectParams();
   invariant(projectParams);
   const { activeDiff } = useBuildDiffState();
@@ -137,7 +135,6 @@ export function AddCommentForm(props: {
     <StandaloneEditor
       onSubmit={handleSubmit}
       draftKey={`build.${build.id}.comment`}
-      mentions={mentions}
       placeholder="Leave a comment…"
       submitLabel="Submit the comment"
       emptyMessage={{

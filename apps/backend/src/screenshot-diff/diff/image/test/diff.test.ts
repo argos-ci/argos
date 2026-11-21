@@ -71,7 +71,9 @@ describe("diff E2E", () => {
     expect(result.score).toBe(0);
   });
 
-  it("generates different sizes images", async () => {
+  it("ignores a white margin around the same image", async () => {
+    // checkerboard-excess.png is checkerboard.png with five more white rows and
+    // columns: the smaller image is padded, never scaled up to the larger one.
     const baseFilename = "checkerboard-excess.png";
     const compareFilename = "checkerboard.png";
 
@@ -80,7 +82,7 @@ describe("diff E2E", () => {
       compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
 
-    expect(snapshotResult(result)).toMatchSnapshot();
+    expect(result.score).toBe(0);
   });
 
   it("generates the same image where 1 has a transparent background", async () => {

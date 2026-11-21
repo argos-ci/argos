@@ -13,16 +13,11 @@ export interface ClientConfig {
   releaseVersion: string;
   contactEmail: string;
   github: {
-    appUrl: string;
     clientId: string;
-    loginUrl: string;
     marketplaceUrl: string;
   };
   githubLight: {
     appUrl: string;
-  };
-  gitlab: {
-    loginUrl: string;
   };
   stripe: {
     pricingTableId: string;

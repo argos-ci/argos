@@ -15,8 +15,6 @@ import {
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { EvaluationStatus } from "@/pages/Build/EvaluationStatus";
 
-import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
-
 /**
  * Where a subset build lists the baseline snapshots it did not upload. Such a
  * build only runs part of the tests, so a missing snapshot was not run rather
@@ -47,11 +45,6 @@ export const DIFF_STATS_GROUPS = DIFF_GROUPS.filter(
 export type DiffGroupName = (typeof DIFF_GROUPS)[number];
 export type DiffStatusGroupName = (typeof DIFF_STATS_GROUPS)[number];
 
-export interface DiffGroup<TDiff = BuildDiffDetailDocument> {
-  name: DiffGroupName;
-  diffs: (TDiff | null)[];
-}
-
 export function checkIsDiffGroupName(value: unknown): value is DiffGroupName {
   return DIFF_GROUPS.includes(value as DiffGroupName);
 }
@@ -69,6 +62,14 @@ export function getDiffStatusGroup(
   }
   return status;
 }
+
+/** The statuses that put a diff in front of a reviewer. */
+export const ATTENTION_STATUSES = [
+  ScreenshotDiffStatus.Failure,
+  ScreenshotDiffStatus.Changed,
+  ScreenshotDiffStatus.Added,
+  ScreenshotDiffStatus.Removed,
+] as const satisfies DiffGroupName[];
 
 export type DiffGroupColor = "danger" | "warning" | "success" | "neutral";
 

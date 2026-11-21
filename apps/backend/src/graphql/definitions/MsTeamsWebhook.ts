@@ -2,7 +2,8 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 import { UniqueViolationError } from "objection";
 
-import { MsTeamsWebhook, type Account, type User } from "@/database/models";
+import type { AuthSessionPayload } from "@/auth/payload";
+import { MsTeamsWebhook, type Account } from "@/database/models";
 import {
   obfuscateMsTeamsWebhookUrl,
   parseMsTeamsWebhookUrl,
@@ -53,7 +54,7 @@ export const typeDefs = gql`
  */
 async function getAdminWebhook(args: {
   id: string;
-  user: User | undefined | null;
+  auth: AuthSessionPayload | null;
 }): Promise<{ webhook: MsTeamsWebhook; account: Account }> {
   const webhook = await MsTeamsWebhook.query().findById(args.id);
 
@@ -64,7 +65,7 @@ async function getAdminWebhook(args: {
   // Throws when the user is not an admin of the owning account.
   const account = await getAdminAccount({
     id: webhook.accountId,
-    user: args.user,
+    auth: args.auth,
   });
 
   return { webhook, account };
@@ -75,7 +76,7 @@ export const resolvers: IResolvers = {
     url: async (webhook, _args, ctx) => {
       const account = await ctx.loaders.Account.load(webhook.accountId);
       invariant(account, "account not found");
-      const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+      const permissions = await account.$getPermissions(ctx.auth);
       if (!permissions.includes("admin")) {
         // Posting to the webhook is an admin action, so only admins get the
         // credential it embeds.
@@ -90,7 +91,7 @@ export const resolvers: IResolvers = {
 
       const account = await getAdminAccount({
         id: accountId,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
 
       const trimmedName = name.trim();
@@ -142,7 +143,7 @@ export const resolvers: IResolvers = {
     deleteMsTeamsWebhook: async (_root, args, ctx) => {
       const { webhook, account } = await getAdminWebhook({
         id: args.input.id,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
 
       await webhook.$query().delete();
@@ -152,7 +153,7 @@ export const resolvers: IResolvers = {
     testMsTeamsWebhook: async (_root, args, ctx) => {
       const { webhook } = await getAdminWebhook({
         id: args.input.id,
-        user: ctx.auth?.user,
+        auth: ctx.auth,
       });
 
       try {

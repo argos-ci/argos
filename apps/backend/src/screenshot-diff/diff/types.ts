@@ -1,11 +1,19 @@
+import type { Shift } from "@argos-ci/iris";
+
 export type DiffResult = {
   score: number;
   file?: {
     path: string;
     contentType: string;
-    width?: number;
-    height?: number;
+    width: number;
+    height: number;
+    /** SHA-256 of the file: the key it is stored under. */
+    sha256: string;
+    /** Equal for diffs that look alike: ignore rules are keyed on it. */
+    fingerprint: string;
   };
+  /** Content that moved rather than changed, when it explains part of the mask. */
+  layoutShift?: Shift | undefined;
 };
 
 export type DiffOptions = {

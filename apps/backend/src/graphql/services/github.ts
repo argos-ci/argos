@@ -2,6 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
+import type { AuthViewer } from "@/auth/payload";
 import {
   Account,
   GithubAccount,
@@ -9,7 +10,6 @@ import {
   GithubInstallation,
   GithubRepository,
   TeamUser,
-  User,
 } from "@/database/models";
 import { checkOctokitErrorStatus, getTokenOctokit, Octokit } from "@/github";
 
@@ -150,7 +150,7 @@ export async function checkUserHasAccessToInstallation(
  * Check if a user administers an account a light installation belongs to.
  */
 export async function checkUserAdministersLightInstallation(
-  user: User,
+  auth: AuthViewer,
   installation: GithubInstallation,
 ): Promise<boolean> {
   if (installation.app !== "light") {
@@ -161,7 +161,7 @@ export async function checkUserAdministersLightInstallation(
     installation.id,
   );
   const permissionsByAccount = await Promise.all(
-    accounts.map((account) => account.$getPermissions(user)),
+    accounts.map((account) => account.$getPermissions(auth)),
   );
   return permissionsByAccount.some((permissions) =>
     permissions.includes("admin"),

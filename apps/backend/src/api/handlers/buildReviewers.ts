@@ -30,7 +30,7 @@ const BuildPathSchema = z.object({
 const ReviewersBodySchema = z.object({
   userIds: z.array(z.string()).min(1).max(100).meta({
     description:
-      "Identifiers of the users to act on — the `id` of a user as returned by `listBuildReviewers` or `getMe`.",
+      "Identifiers of the users to act on: the `id` of a user as returned by `listBuildReviewers` or `getMe`.",
   }),
 });
 

@@ -10,6 +10,7 @@ import {
 } from "@/database/services/monthly-report";
 import { job as deploymentNotificationJob } from "@/deployment-notification";
 import { reconcilePendingCustomDomains } from "@/deployment/custom-domain";
+import { githubDeploymentJob } from "@/github-deployment/job";
 import { githubPullRequestJob } from "@/github-pull-request/job";
 import { syncGithubMarketplacePlanPrices } from "@/github/marketplace";
 import { createJobWorker } from "@/job-core";
@@ -21,6 +22,7 @@ import { notificationWorkflowJob } from "@/notification/workflow-job";
 import { purgeAbandonedClients } from "@/oauth/clients";
 import { originPullRequestJob } from "@/origin-pull-request/job";
 import { originInstallationSyncJob } from "@/origin/synchronize-job";
+import { warnExpiringProjectTokens } from "@/project-token/expiration";
 import { job as screenshotDiffJob } from "@/screenshot-diff";
 import { checkIsStripeConfigured } from "@/stripe";
 import { syncStripeInvoices } from "@/stripe/invoice-mirror";
@@ -46,6 +48,10 @@ scheduleCron("custom-domain-reconcile", "*/5 * * * *", () =>
 
 scheduleCron("saml-certificate-expiration", "0 * * * *", (context) =>
   checkExpiringSamlCertificates(context.date),
+);
+
+scheduleCron("project-token-expiration", "40 * * * *", (context) =>
+  warnExpiringProjectTokens(context.date),
 );
 
 // Media retention. Hourly rather than daily: a 30-day promise measured in hours
@@ -96,6 +102,7 @@ createJobWorker(
   buildJob,
   buildNotificationJob,
   deploymentNotificationJob,
+  githubDeploymentJob,
   githubPullRequestJob,
   mediaDiffJob,
   notificationMessageJob,

@@ -24,7 +24,7 @@ export function getAuthMd(): string {
   const apiUrl = getApiResourceUrl();
   const mcpUrl = getMcpResourceUrl();
   const scopeLines = OAUTH_SCOPE_LIST.map(
-    (scope) => `- \`${scope}\` — ${OAUTH_SCOPES[scope].description}`,
+    (scope) => `- \`${scope}\`: ${OAUTH_SCOPES[scope].description}`,
   ).join("\n");
 
   return `# Argos auth.md
@@ -95,8 +95,8 @@ Authorization: Bearer <access_token>
 
 ${scopeLines}
 
-Scopes only ever narrow what the authenticating user is already allowed to do —
-they never widen it.
+Scopes only ever narrow what the authenticating user is already allowed to do.
+They never widen it.
 
 ## 6. Revoke
 

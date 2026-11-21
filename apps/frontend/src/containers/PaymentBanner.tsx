@@ -7,7 +7,10 @@ import { invariant } from "@argos/util/invariant";
 import { config } from "@/config";
 import { ResumeSubscriptionButton } from "@/containers/Team/CancelSubscription";
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
-import { TeamOwnersLink } from "@/containers/Team/TeamOwnersLink";
+import {
+  TeamBillingMembersLink,
+  TeamOwnersLink,
+} from "@/containers/Team/TeamOwnersLink";
 import { DocumentType, graphql } from "@/gql";
 import {
   AccountPermission,
@@ -86,6 +89,23 @@ function BannerTemplate(props: {
   );
 }
 
+/** Where a member who cannot act on billing is sent: the people who can. */
+function AskBillingManagers(props: {
+  account: { slug: string; permissions: readonly AccountPermission[] };
+  children: React.ReactNode;
+}) {
+  const { account, children } = props;
+  return (
+    <>
+      Ask a <TeamOwnersLink account={account}>team owner</TeamOwnersLink> or{" "}
+      <TeamBillingMembersLink account={account}>
+        billing member
+      </TeamBillingMembersLink>{" "}
+      {children}
+    </>
+  );
+}
+
 const ExtendTrialMutation = graphql(`
   mutation PaymentBanner_extendTrial($teamAccountId: ID!) {
     extendTrial(teamAccountId: $teamAccountId) {
@@ -131,8 +151,9 @@ export const PaymentBanner = memo(
       return null;
     }
 
-    const userIsAdmin = permissions.includes(AccountPermission.Admin);
-    const askOwners = !userIsAdmin && account.__typename === "Team";
+    const canManageBilling = permissions.includes(AccountPermission.Billing);
+    const askBillingManagers =
+      !canManageBilling && account.__typename === "Team";
 
     const trialing = checkIsTrialingSubscriptionStatus(subscriptionStatus);
 
@@ -145,18 +166,16 @@ export const PaymentBanner = memo(
             Your {subscriptionTypeLabel} has been canceled. You can still use
             team features until the{" "}
             <Time date={pendingCancelAt} format="longDate" />.
-            {askOwners ? (
+            {askBillingManagers ? (
               <>
                 {" "}
-                Ask{" "}
-                <TeamOwnersLink account={account}>
-                  a team owner
-                </TeamOwnersLink>{" "}
-                to resume it.
+                <AskBillingManagers account={account}>
+                  to resume it.
+                </AskBillingManagers>
               </>
             ) : null}
           </p>
-          {userIsAdmin &&
+          {canManageBilling &&
             // The portal's renew control goes away with its cancel section,
             // which is turned off so the survey is not asked twice.
             (subscription?.provider === AccountSubscriptionProvider.Stripe ? (
@@ -196,19 +215,15 @@ export const PaymentBanner = memo(
               ) : daysRemaining ? (
                 <>Your trial ends in {daysRemaining} days. </>
               ) : null}
-              {askOwners ? (
-                <>
-                  Ask{" "}
-                  <TeamOwnersLink account={account}>
-                    a team owner
-                  </TeamOwnersLink>{" "}
+              {askBillingManagers ? (
+                <AskBillingManagers account={account}>
                   to add a payment method to retain access to team features.
-                </>
+                </AskBillingManagers>
               ) : (
                 "Add a payment method to retain access to team features."
               )}
             </p>
-            {userIsAdmin && (
+            {canManageBilling && (
               <ManageStripeButton
                 stripeCustomerId={stripeCustomerId ?? null}
                 accountId={account.id}
@@ -224,19 +239,15 @@ export const PaymentBanner = memo(
           <BannerTemplate color="danger">
             <p>
               Your subscription is past due.{" "}
-              {askOwners ? (
-                <>
-                  Ask{" "}
-                  <TeamOwnersLink account={account}>
-                    a team owner
-                  </TeamOwnersLink>{" "}
+              {askBillingManagers ? (
+                <AskBillingManagers account={account}>
                   to update the payment method.
-                </>
+                </AskBillingManagers>
               ) : (
                 "Please update your payment method."
               )}
             </p>
-            {userIsAdmin && (
+            {canManageBilling && (
               <ManageStripeButton
                 stripeCustomerId={stripeCustomerId ?? null}
                 accountId={account.id}
@@ -252,19 +263,15 @@ export const PaymentBanner = memo(
           <BannerTemplate color="danger">
             <p>
               Your subscription is unpaid.{" "}
-              {askOwners ? (
-                <>
-                  Ask{" "}
-                  <TeamOwnersLink account={account}>
-                    a team owner
-                  </TeamOwnersLink>{" "}
+              {askBillingManagers ? (
+                <AskBillingManagers account={account}>
                   to pay it to retain access to team features.
-                </>
+                </AskBillingManagers>
               ) : (
                 "Please proceed to payment to retain access to team features."
               )}
             </p>
-            {userIsAdmin && (
+            {canManageBilling && (
               <ManageStripeButton
                 stripeCustomerId={stripeCustomerId ?? null}
                 accountId={account.id}
@@ -280,19 +287,15 @@ export const PaymentBanner = memo(
           <BannerTemplate color="danger">
             <p>
               Your trial has expired.{" "}
-              {askOwners ? (
-                <>
-                  Ask{" "}
-                  <TeamOwnersLink account={account}>
-                    a team owner
-                  </TeamOwnersLink>{" "}
+              {askBillingManagers ? (
+                <AskBillingManagers account={account}>
                   to subscribe to the Pro plan to use team features.
-                </>
+                </AskBillingManagers>
               ) : (
                 "Subscribe to Pro plan to use team features."
               )}
             </p>
-            {userIsAdmin && (
+            {canManageBilling && (
               <div className="flex flex-wrap items-center gap-2">
                 <TeamSubscribeDialog initialAccountId={account.id}>
                   Subscribe
@@ -309,19 +312,15 @@ export const PaymentBanner = memo(
         return (
           <BannerTemplate color="danger">
             <p>
-              {askOwners ? (
-                <>
-                  Ask{" "}
-                  <TeamOwnersLink account={account}>
-                    a team owner
-                  </TeamOwnersLink>{" "}
+              {askBillingManagers ? (
+                <AskBillingManagers account={account}>
                   to subscribe to the Pro plan to use team features.
-                </>
+                </AskBillingManagers>
               ) : (
                 "Subscribe to Pro plan to use team features."
               )}
             </p>
-            {userIsAdmin && (
+            {canManageBilling && (
               <TeamSubscribeDialog initialAccountId={account.id}>
                 Subscribe
               </TeamSubscribeDialog>

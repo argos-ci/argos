@@ -47,7 +47,7 @@ export const createProjectOperation = {
   },
   responses: {
     "201": {
-      description: "Project created successfully — returns the project",
+      description: "The created project",
       content: {
         "application/json": {
           schema: ProjectSchema,
@@ -73,7 +73,7 @@ export const createProject: CreateAPIHandler = ({ post }) => {
     // Shared with the GraphQL API — enforces admin permission and name rules.
     const project = await createProjectService({
       account,
-      user: auth.user,
+      auth,
       name: body.name,
       source: null,
     });

@@ -53,7 +53,10 @@ const test = baseTest.extend<Fixtures>({
       compareScreenshotBucket: compareBucket,
       project,
       pullRequest: null,
-      context: { checkIsAutoApproved: () => false },
+      context: {
+        checkIsAutoApproved: () => false,
+        isAutoApprovedBranch: () => false,
+      },
     });
   },
 });
@@ -84,12 +87,17 @@ async function createBaseline(project: Project, commit: string) {
 /**
  * Create a completed check build that nobody reviewed at a given commit.
  */
-async function createUnreviewedBuild(project: Project, commit: string) {
+async function createUnreviewedBuild(
+  project: Project,
+  commit: string,
+  input: { branch?: string; prHeadCommit?: string } = {},
+) {
   const bucket = await factory.ScreenshotBucket.create({
     projectId: project.id,
     name: "default",
     mode: "ci",
     commit,
+    ...(input.branch ? { branch: input.branch } : {}),
   });
   const build = await factory.Build.create({
     projectId: project.id,
@@ -98,6 +106,7 @@ async function createUnreviewedBuild(project: Project, commit: string) {
     mode: "ci",
     type: "check",
     jobStatus: "complete",
+    prHeadCommit: input.prHeadCommit ?? null,
   });
   return { bucket, build };
 }
@@ -323,12 +332,170 @@ describe("#getCIBase (no git provider)", () => {
 
       const result = await getCIBase({
         ...args,
-        context: { checkIsAutoApproved: () => true },
+        context: {
+          checkIsAutoApproved: () => true,
+          isAutoApprovedBranch: () => true,
+        },
       });
       expect(
         result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
       ).toBe(closerBucket.id);
     });
+  });
+
+  describe("stacked pull requests", () => {
+    const BELOW_COMMIT = "dddddddddddddddddddddddddddddddddddddddd";
+    const MAIN_COMMIT = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+    const MERGE_COMMIT = "ffffffffffffffffffffffffffffffffffffffff";
+
+    /**
+     * Open a pull request from `feature-2` into `baseRef`, with the pull
+     * request below it from `feature-1` into `main`.
+     */
+    async function createStack(input: {
+      baseRef: string;
+      below?: Partial<{ state: "open" | "closed"; headFromFork: boolean }>;
+    }) {
+      const repository = await factory.GithubRepository.create();
+      await factory.PullRequest.create({
+        githubRepositoryId: repository.id,
+        number: 1,
+        headRef: "feature-1",
+        baseRef: "main",
+        headFromFork: false,
+        ...input.below,
+      });
+      return factory.PullRequest.create({
+        githubRepositoryId: repository.id,
+        number: 2,
+        headRef: "feature-2",
+        baseRef: input.baseRef,
+        headFromFork: false,
+      });
+    }
+
+    test("compares with the latest build of the pull request below, approved or not", async ({
+      args,
+      build,
+      project,
+    }) => {
+      const pullRequest = await createStack({ baseRef: "feature-1" });
+      const { bucket: belowBucket } = await createUnreviewedBuild(
+        project,
+        BELOW_COMMIT,
+        { branch: "feature-1" },
+      );
+      await createBaseline(project, MAIN_COMMIT);
+      await build.$query().patch({
+        parentCommits: [HEAD_COMMIT, BELOW_COMMIT, MAIN_COMMIT],
+      });
+
+      const result = await getCIBase({ ...args, pullRequest });
+      expect(
+        result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
+      ).toBe(belowBucket.id);
+      expect(result.baseBranch).toBe("feature-1");
+      expect(result.baseBranchResolvedFrom).toBe("pull-request");
+    });
+
+    test("never compares with a rejected build of the pull request below", async ({
+      args,
+      build,
+      project,
+    }) => {
+      const pullRequest = await createStack({ baseRef: "feature-1" });
+      const { build: belowBuild } = await createUnreviewedBuild(
+        project,
+        BELOW_COMMIT,
+        { branch: "feature-1" },
+      );
+      await factory.BuildReview.create({
+        buildId: belowBuild.id,
+        state: "rejected",
+      });
+      const mainBucket = await createBaseline(project, MAIN_COMMIT);
+      await build.$query().patch({
+        parentCommits: [HEAD_COMMIT, BELOW_COMMIT, MAIN_COMMIT],
+      });
+
+      const result = await getCIBase({ ...args, pullRequest });
+      expect(
+        result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
+      ).toBe(mainBucket.id);
+    });
+
+    test("finds the build below by its head commit when CI builds merge commits", async ({
+      args,
+      build,
+      project,
+    }) => {
+      const pullRequest = await createStack({ baseRef: "feature-1" });
+      const { bucket: belowBucket } = await createUnreviewedBuild(
+        project,
+        MERGE_COMMIT,
+        { branch: "feature-1", prHeadCommit: BELOW_COMMIT },
+      );
+      await createBaseline(project, MAIN_COMMIT);
+      await build.$query().patch({
+        parentCommits: [HEAD_COMMIT, BELOW_COMMIT, MAIN_COMMIT],
+      });
+
+      const result = await getCIBase({ ...args, pullRequest });
+      expect(
+        result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
+      ).toBe(belowBucket.id);
+    });
+
+    test("requires an approved baseline from any other branch", async ({
+      args,
+      build,
+      project,
+    }) => {
+      const pullRequest = await createStack({ baseRef: "feature-1" });
+      await createUnreviewedBuild(project, BELOW_COMMIT, {
+        branch: "feature-3",
+      });
+      const mainBucket = await createBaseline(project, MAIN_COMMIT);
+      await build.$query().patch({
+        parentCommits: [HEAD_COMMIT, BELOW_COMMIT, MAIN_COMMIT],
+      });
+
+      const result = await getCIBase({ ...args, pullRequest });
+      expect(
+        result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
+      ).toBe(mainBucket.id);
+    });
+
+    test.for([
+      ["no pull request comes from the base branch", { baseRef: "develop" }],
+      [
+        "the pull request below is closed",
+        { baseRef: "feature-1", below: { state: "closed" as const } },
+      ],
+      [
+        "the pull request below comes from a fork",
+        { baseRef: "feature-1", below: { headFromFork: true } },
+      ],
+    ] as const)(
+      "requires an approved baseline when %s",
+      async ([, input], { args, build, project }) => {
+        const pullRequest = await createStack(input);
+        await createUnreviewedBuild(project, BELOW_COMMIT, {
+          branch: "feature-1",
+        });
+        const mainBucket = await createBaseline(project, MAIN_COMMIT);
+        await build.$query().patch({
+          parentCommits: [HEAD_COMMIT, BELOW_COMMIT, MAIN_COMMIT],
+        });
+
+        const result = await getCIBase({ ...args, pullRequest });
+        expect(
+          result.baseBucket &&
+            "id" in result.baseBucket &&
+            result.baseBucket.id,
+        ).toBe(mainBucket.id);
+      },
+    );
   });
 
   describe("same commit and branch fallback", () => {

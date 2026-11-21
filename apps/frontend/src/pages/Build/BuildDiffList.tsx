@@ -26,9 +26,7 @@ import {
 import memoize from "memoize";
 
 import {
-  checkIsDiffGroupName,
   getDiffGroupDefinition,
-  type DiffGroup,
   type DiffGroupName,
 } from "@/containers/Build/BuildDiffGroup";
 import {
@@ -43,7 +41,7 @@ import {
 import { NoScreenshotsBuildEmptyState } from "@/containers/Build/BuildEmptyStates";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { Badge } from "@/ui/Badge";
-import { Button, ButtonIcon, ButtonProps, LinkButton } from "@/ui/Button";
+import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import {
@@ -53,14 +51,19 @@ import {
   EmptyStateIcon,
 } from "@/ui/Layout";
 import { Tooltip } from "@/ui/Tooltip";
+import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
+import { lowTextColorClassNames } from "@/util/colors";
 
 import {
   Diff,
   DiffResult,
+  getDiffListStatus,
+  getFirstListedStatus,
   useBuildDiffState,
   useSearchModeState,
+  type DiffListGroup,
 } from "./BuildDiffState";
 import { getBuildOverviewURL, useBuildParams } from "./BuildParams";
 import {
@@ -70,6 +73,11 @@ import {
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
 import { EvaluationStatus } from "./EvaluationStatus";
 import { FilterStateContext } from "./metadata/filters/FilterState";
+import {
+  useSnapshotDisplay,
+  type SnapshotDisplay,
+  type SnapshotGrouping,
+} from "./SnapshotListPreferences";
 
 const DIFF_IMAGE_CONFIG = {
   maxWidth: 262,
@@ -78,14 +86,16 @@ const DIFF_IMAGE_CONFIG = {
   minHeight: 100,
 };
 
+const NAME_ROW_HEIGHT = 28;
+
 interface ListHeaderRow {
   key: string;
   type: "header";
-  name: DiffGroup<Diff>["name"];
+  name: string;
   count: number;
   expanded: boolean;
   borderBottom: boolean;
-  group: DiffGroup<Diff>;
+  group: DiffListGroup;
 }
 
 interface ListItemRow {
@@ -93,7 +103,7 @@ interface ListItemRow {
   type: "item";
   first: boolean;
   last: boolean;
-  diff: Diff | null;
+  diff: Diff;
   result: DiffResult | null;
   parent: ListGroupItemRow | null;
 }
@@ -103,7 +113,7 @@ interface ListGroupItemRow {
   type: "group-item";
   first: boolean;
   last: boolean;
-  diff: Diff | null;
+  diff: Diff;
   result: DiffResult | null;
   expanded: boolean;
   group: Set<Diff>;
@@ -112,7 +122,7 @@ interface ListGroupItemRow {
 type ListRow = ListHeaderRow | ListItemRow | ListGroupItemRow;
 
 function createHeaderRow(input: {
-  group: DiffGroup<Diff>;
+  group: DiffListGroup;
   expanded: boolean;
   borderBottom: boolean;
 }): ListHeaderRow {
@@ -128,15 +138,14 @@ function createHeaderRow(input: {
 }
 
 function createListItemRow(input: {
-  index: number;
-  diff: Diff | null;
+  diff: Diff;
   first: boolean;
   last: boolean;
   result?: DiffResult | null;
   parent?: ListGroupItemRow | null;
 }): ListItemRow {
   return {
-    key: `item-${input.diff?.id ?? `idx:${input.index}`}`,
+    key: `item-${input.diff.id}`,
     type: "item",
     diff: input.diff,
     first: input.first,
@@ -149,8 +158,7 @@ function createListItemRow(input: {
 const memoCreateListItemRow = memoize(createListItemRow, {
   cacheKey: ([input]) =>
     [
-      input.index,
-      input.diff?.id,
+      input.diff.id,
       input.first,
       input.last,
       input.result ? JSON.stringify(input.result.match) : null,
@@ -177,131 +185,100 @@ function createGroupItemRow(input: {
   };
 }
 
-const memoCreateGroupItemRow = memoize(createGroupItemRow, {
-  cacheKey: ([input]) =>
-    [
-      input.diff?.id,
-      input.first,
-      input.last,
-      input.expanded,
-      input.result ? JSON.stringify(input.result.match) : null,
-    ].join(""),
-});
-
 function getRows(
-  groups: DiffGroup<Diff>[],
-  expandedGroups: string[],
+  groups: DiffListGroup[],
+  expandedGroups: ReadonlySet<string>,
   results: DiffResult[],
   searchMode: boolean,
 ): ListRow[] {
-  let _uindex = 0;
-  return (
-    groups
-      // Filter out empty groups
-      .filter((group) => group.diffs.length > 0)
-      .flatMap((group, groupIndex, filteredGroups) => {
-        const isLastGroup = groupIndex === filteredGroups.length - 1;
-        const isGroupExpanded = expandedGroups.includes(group.name);
+  const rows: ListRow[] = [];
+  const nonEmptyGroups = groups.filter((group) => group.diffs.length > 0);
+  nonEmptyGroups.forEach((group, groupIndex) => {
+    const isLastGroup = groupIndex === nonEmptyGroups.length - 1;
+    const isGroupExpanded = expandedGroups.has(group.name);
 
-        // Create the header row
-        const initialRows: ListRow[] = [
-          createHeaderRow({
-            group,
-            expanded: isGroupExpanded,
-            borderBottom: isLastGroup || isGroupExpanded,
-          }),
-        ];
+    rows.push(
+      createHeaderRow({
+        group,
+        expanded: isGroupExpanded,
+        borderBottom: isLastGroup || isGroupExpanded,
+      }),
+    );
 
-        // If the group is not expanded, return the header row only
-        if (!isGroupExpanded) {
-          return initialRows;
+    if (!isGroupExpanded) {
+      return;
+    }
+
+    // Listed by test, similar diffs are not stacked: they mostly come from
+    // other tests.
+    const stackSizes = new Map<string, number>();
+    if (!searchMode && group.type === "status") {
+      for (const diff of group.diffs) {
+        if (diff.group) {
+          stackSizes.set(diff.group, (stackSizes.get(diff.group) ?? 0) + 1);
+        }
+      }
+    }
+
+    let currentGroupItem: ListGroupItemRow | null = null;
+
+    group.diffs.forEach((diff, index, diffs) => {
+      const first = index === 0;
+      const last = index === diffs.length - 1;
+
+      // In search mode, we don't show groups.
+      if (searchMode) {
+        const result = results.find((r) => r.item === diff) ?? null;
+        if (result) {
+          rows.push(memoCreateListItemRow({ diff, first, last, result }));
+        }
+        return;
+      }
+
+      // A diff alone in its stack is listed on its own.
+      if (!diff.group || (stackSizes.get(diff.group) ?? 0) < 2) {
+        rows.push(memoCreateListItemRow({ diff, first, last }));
+        return;
+      }
+
+      const expanded = expandedGroups.has(diff.group);
+
+      // If the diff is part the last group.
+      if (currentGroupItem && diff.group === currentGroupItem.diff.group) {
+        // Update the group count.
+        currentGroupItem.group.add(diff);
+
+        // If the group is expanded, add an item row.
+        if (expanded) {
+          rows.push(
+            memoCreateListItemRow({
+              diff,
+              first,
+              last,
+              parent: currentGroupItem,
+            }),
+          );
+          return;
         }
 
-        let currentGroupItem: ListGroupItemRow | null = null;
+        // If the diff is collapsed, update the last flag.
+        currentGroupItem.last = last;
+        return;
+      }
 
-        return group.diffs.reduce((acc, diff, index, diffs) => {
-          const uindex = _uindex++;
-          const first = index === 0;
-          const last = index === diffs.length - 1;
-
-          // In search mode, we don't show groups.
-          if (searchMode) {
-            const result = results.find((r) => r.item === diff) ?? null;
-            if (result) {
-              return [
-                ...acc,
-                memoCreateListItemRow({
-                  index: uindex,
-                  diff,
-                  first,
-                  last,
-                  result,
-                }),
-              ];
-            }
-            return acc;
-          }
-
-          // If there is no group, we create an item row.
-          if (!diff?.group) {
-            return [
-              ...acc,
-              memoCreateListItemRow({ index: uindex, diff, first, last }),
-            ];
-          }
-
-          // Else we have a group.
-          const otherDiffInGroup = diffs.some(
-            (d) => d && d !== diff && d.group === diff.group,
-          );
-
-          // If it's the only diff of the group, we don't group it.
-          if (!otherDiffInGroup) {
-            return [
-              ...acc,
-              memoCreateListItemRow({ index: uindex, diff, first, last }),
-            ];
-          }
-
-          const expanded = expandedGroups.includes(diff.group);
-
-          // If the diff is part the last group.
-          if (currentGroupItem && diff.group === currentGroupItem.diff?.group) {
-            // Update the group count.
-            currentGroupItem.group.add(diff);
-
-            // If the group is expanded, add an item row.
-            if (expanded) {
-              return [
-                ...acc,
-                memoCreateListItemRow({
-                  index: uindex,
-                  diff,
-                  first,
-                  last,
-                  parent: currentGroupItem,
-                }),
-              ];
-            }
-
-            // If the diff is collapsed, update the last flag.
-            currentGroupItem.last = last;
-            return acc;
-          }
-
-          currentGroupItem = memoCreateGroupItemRow({
-            diff,
-            first,
-            last,
-            expanded,
-            result: null,
-          });
-
-          // Otherwise, create a new group item row.
-          return [...acc, currentGroupItem];
-        }, initialRows as ListRow[]);
-      })
-  );
+      // Built afresh on each pass, not memoized: the loop goes on to add to
+      // its stack and move its `last`.
+      currentGroupItem = createGroupItemRow({
+        diff,
+        first,
+        last,
+        expanded,
+        result: null,
+      });
+      rows.push(currentGroupItem);
+    });
+  });
+  return rows;
 }
 
 function ListHeader(props: {
@@ -309,34 +286,82 @@ function ListHeader(props: {
   onClick: ComponentPropsWithRef<"button">["onClick"];
   item: ListHeaderRow;
   activeIndex: number;
+  testStatuses: ReadonlyMap<string, DiffGroupName>;
 }) {
-  const { style, onClick, item, activeIndex } = props;
+  const { style, onClick, item, activeIndex, testStatuses } = props;
   const borderB = item.borderBottom ? "border-b-thin" : "";
-  const def = getDiffGroupDefinition(item.name);
   return (
     <button
       type="button"
       className={clsx(
         borderB,
-        "group/list-header bg-app hover:bg-subtle focus-visible:bg-subtle border-t-thin z-10 flex w-full cursor-default items-center pr-2 text-left select-none focus:outline-hidden",
+        "group/list-header bg-app hover:bg-subtle focus-visible:bg-subtle border-t-thin z-10 flex w-full cursor-default items-center gap-1.5 pr-2 text-left select-none focus:outline-hidden",
       )}
       style={style}
       onClick={onClick}
     >
       <ChevronDownIcon
         className={clsx(
-          "text-low m-0.75 size-2.5 shrink-0 opacity-0 transition group-hover/sidebar:opacity-100 group-focus-visible/list-header:opacity-100",
+          "text-low m-0.75 -mr-0.75 size-2.5 shrink-0 opacity-0 transition group-hover/sidebar:opacity-100 group-focus-visible/list-header:opacity-100",
           !item.expanded && "-rotate-90",
         )}
       />
-      <def.icon className="text-low mr-1.5 size-3" />
-      <div className="text-default flex-1 text-sm font-medium">{def.label}</div>
+      <ListHeaderLabel group={item.group} testStatuses={testStatuses} />
       <Badge className="shrink-0">
         {activeIndex !== -1 ? <>{activeIndex + 1} / </> : null}
         {item.count}
       </Badge>
     </button>
   );
+}
+
+function ListHeaderLabel(props: {
+  group: DiffListGroup;
+  testStatuses: ReadonlyMap<string, DiffGroupName>;
+}) {
+  const { group, testStatuses } = props;
+  switch (group.type) {
+    case "status": {
+      const def = getDiffGroupDefinition(group.name);
+      return (
+        <>
+          <def.icon className="text-low size-3 shrink-0" />
+          <div className="text-default flex-1 text-sm font-medium">
+            {def.label}
+          </div>
+        </>
+      );
+    }
+    case "test": {
+      const status = testStatuses.get(group.name);
+      invariant(status, "every test group has a status");
+      return (
+        <>
+          <DiffStatusIndicator group={status} />
+          {/* The title keeps the room it needs, the path takes what is left:
+              its basis is 0, so it truncates first. */}
+          <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+            {group.test ? (
+              <>
+                <Truncable className="text-default min-w-0 text-sm font-medium">
+                  {group.test.title}
+                </Truncable>
+                {group.test.prefix ? (
+                  <span className="text-low min-w-0 flex-1 truncate text-xs">
+                    {group.test.prefix}
+                  </span>
+                ) : null}
+              </>
+            ) : (
+              <div className="text-low text-sm font-medium">No test</div>
+            )}
+          </div>
+        </>
+      );
+    }
+    default:
+      assertNever(group);
+  }
 }
 
 function CardStack(props: {
@@ -360,14 +385,12 @@ function CardStack(props: {
   );
 }
 
-function ShowSubItemToggle(
-  props: ButtonProps & {
-    count: number;
-    open: boolean;
-    onToggleGroupItem: () => void;
-    active: boolean;
-  },
-) {
+function ShowSubItemToggle(props: {
+  count: number;
+  open: boolean;
+  onToggleGroupItem: () => void;
+  active: boolean;
+}) {
   const { open, onToggleGroupItem } = props;
 
   const toggleDiff = useBuildHotkey(
@@ -411,13 +434,61 @@ function ShowSubItemToggle(
   );
 }
 
-function DiffStatusIndicator(props: { group: DiffGroupName }) {
-  const { group } = props;
-  const def = getDiffGroupDefinition(group);
+function DiffStatusIcon(props: { group: DiffGroupName }) {
+  const def = getDiffGroupDefinition(props.group);
   return (
-    <Tooltip content={def.label}>
-      <def.icon className="text-low size-3" />
+    <def.icon
+      className={clsx("size-3 shrink-0", lowTextColorClassNames[def.color])}
+    />
+  );
+}
+
+function DiffStatusIndicator(props: { group: DiffGroupName }) {
+  return (
+    <Tooltip content={getDiffGroupDefinition(props.group).label}>
+      <DiffStatusIcon group={props.group} />
     </Tooltip>
+  );
+}
+
+/**
+ * The status a row shows. Listed by status, the section says where a diff
+ * stands, so a card only adds what a reviewed diff was, while a name, which
+ * has nothing else beside it, always shows its diff's status. Listed by test,
+ * nothing else on the row says where the diff stands.
+ */
+function getRowStatus(input: {
+  diff: Diff;
+  status: EvaluationStatus | null;
+  grouping: SnapshotGrouping;
+  display: SnapshotDisplay;
+  isSubsetBuild: boolean;
+}): DiffGroupName | null {
+  const { diff, status, grouping, display, isSubsetBuild } = input;
+  if (grouping === "test") {
+    return getDiffListStatus(diff, status, { isSubsetBuild });
+  }
+  const reviewed =
+    status === EvaluationStatus.Accepted ||
+    status === EvaluationStatus.Rejected;
+  return reviewed || display === "names"
+    ? getDiffListStatus(diff, null, { isSubsetBuild })
+    : null;
+}
+
+function DiffName(props: { diff: Diff; result: DiffResult | null }) {
+  const { diff, result } = props;
+  if (!result) {
+    return diff.name;
+  }
+  const start = Math.max(result.match.index, 0);
+  const end = result.match.index + result.match.length;
+  return (
+    <>
+      {result.key.slice(0, start)}
+      <strong>{result.key.slice(start, end)}</strong>
+      {result.key.slice(end)}
+    </>
   );
 }
 
@@ -425,6 +496,12 @@ const ListItem = memo(function ListItem(props: {
   item: ListItemRow | ListGroupItemRow;
   index: number;
   status: EvaluationStatus | null;
+  /**
+   * The status shown on the row, or null when the section it is listed in
+   * already says it.
+   */
+  listStatus: DiffGroupName | null;
+  display: SnapshotDisplay;
   active: boolean;
   setActiveDiff: (diff: Diff) => void;
   observer: IntersectionObserver | null;
@@ -436,6 +513,8 @@ const ListItem = memo(function ListItem(props: {
     index,
     active,
     status,
+    listStatus,
+    display,
     setActiveDiff,
     observer,
     onToggleGroupItem,
@@ -456,72 +535,76 @@ const ListItem = memo(function ListItem(props: {
   const isGroupItem = item.type === "group-item" && item.group.size > 1;
   const isSubItem = item.type === "item" && item.parent;
 
-  const rowStyle = getRowStyle(item);
+  const rowStyle = getRowStyle(item, display);
+
+  const subItemToggle = isGroupItem ? (
+    <ShowSubItemToggle
+      onToggleGroupItem={() => onToggleGroupItem(item.diff.group ?? null)}
+      count={item.group.size}
+      open={item.expanded}
+      active={active}
+    />
+  ) : null;
+
+  const buttonProps = {
+    ref,
+    "data-index": index,
+    onClick: () => setActiveDiff(item.diff),
+    "aria-current": active ? ("true" as const) : undefined,
+  };
+
+  if (display === "names") {
+    return (
+      <div className="w-full px-2" style={rowStyle}>
+        <ListItemButton
+          {...buttonProps}
+          title={
+            listStatus
+              ? `${item.diff.name} (${getDiffGroupDefinition(listStatus).label})`
+              : item.diff.name
+          }
+          className={clsx(
+            "flex size-full items-center gap-1.5 rounded-md pr-1 text-xs",
+            isSubItem ? "pl-6" : "pl-2",
+            active
+              ? "bg-active text-default"
+              : "text-low hover:bg-hover hover:text-default",
+          )}
+        >
+          {isSubItem && (
+            <CornerDownRightIcon className="text-low size-3 shrink-0" />
+          )}
+          {/* No tooltips here: rows this short mount by the dozen on every
+              scroll, so the row's native title names the snapshot instead. */}
+          {listStatus && <DiffStatusIcon group={listStatus} />}
+          <div className="min-w-0 flex-1 truncate">
+            <DiffName diff={item.diff} result={item.result} />
+          </div>
+          {subItemToggle}
+        </ListItemButton>
+      </div>
+    );
+  }
 
   const button = (
-    <ListItemButton
-      ref={ref}
-      data-index={index}
-      onClick={() => {
-        if (item.diff) {
-          setActiveDiff(item.diff);
-        }
-      }}
-      disabled={!item.diff}
-      className="size-full"
-    >
+    <ListItemButton {...buttonProps} className="size-full">
       <StatusDiffCard isActive={active} status={status}>
-        {item.diff ? (
-          <>
-            <DiffImage diff={item.diff} config={DIFF_IMAGE_CONFIG} />
-            <DiffCardFooter
-              alwaysVisible={searchMode || status !== EvaluationStatus.Pending}
-            >
-              {(status === EvaluationStatus.Accepted ||
-                status === EvaluationStatus.Rejected) &&
-              checkIsDiffGroupName(item.diff.status) ? (
-                <DiffStatusIndicator group={item.diff.status} />
-              ) : null}
-              <DiffCardFooterText>
-                {item.result ? (
-                  <>
-                    {item.result.key.slice(
-                      0,
-                      Math.max(item.result.match.index, 0),
-                    )}
-                    <strong>
-                      {item.result.key.slice(
-                        Math.max(item.result.match.index, 0),
-                        item.result.match.index + item.result.match.length,
-                      )}
-                    </strong>
-                    {item.result.key.slice(
-                      item.result.match.index + item.result.match.length,
-                      item.result.key.length,
-                    )}
-                  </>
-                ) : (
-                  item.diff.name
-                )}
-              </DiffCardFooterText>
-              {isGroupItem && (
-                <div className="shrink-0 py-2">
-                  <ShowSubItemToggle
-                    onClick={() => {
-                      onToggleGroupItem(item.diff?.group ?? null);
-                    }}
-                    onToggleGroupItem={() =>
-                      onToggleGroupItem(item.diff?.group ?? null)
-                    }
-                    count={item.group.size}
-                    open={item.expanded}
-                    active={active}
-                  />
-                </div>
-              )}
-            </DiffCardFooter>
-          </>
-        ) : null}
+        <DiffImage diff={item.diff} config={DIFF_IMAGE_CONFIG} />
+        <DiffCardFooter
+          alwaysVisible={
+            searchMode ||
+            status !== EvaluationStatus.Pending ||
+            listStatus !== null
+          }
+        >
+          {listStatus && <DiffStatusIndicator group={listStatus} />}
+          <DiffCardFooterText>
+            <DiffName diff={item.diff} result={item.result} />
+          </DiffCardFooterText>
+          {subItemToggle && (
+            <div className="shrink-0 py-2">{subItemToggle}</div>
+          )}
+        </DiffCardFooter>
       </StatusDiffCard>
     </ListItemButton>
   );
@@ -623,33 +706,37 @@ const preloadImage = (src: string) => {
 };
 
 const preloadListItemRow = (row: ListItemRow | ListGroupItemRow) => {
-  if (row.diff?.baseScreenshot?.url) {
+  if (row.diff.baseScreenshot?.url) {
     preloadImage(row.diff.baseScreenshot.url);
   }
-  if (row.diff?.compareScreenshot?.url) {
+  if (row.diff.compareScreenshot?.url) {
     preloadImage(row.diff.compareScreenshot.url);
   }
-  if (row.diff?.url) {
+  if (row.diff.url) {
     preloadImage(row.diff.url);
   }
 };
 
-function useEstimateListItemHeight() {
-  return useCallback((row: ListItemRow | ListGroupItemRow) => {
-    return getRowStyle(row).height;
-  }, []);
-}
-
 /**
  * Get the height and padding of the row based on the row type.
  */
-function getRowStyle(row: ListItemRow | ListGroupItemRow) {
-  const dimensions = getDiffDimensions(row.diff, DIFF_IMAGE_CONFIG);
-  const innerHeight = Math.max(dimensions.height, DIFF_IMAGE_CONFIG.minHeight);
-
-  const gap = 12;
-  const paddingTop = row.first ? gap : gap / 2;
-  const paddingBottom = row.last ? gap : gap / 2;
+function getRowStyle(
+  row: ListItemRow | ListGroupItemRow,
+  display: SnapshotDisplay,
+) {
+  const { innerHeight, edgeGap, gap } =
+    display === "names"
+      ? { innerHeight: NAME_ROW_HEIGHT, edgeGap: 4, gap: 0 }
+      : {
+          innerHeight: Math.max(
+            getDiffDimensions(row.diff, DIFF_IMAGE_CONFIG).height,
+            DIFF_IMAGE_CONFIG.minHeight,
+          ),
+          edgeGap: 12,
+          gap: 12,
+        };
+  const paddingTop = row.first ? edgeGap : gap / 2;
+  const paddingBottom = row.last ? edgeGap : gap / 2;
   return {
     height: innerHeight + paddingTop + paddingBottom,
     paddingTop,
@@ -666,13 +753,16 @@ const InternalBuildDiffList = memo(() => {
     setActiveDiff,
     initialDiff,
     firstDiff,
-    scrolledDiff,
+    scrollRequest,
     stats,
     results,
     hasNoResults,
     isSubsetBuild,
+    grouping,
+    diffs,
   } = useBuildDiffState();
   const { searchMode } = useSearchModeState();
+  const [display] = useSnapshotDisplay();
   const filterState = use(FilterStateContext);
   const rows = useMemo(
     () => getRows(groups, expanded, results, searchMode),
@@ -689,16 +779,42 @@ const InternalBuildDiffList = memo(() => {
     );
   });
 
+  const getDiffStatus = useGetDiffStatus();
+  const getListStatus = useCallback(
+    (diff: Diff) =>
+      getDiffListStatus(diff, getDiffStatus(diff.id), { isSubsetBuild }),
+    [getDiffStatus, isSubsetBuild],
+  );
+
+  // The first diff listed under that status, review included, whichever way
+  // the list is grouped: by status, that is the first of its section.
   const openGroup = useCallback(
-    (name: DiffGroup<Diff>["name"]) => {
-      const group = groups.find((g) => g.name === name);
-      const firstDiff = group?.diffs[0];
+    (name: DiffGroupName) => {
+      const firstDiff = diffs.find((diff) => getListStatus(diff) === name);
       if (firstDiff) {
         setActiveDiff(firstDiff, true);
       }
     },
-    [groups, setActiveDiff],
+    [diffs, getListStatus, setActiveDiff],
   );
+
+  // Per test rather than in the header, which renders on every scroll.
+  const testStatuses = useMemo(() => {
+    const statuses = new Map<string, DiffGroupName>();
+    for (const group of groups) {
+      if (group.type === "test") {
+        const groupStatuses = new Set(
+          group.diffs.map((diff) => {
+            const status = getListStatus(diff);
+            invariant(status, "a listed diff has a status");
+            return status;
+          }),
+        );
+        statuses.set(group.name, getFirstListedStatus(groupStatuses));
+      }
+    }
+    return statuses;
+  }, [groups, getListStatus]);
 
   const stickyIndices = useMemo(() => {
     return rows.reduce((acc, row, index) => {
@@ -710,7 +826,6 @@ const InternalBuildDiffList = memo(() => {
   }, [rows]);
 
   const [activeStickyIndex, setActiveStickyIndex] = useState<number>(0);
-  const estimateListItemHeight = useEstimateListItemHeight();
   const estimateSize = useCallback(
     (index: number) => {
       const row = rows[index];
@@ -724,13 +839,13 @@ const InternalBuildDiffList = memo(() => {
         }
         case "item":
         case "group-item": {
-          return estimateListItemHeight(row);
+          return getRowStyle(row, display).height;
         }
         default:
           return 0;
       }
     },
-    [estimateListItemHeight, rows],
+    [display, rows],
   );
 
   const rowVirtualizer = useVirtualizer({
@@ -783,14 +898,19 @@ const InternalBuildDiffList = memo(() => {
   const { observer, getIndicesInViewport } = useInViewportIndices(containerRef);
 
   useEffect(() => {
-    const index = getDiffIndex(scrolledDiff);
-    if (index !== -1 && !getIndicesInViewport().has(index)) {
-      rowVirtualizerRef.current.scrollToIndex(index, {
-        align: "start",
-        behavior: "smooth",
-      });
+    if (!scrollRequest) {
+      return;
     }
-  }, [scrolledDiff, getDiffIndex, getIndicesInViewport, rowVirtualizerRef]);
+    const { diff, reflowed } = scrollRequest;
+    const index = getDiffIndex(diff);
+    if (index === -1 || (!reflowed && getIndicesInViewport().has(index))) {
+      return;
+    }
+    rowVirtualizerRef.current.scrollToIndex(index, {
+      align: "start",
+      behavior: reflowed ? "auto" : "smooth",
+    });
+  }, [scrollRequest, getDiffIndex, getIndicesInViewport, rowVirtualizerRef]);
 
   const handleToggleGroupItem = useCallback(
     (groupId: string | null) => {
@@ -802,7 +922,6 @@ const InternalBuildDiffList = memo(() => {
   );
 
   const getDiffGroupStatus = useGetDiffGroupEvaluationStatus();
-  const getDiffStatus = useGetDiffStatus();
   const hasOverview = (stats?.total ?? 0) > 0;
 
   return (
@@ -899,7 +1018,10 @@ const InternalBuildDiffList = memo(() => {
                     <ListHeader
                       key={virtualRow.key}
                       item={item}
-                      activeIndex={item.group.diffs.indexOf(activeDiff)}
+                      testStatuses={testStatuses}
+                      activeIndex={
+                        activeDiff ? item.group.diffs.indexOf(activeDiff) : -1
+                      }
                       onClick={() => {
                         toggleGroup(item.name);
                       }}
@@ -922,9 +1044,15 @@ const InternalBuildDiffList = memo(() => {
                   );
                 case "item":
                 case "group-item": {
-                  preloadListItemRow(item);
+                  if (display === "screenshots") {
+                    preloadListItemRow(item);
+                  }
+                  // Only a stack of cards draws the status of its group.
                   const groupStatus =
-                    getDiffGroupStatus?.(item.diff?.group ?? null) ?? null;
+                    display === "screenshots" && item.type === "group-item"
+                      ? (getDiffGroupStatus?.(item.diff.group ?? null) ?? null)
+                      : null;
+                  const status = getDiffStatus(item.diff.id);
                   return (
                     <div
                       key={virtualRow.key}
@@ -945,7 +1073,15 @@ const InternalBuildDiffList = memo(() => {
                         observer={observer}
                         onToggleGroupItem={handleToggleGroupItem}
                         groupStatus={groupStatus}
-                        status={getDiffStatus(item.diff?.id ?? null)}
+                        status={status}
+                        listStatus={getRowStatus({
+                          diff: item.diff,
+                          status,
+                          grouping,
+                          display,
+                          isSubsetBuild,
+                        })}
+                        display={display}
                       />
                     </div>
                   );

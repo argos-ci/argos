@@ -6,7 +6,10 @@ import { slugJsonSchema } from "@argos/util/slug";
 import { memoize } from "lodash-es";
 import { raw, type Pojo, type RelationMappings } from "objection";
 
+import type { AuthViewer } from "@/auth/payload";
+
 import { computeAdditionalScreenshots } from "../services/additional-screenshots";
+import type { PlanLimitAlertLevel } from "../services/plan-limit-alert";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { DiscordWebhook } from "./DiscordWebhook";
@@ -20,7 +23,7 @@ import { Project } from "./Project";
 import { clampedStorybookCount, ScreenshotBucket } from "./ScreenshotBucket";
 import { SlackInstallation } from "./SlackInstallation";
 import { Subscription } from "./Subscription";
-import { Team, type GetPermissionsOptions } from "./Team";
+import { Team } from "./Team";
 import { TeamSamlConfig } from "./TeamSamlConfig";
 import { User } from "./User";
 
@@ -155,9 +158,19 @@ function computeAccountSubscriptionStatus(args: {
   return "canceled";
 }
 
-export type AccountPermission = "admin" | "view";
+export type AccountPermission = "admin" | "billing" | "view";
 
-export const ALL_ACCOUNT_PERMISSIONS: AccountPermission[] = ["admin", "view"];
+export const ALL_ACCOUNT_PERMISSIONS: AccountPermission[] = [
+  "admin",
+  "billing",
+  "view",
+];
+
+/**
+ * Usage a flat-rate plan may reach, as a share of its included screenshots,
+ * before its builds and uploads are rejected.
+ */
+export const FLAT_RATE_MAX_CONSUMPTION_RATIO = 1.1;
 
 export class Account extends Model {
   static override tableName = "accounts";
@@ -191,6 +204,8 @@ export class Account extends Model {
           },
           blockWhenSpendLimitIsReached: { type: "boolean" },
           lastOverageAlertThreshold: { type: ["integer", "null"] },
+          lastPlanLimitAlertLevel: { type: ["string", "null"] },
+          lastPlanLimitAlertAt: { type: ["string", "null"] },
           lastMonthlyReportAt: { type: ["string", "null"] },
         },
       },
@@ -223,6 +238,14 @@ export class Account extends Model {
    * configured, not to report usage.
    */
   lastOverageAlertThreshold!: number | null;
+  /**
+   * Last plan limit alert sent to the owners, in the billing period holding
+   * `lastPlanLimitAlertAt`, null when none was. Unlike the overage alert, it is
+   * sent again every period: a flat-rate plan rejects builds again every time
+   * it runs out.
+   */
+  lastPlanLimitAlertLevel!: PlanLimitAlertLevel | null;
+  lastPlanLimitAlertAt!: string | null;
   /** When the owners were last sent the monthly report. */
   lastMonthlyReportAt!: string | null;
 
@@ -685,7 +708,9 @@ export class Account extends Model {
         // then we are never out of capacity
         return null;
       }
-      return consumptionRatio > 1.1 ? "flat-rate" : null;
+      return consumptionRatio > FLAT_RATE_MAX_CONSUMPTION_RATIO
+        ? "flat-rate"
+        : null;
     });
 
     const getAdditionalScreenshotCost: AccountSubscriptionManager["getAdditionalScreenshotCost"] =
@@ -854,14 +879,16 @@ export class Account extends Model {
 
   static async getPermissions(
     account: Account,
-    user: User | null,
-    options?: GetPermissionsOptions,
+    auth: AuthViewer | null,
   ): Promise<AccountPermission[]> {
     switch (account.type) {
       case "user":
-        return User.getPermissions(account.userId as string, user);
+        return User.getPermissions(
+          account.userId as string,
+          auth?.user ?? null,
+        );
       case "team":
-        return Team.getPermissions(account.teamId as string, user, options);
+        return Team.getPermissions(account.teamId as string, auth);
       default:
         assertNever(account.type);
     }
@@ -871,19 +898,26 @@ export class Account extends Model {
    * Get the owner ids associated with the account.
    */
   async $getOwnerIds(): Promise<string[]> {
+    return this.$getUserIdsWithPermission("admin");
+  }
+
+  /**
+   * Get the ids of the users granted `permission` on the account: its user, or
+   * the team members whose role grants it.
+   */
+  async $getUserIdsWithPermission(
+    permission: AccountPermission,
+  ): Promise<string[]> {
     if (this.userId && !this.teamId) {
       return [this.userId];
     }
     if (this.teamId && !this.userId) {
-      return Team.getOwnerIds(this.teamId);
+      return Team.getUserIdsWithPermission(this.teamId, permission);
     }
     throw new Error("Incoherent account type");
   }
 
-  async $getPermissions(
-    user: User | null,
-    options?: GetPermissionsOptions,
-  ): Promise<AccountPermission[]> {
-    return Account.getPermissions(this, user, options);
+  async $getPermissions(auth: AuthViewer | null): Promise<AccountPermission[]> {
+    return Account.getPermissions(this, auth);
   }
 }

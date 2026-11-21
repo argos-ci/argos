@@ -68,3 +68,43 @@ index 21df34aa63dd82e50a3f946ab9e6c3a2e6bccbe4..6ddb30a05f5a16f0e61ba6f0a24593e5
    return data.hoverInteractionState;
  }
 \ No newline at end of file
+diff --git a/utils/getFiniteAnimations.js b/utils/getFiniteAnimations.js
+index 6be610f29ccabcd7944483bb2e6f25f6e978a8ca..6ed40c66d6b172138b704946462caad712ae3c6d 100644
+--- a/utils/getFiniteAnimations.js
++++ b/utils/getFiniteAnimations.js
+@@ -5,10 +5,15 @@ Object.defineProperty(exports, "__esModule", {
+ });
+ exports.getFiniteAnimations = getFiniteAnimations;
+ /**
+- * Excludes infinite animations, whose finished promises never resolve while they run.
++ * Excludes animations whose finished promises never resolve while they run: infinite ones, and
++ * scroll-driven ones (`animation-timeline: scroll()` or `view()`), which follow a scroll position
++ * rather than time and only finish while scrolled to their end.
+  */
+ function getFiniteAnimations(element, options) {
+   return element.getAnimations(options).filter(animation => {
++    if (typeof ScrollTimeline !== 'undefined' && animation.timeline instanceof ScrollTimeline) {
++      return false;
++    }
+     const timing = animation.effect?.getTiming();
+     return timing?.duration !== Infinity && timing?.iterations !== Infinity;
+   });
+diff --git a/utils/getFiniteAnimations.mjs b/utils/getFiniteAnimations.mjs
+index 3342f752e6f240bb2cd804d53fa13ba81aa7f49b..9aa83455563a73f783523f9c5d105ada91e39799 100644
+--- a/utils/getFiniteAnimations.mjs
++++ b/utils/getFiniteAnimations.mjs
+@@ -1,8 +1,13 @@
+ /**
+- * Excludes infinite animations, whose finished promises never resolve while they run.
++ * Excludes animations whose finished promises never resolve while they run: infinite ones, and
++ * scroll-driven ones (`animation-timeline: scroll()` or `view()`), which follow a scroll position
++ * rather than time and only finish while scrolled to their end.
+  */
+ export function getFiniteAnimations(element, options) {
+   return element.getAnimations(options).filter(animation => {
++    if (typeof ScrollTimeline !== 'undefined' && animation.timeline instanceof ScrollTimeline) {
++      return false;
++    }
+     const timing = animation.effect?.getTiming();
+     return timing?.duration !== Infinity && timing?.iterations !== Infinity;
+   });

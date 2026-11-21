@@ -1,3 +1,4 @@
+import { isRecord } from "@argos/util/isRecord";
 import { z } from "zod";
 
 import { invalidValue, ScimError } from "./error";
@@ -27,10 +28,6 @@ const OperationsSchema = z
   .min(1);
 
 type PatchOperation = z.infer<typeof OperationsSchema>[number];
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 /**
  * Read the operations of a PATCH request (RFC 7644 §3.5.2).

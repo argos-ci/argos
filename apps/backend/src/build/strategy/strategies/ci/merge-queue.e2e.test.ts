@@ -62,7 +62,10 @@ const test = baseTest.extend<Fixtures>({
       compareScreenshotBucket: compareBucket,
       project,
       pullRequest: null,
-      context: { checkIsAutoApproved: () => false },
+      context: {
+        checkIsAutoApproved: () => false,
+        isAutoApprovedBranch: () => false,
+      },
     });
   },
 });
@@ -141,7 +144,10 @@ describe("#getCIMergeQueueBase", () => {
       compareScreenshotBucket: compareBucket,
       project,
       pullRequest: null,
-      context: { checkIsAutoApproved: () => false },
+      context: {
+        checkIsAutoApproved: () => false,
+        isAutoApprovedBranch: () => false,
+      },
     });
 
     expect(
@@ -226,7 +232,10 @@ describe("#getCIMergeQueueBase", () => {
       compareScreenshotBucket: compareBucket,
       project,
       pullRequest: null,
-      context: { checkIsAutoApproved: () => false },
+      context: {
+        checkIsAutoApproved: () => false,
+        isAutoApprovedBranch: () => false,
+      },
     });
 
     expect(mockMergeBucketWithBuildDiffs).toHaveBeenCalledOnce();
@@ -323,7 +332,10 @@ describe("#getCIMergeQueueBase", () => {
       compareScreenshotBucket: compareBucket,
       project,
       pullRequest: null,
-      context: { checkIsAutoApproved: () => false },
+      context: {
+        checkIsAutoApproved: () => false,
+        isAutoApprovedBranch: () => false,
+      },
     });
 
     expect(mockMergeBucketWithBuildDiffs).toHaveBeenCalledOnce();
@@ -437,7 +449,10 @@ describe("#getCIMergeQueueBase", () => {
       compareScreenshotBucket: compareBucket,
       project,
       pullRequest: null,
-      context: { checkIsAutoApproved: () => false },
+      context: {
+        checkIsAutoApproved: () => false,
+        isAutoApprovedBranch: () => false,
+      },
     });
 
     expect(mockMergeBucketWithBuildDiffs).toHaveBeenCalledTimes(2);

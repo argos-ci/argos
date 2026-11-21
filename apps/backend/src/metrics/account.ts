@@ -48,11 +48,26 @@ const DST_SHIFT_IN_MS = 60 * 60 * 1000;
 export class InvalidAccountMetricsInputError extends Error {}
 
 /**
- * Postgres reads a numeric offset in `AT TIME ZONE` as POSIX, with the sign
- * inverted ("+02:00" is UTC-2), so it would shift every bucket without failing.
+ * Postgres reads a POSIX zone in `AT TIME ZONE` with the sign inverted
+ * ("+02:00" and "UTC+2" are both UTC-2), so it would shift every bucket
+ * without failing. Intl rejects "UTC+2" but accepts "+02:00", hence both
+ * checks. Intl also accepts ICU-only IDs Postgres does not know ("AET"):
+ * `isUnknownTimeZoneError` catches those once the query runs.
  */
-function checkIsNumericOffset(timeZone: string) {
-  return /^[+\-\d]/.test(timeZone);
+function checkIsSupportedTimeZone(timeZone: string) {
+  if (/^[+-]/.test(timeZone)) {
+    return false;
+  }
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getUnknownTimeZoneMessage(timeZone: string) {
+  return `Unknown time zone "${timeZone}". Use an IANA name such as Europe/Paris.`;
 }
 
 function isUnknownTimeZoneError(error: unknown) {
@@ -155,9 +170,9 @@ export async function getAccountMetrics(input: GetAccountMetricsInput) {
   }
 
   const timeZone = input.timeZone ?? "UTC";
-  if (checkIsNumericOffset(timeZone)) {
+  if (!checkIsSupportedTimeZone(timeZone)) {
     throw new InvalidAccountMetricsInputError(
-      `Unknown time zone "${timeZone}".`,
+      getUnknownTimeZoneMessage(timeZone),
     );
   }
 
@@ -179,7 +194,7 @@ export async function getAccountMetrics(input: GetAccountMetricsInput) {
   } catch (error) {
     if (isUnknownTimeZoneError(error)) {
       throw new InvalidAccountMetricsInputError(
-        `Unknown time zone "${timeZone}".`,
+        getUnknownTimeZoneMessage(timeZone),
       );
     }
     throw error;

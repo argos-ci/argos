@@ -1,7 +1,11 @@
 import { memo } from "react";
+import { PLAN_LIMIT_WARNING_RATIO } from "@argos/schemas/plan-limit";
 import { AlertTriangleIcon } from "lucide-react";
 
-import { TeamOwnersLink } from "@/containers/Team/TeamOwnersLink";
+import {
+  TeamBillingMembersLink,
+  TeamOwnersLink,
+} from "@/containers/Team/TeamOwnersLink";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { Banner } from "@/ui/Banner";
@@ -29,7 +33,8 @@ export const OvercapacityBanner = memo(
   }) => {
     const { accountSlug, account } = props;
     const { plan, consumptionRatio } = account;
-    const visible = plan && !plan.usageBased && consumptionRatio >= 0.9;
+    const visible =
+      plan && !plan.usageBased && consumptionRatio >= PLAN_LIMIT_WARNING_RATIO;
     if (!visible) {
       return null;
     }
@@ -44,13 +49,17 @@ export const OvercapacityBanner = memo(
           You&apos;ve hit {Math.floor(consumptionRatio * 100)}% of the{" "}
           {plan.displayName} plan limit.
         </span>
-        {account.permissions.includes(AccountPermission.Admin) ? (
+        {account.permissions.includes(AccountPermission.Billing) ? (
           <Link href={`${getAccountURL({ accountSlug })}/settings/billing`}>
             Upgrade plan
           </Link>
         ) : account.__typename === "Team" ? (
           <span>
-            Ask <TeamOwnersLink account={account}>a team owner</TeamOwnersLink>{" "}
+            Ask a <TeamOwnersLink account={account}>team owner</TeamOwnersLink>{" "}
+            or{" "}
+            <TeamBillingMembersLink account={account}>
+              billing member
+            </TeamBillingMembersLink>{" "}
             to upgrade the plan.
           </span>
         ) : null}

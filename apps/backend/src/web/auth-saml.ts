@@ -1,6 +1,7 @@
-import express, { Router } from "express";
+import express, { Router, type ErrorRequestHandler } from "express";
 import { z } from "zod";
 
+import { issueCallbackState } from "@/auth/callback-binding";
 import {
   checkHasAccessToSAML,
   checkTeamSamlEnabled,
@@ -12,50 +13,42 @@ import {
 } from "@/auth/saml";
 import config from "@/config";
 import { Account } from "@/database/models";
-import { boom } from "@/util/error";
+import logger from "@/logger";
+import { boom, HTTPError } from "@/util/error";
 
-import { asyncHandler } from "./util";
-
-const LoginQuerySchema = z.object({
-  r: z.union([z.string(), z.array(z.string())]).optional(),
-});
+import { asyncHandler, getFirstString, getLoginRedirect } from "./util";
 
 const AcsBodySchema = z.object({
   SAMLResponse: z.string(),
   RelayState: z.string().optional(),
 });
 
-/**
- * A same-origin path to land on after login. Resolved with the URL parser
- * rather than matched as a string: `//evil.example` and `/\evil.example` both
- * start with a slash and both leave the origin.
- */
-function getSafeRedirect(redirect: string | undefined) {
-  if (!redirect) {
-    return "/";
-  }
-  const origin = new URL(config.get("server.url")).origin;
-  let url: URL;
-  try {
-    url = new URL(redirect, origin);
-  } catch {
-    return "/";
-  }
-  if (url.origin !== origin) {
-    return "/";
-  }
-  return `${url.pathname}${url.search}${url.hash}`;
+function getLoginErrorUrl(message: string) {
+  const loginUrl = new URL("/login", config.get("server.url"));
+  loginUrl.searchParams.set("error", message);
+  return loginUrl.toString();
 }
 
-function getFirstString(input: string | string[] | undefined) {
-  if (typeof input === "string") {
-    return input;
+/**
+ * The browser reaches these routes by navigation (the IdP's page posts to the
+ * ACS), so a failed login goes back to the login page with the reason instead
+ * of ending on a bare error response.
+ */
+const redirectFailedLoginToLoginPage: ErrorRequestHandler = (
+  error,
+  _req,
+  res,
+  _next,
+) => {
+  if (error instanceof HTTPError && error.statusCode < 500) {
+    res.redirect(getLoginErrorUrl(error.message));
+    return;
   }
-  if (Array.isArray(input)) {
-    return input[0];
-  }
-  return undefined;
-}
+  logger.error({ error }, "SAML login failed");
+  res.redirect(
+    getLoginErrorUrl("SAML login failed on the Argos side. Try again shortly."),
+  );
+};
 
 async function getTeamAccountOrThrow(teamSlug: string) {
   const account = await Account.query()
@@ -81,31 +74,21 @@ const router: Router = Router();
 router.get(
   "/auth/saml/:teamSlug/login",
   asyncHandler(async (req, res) => {
-    try {
-      const teamSlug = getFirstString(req.params["teamSlug"]);
-      if (!teamSlug) {
-        throw boom(400, "Team slug is missing.");
-      }
-      const query = LoginQuerySchema.safeParse(req.query);
-      const redirect = getSafeRedirect(
-        query.success ? getFirstString(query.data.r) : undefined,
-      );
-      const account = await getTeamAccountOrThrow(teamSlug);
-      const samlConfig = await getEnabledTeamSamlConfig(account);
-      const loginUrl = await createSamlLoginRedirect({
-        teamSlug,
-        samlConfig,
-        redirect,
-      });
-      res.redirect(loginUrl);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to start SAML login.";
-      const loginUrl = new URL("/login", config.get("server.url"));
-      loginUrl.searchParams.set("error", message);
-      res.redirect(loginUrl.toString());
+    const teamSlug = getFirstString(req.params["teamSlug"]);
+    if (!teamSlug) {
+      throw boom(400, "Team slug is missing.");
     }
+    const redirect = getLoginRedirect(req.query);
+    const account = await getTeamAccountOrThrow(teamSlug);
+    const samlConfig = await getEnabledTeamSamlConfig(account);
+    const loginUrl = await createSamlLoginRedirect({
+      teamSlug,
+      samlConfig,
+      redirect,
+    });
+    res.redirect(loginUrl);
   }),
+  redirectFailedLoginToLoginPage,
 );
 
 router.post(
@@ -116,14 +99,20 @@ router.post(
     if (!teamSlug) {
       throw boom(400, "Team slug is missing.");
     }
-    const body = AcsBodySchema.parse(req.body);
+    const body = AcsBodySchema.safeParse(req.body);
+    if (!body.success) {
+      throw boom(
+        400,
+        "Argos could not read the SAML response. Try signing in again.",
+      );
+    }
     const account = await getTeamAccountOrThrow(teamSlug);
     const samlConfig = await getEnabledTeamSamlConfig(account);
     const parsed = await parseAndValidateSamlLoginResponse({
       teamSlug,
       samlConfig,
-      samlResponse: body.SAMLResponse,
-      relayState: body.RelayState ?? null,
+      samlResponse: body.data.SAMLResponse,
+      relayState: body.data.RelayState ?? null,
     });
 
     // For Okta email is the subject (NameID)
@@ -140,18 +129,16 @@ router.post(
       teamAccountId: account.id,
       email,
       ssoSubject: parsed.subject ?? email,
-      redirect: parsed.redirect,
     });
     const loginUrl = new URL("/auth/saml/callback", config.get("server.url"));
     loginUrl.searchParams.set("code", code);
     loginUrl.searchParams.set(
       "state",
-      Buffer.from(
-        JSON.stringify({ nonce: "none", redirect: parsed.redirect }),
-      ).toString("base64"),
+      issueCallbackState(res, { provider: "saml", redirect: parsed.redirect }),
     );
     res.redirect(loginUrl.toString());
   }),
+  redirectFailedLoginToLoginPage,
 );
 
 router.get(

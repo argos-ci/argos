@@ -20,7 +20,7 @@ import { insertFilesAndScreenshots } from "@/database/services/screenshots";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
-import { assertAuthAttributes } from "../auth/project";
+import { assertAuthAttributes, findAuthProject } from "../auth/project";
 import {
   BuildIdSchema,
   BuildSchema,
@@ -68,7 +68,7 @@ export const updateBuildOperation = {
   description:
     "Add screenshots to an existing build and update its metadata. Used to push the screenshots of a parallel shard, identified by `parallelIndex` and `parallelTotal`.",
   tags: ["Builds"],
-  security: projectTokenAuth,
+  security: projectTokenAuth(["builds:write"]),
   requestParams: {
     path: z.object({
       buildId: BuildIdSchema,
@@ -125,7 +125,8 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
 
     // Before anything is answered about the build: ids are sequential, and the
     // retry path below returns the whole build.
-    if (build.projectId !== auth.project.id) {
+    const project = findAuthProject(auth, build.projectId);
+    if (!project) {
       throw boom(403, "Build does not belong to project");
     }
 
@@ -153,7 +154,7 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
     }
 
     const ctx = {
-      project: auth.project,
+      project,
       build,
       body,
       requestId,

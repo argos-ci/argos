@@ -39,6 +39,9 @@ const test = base.extend<{
     const project = await factory.Project.create({
       accountId: account.id,
       name: "web",
+    });
+    await factory.createProjectToken({
+      projects: [project],
       token: "the-awesome-token",
     });
     await use(project);
@@ -116,7 +119,7 @@ describe("getBuild", () => {
           status: "no-changes",
           url: "http://localhost:3000/acme/web/builds/1",
           notification: {
-            description: "3 changed, 1 added, 4 removed — no changes found",
+            description: "3 changed, 1 added, 4 removed, no changes found",
             context: "argos",
             github: { state: "success" },
             gitlab: { state: "success" },

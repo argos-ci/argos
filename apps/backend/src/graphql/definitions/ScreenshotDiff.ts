@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { getStartDateFromPeriod } from "@/metrics/test";
+import { getLayoutShiftRegions } from "@/screenshot-diff/layout-shift";
 import { getImageKitUrl, getPublicFileUrl } from "@/storage";
 
 import {
@@ -47,6 +48,40 @@ export const typeDefs = gql`
     test: Test
     occurrences(period: MetricsPeriod!): Int!
     contentType: String!
+    "Content that moved rather than changed, when it explains part of the mask"
+    layoutShift: LayoutShift
+  }
+
+  "A rectangle in the pixel space of a diff mask"
+  type Rect {
+    x: Int!
+    y: Int!
+    width: Int!
+    height: Int!
+  }
+
+  "A block that moved, where it was in the baseline and where it is in the changes"
+  type LayoutShiftMove {
+    "Left edge in the changes"
+    x: Int!
+    "Left edge in the baseline"
+    baseX: Int!
+    width: Int!
+    baseY: Int!
+    headY: Int!
+    height: Int!
+    "Vertical move in pixels, positive when the block moved down"
+    dy: Int!
+    "Horizontal move in pixels, positive when the block moved right"
+    dx: Int!
+  }
+
+  "Content that moved between the baseline and the changes screenshot"
+  type LayoutShift {
+    "Areas of the mask whose pixels differ only because content moved"
+    hidden: [Rect!]!
+    "Blocks that moved, top to bottom, drawn in place of the hidden areas"
+    moves: [LayoutShiftMove!]!
   }
 
   type ScreenshotDiffConnection implements Connection {
@@ -175,6 +210,15 @@ export const resolvers: IResolvers = {
       return file.height;
     },
     status: statusResolver,
+    layoutShift: (screenshotDiff) => {
+      if (!screenshotDiff.layoutShift) {
+        return null;
+      }
+      const regions = getLayoutShiftRegions(screenshotDiff.layoutShift);
+      // Hiding pixels with no outline to draw in their place would take them
+      // off the screen with nothing to say so: show the mask whole instead.
+      return regions.moves.length > 0 ? regions : null;
+    },
     threshold: async (screenshotDiff, _args, ctx) => {
       if (!screenshotDiff.compareScreenshotId) {
         return null;

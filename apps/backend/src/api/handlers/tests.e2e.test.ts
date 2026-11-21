@@ -78,6 +78,9 @@ const test = base.extend<{
     const project = await factory.Project.create({
       accountId: account.id,
       name: "flaky-project",
+    });
+    await factory.createProjectToken({
+      projects: [project],
       token: "token-flaky",
     });
     await use(project);
@@ -238,8 +241,9 @@ describe("tests", () => {
         .expect(401);
     });
 
-    // A project token is bound to a single project, so a test it cannot reach is
-    // indistinguishable from one that does not exist — both are a 401.
+    // A project token only reaches the projects it is linked to, so a test it
+    // cannot reach is indistinguishable from one that does not exist — both
+    // are a 401.
     test("returns 401 for an unknown test id", async ({ project }) => {
       await request(app)
         .get(
@@ -249,7 +253,7 @@ describe("tests", () => {
             testId: "FLAKY-PROJECT-nope",
           }),
         )
-        .set("Authorization", `Bearer ${project.token}`)
+        .set("Authorization", "Bearer token-flaky")
         .expect((res) => {
           expect(res.body.error).toBe("Unauthorized");
         })
@@ -339,7 +343,7 @@ describe("tests", () => {
             testId: seeded.publicTestId,
           }),
         )
-        .set("Authorization", `Bearer ${project.token}`)
+        .set("Authorization", "Bearer token-flaky")
         .expect(200);
 
       expect(res.body).toMatchObject({
@@ -404,7 +408,7 @@ describe("tests", () => {
             }),
           }),
         )
-        .set("Authorization", `Bearer ${project.token}`)
+        .set("Authorization", "Bearer token-flaky")
         .expect(200);
 
       expect(res.body).toMatchObject({
@@ -444,7 +448,7 @@ describe("tests", () => {
             testId: seeded.publicTestId,
           })}/changes`,
         )
-        .set("Authorization", `Bearer ${project.token}`)
+        .set("Authorization", "Bearer token-flaky")
         .expect(200);
 
       expect(res.body.pageInfo).toEqual({ total: 2, page: 1, perPage: 30 });
@@ -494,15 +498,15 @@ describe("tests", () => {
       const [all, ignored, reviewable] = await Promise.all([
         request(app)
           .get(path)
-          .set("Authorization", `Bearer ${project.token}`)
+          .set("Authorization", "Bearer token-flaky")
           .expect(200),
         request(app)
           .get(`${path}?ignored=true`)
-          .set("Authorization", `Bearer ${project.token}`)
+          .set("Authorization", "Bearer token-flaky")
           .expect(200),
         request(app)
           .get(`${path}?ignored=false`)
-          .set("Authorization", `Bearer ${project.token}`)
+          .set("Authorization", "Bearer token-flaky")
           .expect(200),
       ]);
 
@@ -524,7 +528,7 @@ describe("tests", () => {
 
       const res = await request(app)
         .get(`${path}?perPage=1&page=2`)
-        .set("Authorization", `Bearer ${project.token}`)
+        .set("Authorization", "Bearer token-flaky")
         .expect(200);
 
       expect(res.body.pageInfo).toEqual({ total: 2, page: 2, perPage: 1 });
@@ -541,7 +545,7 @@ describe("tests", () => {
             testId: seeded.publicTestId,
           })}/changes?ignored=maybe`,
         )
-        .set("Authorization", `Bearer ${project.token}`)
+        .set("Authorization", "Bearer token-flaky")
         .expect((res) => {
           expect(res.body.error).toBe("Invalid request");
         })

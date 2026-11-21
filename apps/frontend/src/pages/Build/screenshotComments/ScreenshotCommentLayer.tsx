@@ -10,14 +10,17 @@ import {
   commentToolModeAtom,
   requestedScreenshotCommentIdAtom,
 } from "@/containers/Build/CommentTool";
-import { type NormalizedPoint } from "@/containers/Build/projection";
 import { type PaneSize } from "@/containers/Build/Zoomer";
 import { getCommentThreads } from "@/containers/Comment/commentThreads";
-import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import {
-  PointCommentLayer,
-  type PointCommentThread,
-} from "@/containers/Comment/PointCommentLayer";
+  getImageAnchor,
+  toCommentAnchorInput,
+  type ImageAnchor,
+} from "@/containers/Comment/imageAnchor";
+import {
+  ImageCommentLayer,
+  type ImageCommentThread,
+} from "@/containers/Comment/ImageCommentLayer";
 import { useIsThreadAnchorShown } from "@/containers/Comment/useCollapsedThread";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
@@ -25,6 +28,7 @@ import { ProjectPermission } from "@/gql/graphql";
 import { BuildCommentCard } from "@/pages/Build/sidebar/BuildCommentCard";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { type EditorValue } from "@/ui/Editor/Editor";
+import { MentionableUsersProvider } from "@/ui/Editor/MentionableUsersContext";
 import { toast } from "@/ui/Toaster";
 import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
@@ -64,8 +68,8 @@ const AddBuildCommentMutation = graphql(`
 `);
 
 /**
- * The build's point comments on the changes image: the shared
- * {@link PointCommentLayer} wired to the build's data — its threads, its
+ * The build's point and area comments on the changes image: the shared
+ * {@link ImageCommentLayer} wired to the build's data — its threads, its
  * comment tool state, the build reply card and the add-to-review submission.
  */
 export function ScreenshotCommentLayer(props: {
@@ -88,7 +92,7 @@ export function ScreenshotCommentLayer(props: {
     auth.status === "authenticated" ? auth.account?.id : undefined;
   const client = useApolloClient();
 
-  // Threads anchored to a point on this diff. A resolved thread's pin drops off
+  // Threads anchored to a spot on this diff. A resolved thread's pin drops off
   // the image until the reviewer expands the thread again (the thread itself
   // remains in the sidebar), and hiding comments drops them all.
   const isAnchorShown = useIsThreadAnchorShown();
@@ -96,18 +100,17 @@ export function ScreenshotCommentLayer(props: {
     () =>
       visible
         ? getCommentThreads(build.comments).flatMap(
-            (thread): PointCommentThread<Comment>[] => {
+            (thread): ImageCommentThread<Comment>[] => {
               const { root } = thread;
+              const anchor = getImageAnchor(root.anchor);
               if (
                 root.screenshotDiff?.id !== screenshotDiffId ||
-                root.anchor?.__typename !== "CommentPointAnchor" ||
+                !anchor ||
                 !isAnchorShown(root)
               ) {
                 return [];
               }
-              return [
-                { ...thread, point: { x: root.anchor.x, y: root.anchor.y } },
-              ];
+              return [{ ...thread, anchor }];
             },
           )
         : [],
@@ -141,7 +144,7 @@ export function ScreenshotCommentLayer(props: {
     async (
       body: EditorValue,
       options: { addToReview: boolean },
-      point: NormalizedPoint,
+      anchor: ImageAnchor,
     ): Promise<string | null> => {
       const priorIds = new Set(build.comments.map((comment) => comment.id));
       try {
@@ -151,7 +154,7 @@ export function ScreenshotCommentLayer(props: {
             input: {
               buildId: build.id,
               screenshotDiffId,
-              anchor: { point: { x: point.x, y: point.y } },
+              anchor: toCommentAnchorInput(anchor),
               body,
               addToReview: options.addToReview,
             },
@@ -185,7 +188,7 @@ export function ScreenshotCommentLayer(props: {
 
   return (
     <MentionableUsersProvider value={mentionUsers}>
-      <PointCommentLayer
+      <ImageCommentLayer
         paneSize={paneSize}
         imgSize={imgSize}
         threads={threads}

@@ -150,7 +150,9 @@ describe("GraphQL team domains", () => {
         query: `
           mutation JoinTeam($teamAccountId: ID!) {
             joinTeam(teamAccountId: $teamAccountId) {
-              id
+              team {
+                id
+              }
             }
           }
         `,
@@ -161,7 +163,7 @@ describe("GraphQL team domains", () => {
 
     expectNoGraphQLError(res);
     expect(res.body.data.joinTeam).toEqual({
-      id: teamAccount.id,
+      team: { id: teamAccount.id },
     });
 
     await expect(

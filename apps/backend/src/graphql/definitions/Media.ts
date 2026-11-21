@@ -65,7 +65,7 @@ export const typeDefs = gql`
 
   """
   The pixel difference between the two halves of a before/after pair, computed
-  with the same engine — and therefore the same tolerances — that compares a
+  with the same engine (and therefore the same tolerances) that compares a
   build's screenshots.
 
   Identified by the two versions it was computed from, so it can never describe
@@ -77,7 +77,7 @@ export const typeDefs = gql`
     id: ID!
     status: MediaDiffStatus!
     """
-    CDN URL of the diff mask — a transparent PNG whose opaque pixels are the ones
+    CDN URL of the diff mask: a transparent PNG whose opaque pixels are the ones
     that changed, meant to be drawn over the "after".
 
     Null while the diff is pending, when it failed, and when the two halves are
@@ -85,7 +85,7 @@ export const typeDefs = gql`
     """
     url: String
     """
-    The mask's dimensions — the union of the two halves, since both are padded to
+    The mask's dimensions: the union of the two halves, since both are padded to
     a common canvas before being compared. Place each half at the top left of a
     frame this size and the mask lines up with them.
     """
@@ -93,7 +93,8 @@ export const typeDefs = gql`
     height: Int
     """
     Share of pixels that differ, 0 to 1. Null until the diff has been computed,
-    0 when the two halves are identical, and 1 when their layouts differ.
+    0 when the two halves are identical, and 1 without a mask when they are
+    too large to compare.
     """
     score: Float
     "The version this was computed from on the \`before\` side"
@@ -126,14 +127,14 @@ export const typeDefs = gql`
     "Screenshot units this upload charged"
     billedUnits: Int!
     """
-    The comparison this version took part in — the changed pixels between it and
+    The comparison this version took part in: the changed pixels between it and
     the other half of its pair.
 
     On the version rather than on the media because that is what a comparison is
     of: re-uploading either half makes a new pair and a new comparison, and the
     old one still describes the two versions it was computed from. Looking back
     at an older version therefore gets that version's own comparison, and
-    \`afterVersion\` / \`beforeVersion\` say which two images it describes — the
+    \`afterVersion\` / \`beforeVersion\` say which two images it describes: the
     pair to put on screen beside it.
 
     Null when the media is not half of a visible pair, when the two halves were
@@ -156,23 +157,23 @@ export const typeDefs = gql`
     description: String
     "Share page URL, the one to paste into a pull request"
     url: String!
-    "The token the share URL carries — the handle that opens this media's page"
+    "The token the share URL carries: the handle that opens this media's page"
     shareToken: String!
     """
     Ready-to-paste Markdown embed, always pointing at the newest version: the
     picture served from the CDN, linked to the share page. Never built from
-    \`url\` — that is an HTML page, and an image embed pointing at it renders as
+    \`url\`: that is an HTML page, and an image embed pointing at it renders as
     a broken image.
     """
     markdown: String!
     """
-    Ready-to-paste table showing the before/after pair side by side — the same
+    Ready-to-paste table showing the before/after pair side by side, in the same
     rendering the managed pull request comment uses (an HTML table, which
     GitHub-flavored Markdown renders as-is). Null when this media is not half
     of an uploaded pair.
     """
     markdownPair: String
-    "The newest uploaded version — what the share page and the comment show"
+    "The newest uploaded version: what the share page and the comment show"
     latestVersion: MediaVersion!
     "Every uploaded version, newest first"
     versions: [MediaVersion!]!
@@ -187,18 +188,18 @@ export const typeDefs = gql`
     The pull request this media is published to.
 
     Null for a viewer without access to the project, whatever the media's own
-    visibility — a public share link exists so a reviewer can see the *picture*,
+    visibility. A public share link exists so a reviewer can see the *picture*,
     and the pull request's title, author and number are not part of that.
     """
     pullRequest: PullRequest
     """
     Every media published to the same pull request, this one included, oldest
-    first — the order the managed pull request comment lists them in, so the
+    first: the order the managed pull request comment lists them in, so the
     share page's sidebar reads like the comment the reviewer arrived from.
 
     Empty when this media is not published to a pull request. Filtered by what
-    the viewer may see: without membership on the project, only the public ones
-    — which is what lets a public share link offer the rest of the public set
+    the viewer may see: without membership on the project, only the public ones.
+    That is what lets a public share link offer the rest of the public set
     without opening the team-only uploads beside it.
     """
     pullRequestMedias: [Media!]!
@@ -207,7 +208,7 @@ export const typeDefs = gql`
     permissions: [MediaPermission!]!
     """
     Comment threads on this media, oldest first. A comment's \`anchor\` gives the
-    point on the image it refers to, which is how a reviewer marks one up.
+    point or area of the image it refers to, which is how a reviewer marks one up.
 
     Threads belong to the media rather than to a version, so they survive the
     re-upload they asked for; each comment's \`mediaVersion\` says which version
@@ -215,18 +216,18 @@ export const typeDefs = gql`
     """
     comments: [Comment!]!
     """
-    Users that can be @-mentioned in a comment on this media — the project's
+    Users that can be @-mentioned in a comment on this media: the project's
     members. Empty unless the viewer can comment: a public share link must not
     enumerate the team behind it.
     """
     mentionableUsers: [User!]!
-    "Open threads on this media — what still needs acting on."
+    "Open threads on this media: what still needs acting on."
     unresolvedCommentCount: Int!
   }
 
   extend type Query {
     """
-    Look up a media by its share token — the handle a share URL carries.
+    Look up a media by its share token: the handle a share URL carries.
 
     Answers for anyone when the media is public, and only for members of the
     owning team otherwise. A media nobody may see is reported as not found rather
@@ -379,7 +380,7 @@ export const resolvers: IResolvers = {
       const membershipPermissions =
         await ctx.loaders.ProjectMembershipPermissions.load({
           project,
-          user: ctx.auth?.user ?? null,
+          auth: ctx.auth,
         });
       if (!membershipPermissions.includes("view")) {
         return null;
@@ -395,7 +396,7 @@ export const resolvers: IResolvers = {
       const membershipPermissions =
         await ctx.loaders.ProjectMembershipPermissions.load({
           project,
-          user: ctx.auth?.user ?? null,
+          auth: ctx.auth,
         });
       // Scoped to this media's own project: a pull request can carry media from
       // several projects, and access is decided per project.
@@ -470,7 +471,7 @@ export const resolvers: IResolvers = {
       // A public share page is opened by people with no Argos account, and the
       // project's name can itself be unreleased information. Only viewers who
       // could reach the project anyway get it as context.
-      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
+      const permissions = await project.$getPermissions(ctx.auth);
       return permissions.includes("view") ? project : null;
     },
     comments: async (media, _args, ctx) => {
@@ -488,7 +489,7 @@ export const resolvers: IResolvers = {
       const membershipPermissions =
         await ctx.loaders.ProjectMembershipPermissions.load({
           project,
-          user: ctx.auth.user,
+          auth: ctx.auth,
         });
       const permissions = getMediaPermissions({
         visibility: media.visibility,
@@ -522,7 +523,7 @@ export const resolvers: IResolvers = {
       const membershipPermissions =
         await ctx.loaders.ProjectMembershipPermissions.load({
           project,
-          user: ctx.auth?.user ?? null,
+          auth: ctx.auth,
         });
       return getMediaPermissions({
         visibility: media.visibility,
@@ -560,7 +561,7 @@ export const resolvers: IResolvers = {
       const membershipPermissions =
         await ctx.loaders.ProjectMembershipPermissions.load({
           project,
-          user: ctx.auth?.user ?? null,
+          auth: ctx.auth,
         });
 
       return checkCanViewMedia({
@@ -602,7 +603,7 @@ async function resolveVisibleCounterpart(
   const membershipPermissions =
     await ctx.loaders.ProjectMembershipPermissions.load({
       project,
-      user: ctx.auth?.user ?? null,
+      auth: ctx.auth,
     });
   return checkCanViewMedia({
     visibility: counterpart.visibility,

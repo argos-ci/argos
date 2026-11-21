@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import { describe, expect, test } from "vitest";
 
 import { Account, Team, TeamUser, User } from "@/database/models";
-import { factory, setupDatabase } from "@/database/testing";
+import { factory, sessionViewer, setupDatabase } from "@/database/testing";
 import { HTTPError } from "@/util/error";
 
 import {
@@ -80,9 +80,12 @@ describe("assertTeamAdmin", () => {
   withTeam(
     "returns the team id for an owner",
     async ({ owner, teamAccount }) => {
-      expect(await assertTeamAdmin({ account: teamAccount, user: owner })).toBe(
-        teamAccount.teamId,
-      );
+      expect(
+        await assertTeamAdmin({
+          account: teamAccount,
+          auth: sessionViewer(owner),
+        }),
+      ).toBe(teamAccount.teamId);
     },
   );
 
@@ -93,7 +96,7 @@ describe("assertTeamAdmin", () => {
     invariant(member);
 
     await expectHttpError(
-      assertTeamAdmin({ account: teamAccount, user: member }),
+      assertTeamAdmin({ account: teamAccount, auth: sessionViewer(member) }),
       403,
     );
   });
@@ -103,7 +106,7 @@ describe("assertTeamAdmin", () => {
     invariant(userAccount);
 
     await expectHttpError(
-      assertTeamAdmin({ account: userAccount, user: owner }),
+      assertTeamAdmin({ account: userAccount, auth: sessionViewer(owner) }),
       400,
     );
   });
@@ -182,7 +185,7 @@ describe("setTeamMemberLevel", () => {
 
     const teamUser = await setTeamMemberLevel({
       account: teamAccount,
-      user: owner,
+      auth: sessionViewer(owner),
       userAccountId: memberAccount.id,
       level: "contributor",
     });
@@ -199,7 +202,7 @@ describe("setTeamMemberLevel", () => {
 
       const teamUser = await setTeamMemberLevel({
         account: teamAccount,
-        user: owner,
+        auth: sessionViewer(owner),
         userAccountId: memberAccount.id,
         level: "member",
       });
@@ -214,7 +217,7 @@ describe("setTeamMemberLevel", () => {
     await expectHttpError(
       setTeamMemberLevel({
         account: teamAccount,
-        user: owner,
+        auth: sessionViewer(owner),
         userAccountId: stranger.id,
         level: "member",
       }),
@@ -231,7 +234,7 @@ describe("setTeamMemberLevel", () => {
     await expectHttpError(
       setTeamMemberLevel({
         account: teamAccount,
-        user: member,
+        auth: sessionViewer(member),
         userAccountId: memberAccount.id,
         level: "owner",
       }),
@@ -246,7 +249,7 @@ describe("removeTeamMember", () => {
 
     const { teamMemberId } = await removeTeamMember({
       account: teamAccount,
-      user: owner,
+      auth: sessionViewer(owner),
       userAccountId: memberAccount.id,
     });
 
@@ -265,7 +268,7 @@ describe("removeTeamMember", () => {
 
       await removeTeamMember({
         account: teamAccount,
-        user: owner,
+        auth: sessionViewer(owner),
         userAccountId: ownerAccount.id,
       });
 
@@ -285,7 +288,7 @@ describe("removeTeamMember", () => {
       await expectHttpError(
         removeTeamMember({
           account: teamAccount,
-          user: owner,
+          auth: sessionViewer(owner),
           userAccountId: ownerAccount.id,
         }),
         403,
@@ -300,7 +303,7 @@ describe("setTeamDefaultUserLevel", () => {
     async ({ owner, teamAccount, teamId }) => {
       await setTeamDefaultUserLevel({
         account: teamAccount,
-        user: owner,
+        auth: sessionViewer(owner),
         level: "contributor",
       });
 
@@ -318,7 +321,7 @@ describe("resetTeamInviteLink", () => {
 
     const link = await resetTeamInviteLink({
       account: teamAccount,
-      user: owner,
+      auth: sessionViewer(owner),
     });
 
     expect(link).not.toBe(previousLink);

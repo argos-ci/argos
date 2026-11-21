@@ -258,7 +258,7 @@ function UpcomingInvoiceRow(props: { accountSlug: string }) {
       }
       subtitle={
         <>
-          {formatDate(new Date(upcomingInvoice.periodStart), "monthDay")} –{" "}
+          {formatDate(new Date(upcomingInvoice.periodStart), "monthDay")} to{" "}
           {formatDate(new Date(upcomingInvoice.periodEnd), "date")}
         </>
       }

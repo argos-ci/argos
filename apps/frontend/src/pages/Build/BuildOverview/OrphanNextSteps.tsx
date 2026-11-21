@@ -49,7 +49,7 @@ export function OrphanNextSteps(props: { build: Build }) {
           <GuidanceStepTitle>Record a baseline</GuidanceStepTitle>
           Run Argos in CI on{" "}
           <BranchTag name={build.baseBranch} fallback="your base branch" />
-          {build.pullRequest ? " — usually by merging this pull request" : ""}.
+          {build.pullRequest ? ", usually by merging this pull request" : ""}.
           Its first build there is approved automatically and becomes the{" "}
           <Link
             href="https://argos-ci.com/docs/learn/platform-fundamentals/baseline-build"

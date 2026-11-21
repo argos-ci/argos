@@ -76,6 +76,23 @@ export class OriginPullRequest extends Model {
   mediaCommentId!: string | null;
   mediaCommentDeleted!: boolean;
 
+  /**
+   * The open pull request coming from `branch` of the repository, the newest
+   * if the branch somehow has several.
+   */
+  static async findOpenByHead(args: {
+    originRepositoryId: string;
+    branch: string;
+  }): Promise<OriginPullRequest | null> {
+    const pullRequest = await OriginPullRequest.query()
+      .where("originRepositoryId", args.originRepositoryId)
+      .where("headRef", args.branch)
+      .where("state", "open")
+      .orderBy("number", "desc")
+      .first();
+    return pullRequest ?? null;
+  }
+
   static override get relationMappings(): RelationMappings {
     return {
       builds: {

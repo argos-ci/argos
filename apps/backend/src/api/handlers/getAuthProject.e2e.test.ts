@@ -22,7 +22,9 @@ const test = base.extend<{
 }>({
   project: async ({}, use) => {
     await setupDatabase();
-    const project = await factory.Project.create({
+    const project = await factory.Project.create();
+    await factory.createProjectToken({
+      projects: [project],
       token: "the-awesome-token",
     });
     await use(project);
@@ -128,6 +130,7 @@ describe("getAuthProject", () => {
           githubActionsOidcEnabled: false,
           tokenlessAuthEnabled: false,
           deploymentEnabled: true,
+          githubDeploymentEnabled: true,
           deploymentAuth: "domain-private",
           defaultUserLevel: null,
           ignoreConfig: { enabled: true, autoIgnore: { changes: 3 } },

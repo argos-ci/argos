@@ -14,7 +14,7 @@ export function Component() {
   return (
     <>
       <Helmet>
-        <title>Authorization successful — Argos</title>
+        <title>Authorization successful</title>
       </Helmet>
       <Container className="mt-12 max-w-md px-4">
         <div className="flex flex-col items-center gap-6">

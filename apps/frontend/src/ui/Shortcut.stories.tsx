@@ -22,7 +22,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: (args) => (
     <div className="flex flex-col">
-      <StoryTitle>Text — on a menu row</StoryTitle>
+      <StoryTitle>Text (on a menu row)</StoryTitle>
       <div className="border-thin w-64 rounded-xl p-1.5">
         <div className="text-menu flex items-center gap-2 rounded-lg px-2.5 py-1.5 font-[450]">
           <span className="min-w-0 flex-1 truncate">Heading 1</span>
@@ -34,7 +34,7 @@ export const Default: Story = {
         </div>
       </div>
 
-      <StoryTitle>Boxed — in a tooltip</StoryTitle>
+      <StoryTitle>Boxed (in a tooltip)</StoryTitle>
       <div className="border-thin flex w-fit items-center gap-1 rounded-md px-2 py-1 text-xs">
         <span>Toggle heading</span>
         <span className="text-low">·</span>

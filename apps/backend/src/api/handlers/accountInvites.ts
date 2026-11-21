@@ -72,7 +72,7 @@ export const listAccountInvites: CreateAPIHandler = ({ get }) => {
       slug: req.ctx.params.accountSlug,
     });
 
-    const teamId = await assertTeamAdmin({ account, user: auth.user });
+    const teamId = await assertTeamAdmin({ account, auth });
 
     const invites = await queryTeamInvites({ teamId, search }).range(
       (page - 1) * perPage,
@@ -136,7 +136,7 @@ export const createAccountInvites: CreateAPIHandler = ({ post }) => {
     // Shared with the GraphQL API — same admin check, same invite email.
     const invites = await inviteTeamMembers({
       account,
-      user: auth.user,
+      auth,
       actorAccount: auth.account,
       members: req.ctx.body.members,
       requestLocation: extractLocationFromRequest(req),
@@ -179,7 +179,7 @@ export const cancelAccountInvite: CreateAPIHandler = ({ delete: del }) => {
 
     await cancelTeamInvite({
       account,
-      user: auth.user,
+      auth,
       inviteId: req.ctx.params.inviteId,
     });
 
@@ -228,7 +228,7 @@ export const resetAccountInviteLink: CreateAPIHandler = ({ post }) => {
 
     const inviteLink = await resetTeamInviteLink({
       account,
-      user: auth.user,
+      auth,
     });
     invariant(inviteLink, "invite link not generated");
 

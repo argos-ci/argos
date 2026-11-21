@@ -71,7 +71,7 @@ export const listMediaCommentsOperation = {
   operationId: "listMediaComments",
   summary: "List the comments on a media",
   description:
-    "List the comments on an uploaded media, oldest first. A comment may carry an `anchor` pinning it to a point on the image, which is how reviewers mark up a screenshot.",
+    "List the comments on an uploaded media, oldest first. A comment may carry an `anchor` pinning it to a point or an area of the image, which is how reviewers mark up a screenshot.",
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:read"]),
   requestParams: {
@@ -94,7 +94,7 @@ async function listTargetComments(input: {
 
   await assertCommentTargetPermission({
     target,
-    user: auth.user,
+    auth,
     permission: "view",
     message: `You do not have permission to view this ${target.type}`,
   });

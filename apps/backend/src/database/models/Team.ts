@@ -1,7 +1,9 @@
+import { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import type { RelationMappings } from "objection";
 
+import { checkAuthSatisfiesTeamSaml, type AuthViewer } from "@/auth/payload";
 import { checkTeamSamlEnforced } from "@/auth/saml";
 import config from "@/config";
 import { boom } from "@/util/error";
@@ -14,13 +16,43 @@ import { GithubAccount } from "./GithubAccount";
 import { TeamUser } from "./TeamUser";
 import { User } from "./User";
 
-export type GetPermissionsOptions = {
-  /**
-   * Throw if SSO is not enabled.
-   * @boolean
-   */
-  enforceSSO?: boolean;
-};
+/**
+ * How a request reaches a team. A member is kept out like an outsider while
+ * the team enforces SAML and the request did not go through its IdP;
+ * `saml_required` lets the entry points tell them so.
+ */
+export type TeamAccess =
+  | { type: "member"; userLevel: TeamUser["userLevel"] }
+  | { type: "outsider" }
+  | { type: "saml_required" };
+
+function getTeamUserLevelPermissions(
+  level: TeamUser["userLevel"],
+): AccountPermission[] {
+  switch (level) {
+    case "owner":
+      return ALL_ACCOUNT_PERMISSIONS;
+    case "billing":
+      return ["billing", "view"];
+    case "member":
+    case "contributor":
+      return ["view"];
+    default:
+      assertNever(level);
+  }
+}
+
+/**
+ * The team roles granted `permission`, so the members it reaches can be
+ * listed with the same rule that guards it.
+ */
+export function getTeamUserLevelsWithPermission(
+  permission: AccountPermission,
+): TeamUser["userLevel"][] {
+  return TeamUserLevelSchema.options.filter((level) =>
+    getTeamUserLevelPermissions(level).includes(permission),
+  );
+}
 
 export class Team extends Model {
   static override tableName = "teams";
@@ -137,64 +169,112 @@ export class Team extends Model {
   }
 
   /**
-   * Get permissions for a user in a team.
+   * How `auth` reaches the team. Every permission on a team or its projects
+   * derives from this, which is what makes SAML enforcement hold everywhere.
    */
-  static async getPermissions(
+  static async getAccess(
     teamId: string,
-    user: User | null,
-    options?: GetPermissionsOptions,
-  ): Promise<AccountPermission[]> {
-    if (!user) {
-      return [];
-    }
-
-    if (user.staff) {
-      return ALL_ACCOUNT_PERMISSIONS;
-    }
-
-    const [teamUser, teamAccount] = await Promise.all([
-      TeamUser.query()
-        .select("id", "userLevel", "lastAuthMethod")
-        .findOne({ userId: user.id, teamId: teamId })
-        .withGraphFetched("team"),
-      options?.enforceSSO
-        ? Account.query()
-            .findOne({ "accounts.teamId": teamId })
-            .withGraphJoined("teamSamlConfig")
-        : null,
-    ]);
+    auth: AuthViewer,
+  ): Promise<TeamAccess> {
+    const teamUser = await TeamUser.query()
+      .select(
+        "team_users.userLevel",
+        "team_saml_configs.enforced",
+        "team_saml_configs.enabled",
+      )
+      .join("accounts", "accounts.teamId", "team_users.teamId")
+      .leftJoin(
+        "team_saml_configs",
+        "team_saml_configs.accountId",
+        "accounts.id",
+      )
+      .where("team_users.teamId", teamId)
+      .where("team_users.userId", auth.user.id)
+      .first()
+      .castTo<
+        | {
+            userLevel: TeamUser["userLevel"];
+            enforced: boolean | null;
+            enabled: boolean | null;
+          }
+        | undefined
+      >();
 
     if (!teamUser) {
-      return [];
+      return { type: "outsider" };
     }
 
-    if (options?.enforceSSO && teamUser.lastAuthMethod !== "saml") {
-      invariant(teamAccount, "Team account not found");
-      if (await checkTeamSamlEnforced(teamAccount)) {
-        throw boom(403, "SAML Single Sign-On required", {
-          code: "SAML_SSO_REQUIRED",
-        });
+    if (
+      teamUser.enforced &&
+      teamUser.enabled &&
+      !checkAuthSatisfiesTeamSaml(auth, teamId)
+    ) {
+      const account = await Account.query()
+        .findOne({ "accounts.teamId": teamId })
+        .withGraphJoined("teamSamlConfig");
+      invariant(account, "Team account not found");
+      if (await checkTeamSamlEnforced(account)) {
+        return { type: "saml_required" };
       }
     }
 
-    switch (teamUser.userLevel) {
-      case "owner":
-        return ALL_ACCOUNT_PERMISSIONS;
-      case "member":
-      case "contributor":
-        return ["view"];
-      default:
-        assertNever(teamUser.userLevel);
+    return { type: "member", userLevel: teamUser.userLevel };
+  }
+
+  /**
+   * Throw `SAML_SSO_REQUIRED` when `auth` is a member kept out of the team by
+   * its SAML enforcement. For entry points that found nothing to show, so
+   * the member is prompted to sign in instead of being told it does not exist.
+   */
+  static async assertSamlSatisfied(
+    teamId: string | null,
+    auth: AuthViewer | null,
+  ): Promise<void> {
+    if (!teamId || !auth) {
+      return;
+    }
+    const access = await Team.getAccess(teamId, auth);
+    if (access.type === "saml_required") {
+      throw boom(403, "SAML Single Sign-On required", {
+        code: "SAML_SSO_REQUIRED",
+      });
     }
   }
 
   /**
-   * Get the user IDs of the owners of a team.
+   * Get permissions for a request in a team.
    */
-  static async getOwnerIds(teamId: string): Promise<string[]> {
+  static async getPermissions(
+    teamId: string,
+    auth: AuthViewer | null,
+  ): Promise<AccountPermission[]> {
+    if (!auth) {
+      return [];
+    }
+
+    if (auth.user.staff) {
+      return ALL_ACCOUNT_PERMISSIONS;
+    }
+
+    const access = await Team.getAccess(teamId, auth);
+    if (access.type !== "member") {
+      return [];
+    }
+
+    return getTeamUserLevelPermissions(access.userLevel);
+  }
+
+  /**
+   * Get the user IDs of the team members granted `permission`.
+   */
+  static async getUserIdsWithPermission(
+    teamId: string,
+    permission: AccountPermission,
+  ): Promise<string[]> {
     const teamUsers = await TeamUser.query()
       .select("userId")
-      .where({ teamId, userLevel: "owner" });
+      .where({ teamId })
+      .whereIn("userLevel", getTeamUserLevelsWithPermission(permission));
     return teamUsers.map((teamUser) => teamUser.userId);
   }
 }

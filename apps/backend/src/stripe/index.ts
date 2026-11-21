@@ -533,12 +533,30 @@ export async function createArgosSubscriptionFromStripe({
   return newSubscription;
 }
 
+/**
+ * Cancel a subscription now; one that is already canceled counts as done.
+ *
+ * Stripe refuses to cancel a canceled subscription with the same 404
+ * `resource_missing` it gives an unknown id, though a retrieve still returns
+ * it, so the retrieve tells the two apart. It has to come after the cancel:
+ * checked first, a concurrent cancel — the same deletion replayed — lands in
+ * between and the 404 escapes.
+ */
 export async function cancelStripeSubscription(subscriptionId: string) {
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  if (subscription.status === "canceled") {
-    return;
+  try {
+    await stripe.subscriptions.cancel(subscriptionId);
+  } catch (error) {
+    if (
+      error instanceof Stripe.errors.StripeInvalidRequestError &&
+      error.code === "resource_missing"
+    ) {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      if (subscription.status === "canceled") {
+        return;
+      }
+    }
+    throw error;
   }
-  await stripe.subscriptions.cancel(subscriptionId);
 }
 
 export type StripeCancellationFeedback =
@@ -807,8 +825,8 @@ export async function endTrialToUnlockUsage(
 }
 
 /**
- * Tell the account owners that their trial has been converted, they are now
- * being charged for the screenshots they take.
+ * Tell the account billing users that their trial has been converted, they
+ * are now being charged for the screenshots they take.
  */
 async function notifyTrialEnded(
   account: Account,
@@ -819,7 +837,7 @@ async function notifyTrialEnded(
   // instead of going through the manager.
   const [plan, recipients] = await Promise.all([
     subscription.$relatedQuery("plan"),
-    account.$getOwnerIds(),
+    account.$getUserIdsWithPermission("billing"),
   ]);
   invariant(plan, "Plan not found");
 
@@ -1305,21 +1323,25 @@ export async function handleStripeEvent({
   }
 }
 
+/** How long the trial a team takes out on its own lasts. */
+export const TRIAL_DAYS = 14;
+
 /**
  * Get Stripe subscription data common to all subscriptions.
  */
 export function getSubscriptionData(args: {
   accountId: string;
   subscriberId: string;
-  trial: boolean;
+  /** Length of the trial the subscription opens on, null for none. */
+  trialDays: number | null;
 }) {
   return {
-    ...(args.trial
+    ...(args.trialDays !== null
       ? {
           trial_settings: {
             end_behavior: { missing_payment_method: "cancel" as const },
           },
-          trial_period_days: 14,
+          trial_period_days: args.trialDays,
         }
       : {}),
     metadata: {
@@ -1327,6 +1349,61 @@ export function getSubscriptionData(args: {
       subscriberId: args.subscriberId,
     },
   } satisfies Partial<Stripe.SubscriptionCreateParams>;
+}
+
+/**
+ * Open a trial of the Pro plan for a team, server side rather than through
+ * checkout, and record it.
+ */
+export async function createStripeTrialSubscription(args: {
+  teamAccount: Account;
+  subscriberId: string;
+  stripeCustomerId: string;
+  days: number;
+}): Promise<Subscription> {
+  const { teamAccount, subscriberId, stripeCustomerId, days } = args;
+  const plan = await getStripeProPlanOrThrow();
+  const items = await getDefaultTeamPlanItems(plan);
+  const stripeSubscription = await stripe.subscriptions.create({
+    customer: stripeCustomerId,
+    items,
+    ...getSubscriptionData({
+      trialDays: days,
+      accountId: teamAccount.id,
+      subscriberId,
+    }),
+  });
+  return createArgosSubscriptionFromStripe({
+    stripeSubscription,
+    account: teamAccount,
+    subscriberId,
+  });
+}
+
+/**
+ * Push back the end of a running trial by `days` days.
+ *
+ * Read off Stripe rather than our row: the extension is added to the end
+ * Stripe holds, which a webhook still in flight may not have written yet.
+ */
+export async function extendStripeTrial(args: {
+  stripeSubscriptionId: string;
+  days: number;
+}): Promise<Subscription> {
+  const { stripeSubscriptionId, days } = args;
+  const current = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+  invariant(
+    current.status === "trialing" && current.trial_end,
+    `Stripe subscription ${stripeSubscriptionId} is not trialing`,
+  );
+  const stripeSubscription = await stripe.subscriptions.update(
+    stripeSubscriptionId,
+    {
+      trial_end: current.trial_end + days * 24 * 60 * 60,
+      proration_behavior: "none",
+    },
+  );
+  return syncArgosSubscriptionFromStripe(stripeSubscription);
 }
 
 /**
@@ -1359,7 +1436,7 @@ export async function createStripeCheckoutSession(args: {
   return stripe.checkout.sessions.create({
     line_items: items,
     subscription_data: getSubscriptionData({
-      trial,
+      trialDays: trial ? TRIAL_DAYS : null,
       accountId: teamAccount.id,
       subscriberId: subscriberAccount.userId,
     }),

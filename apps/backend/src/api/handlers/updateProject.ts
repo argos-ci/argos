@@ -65,6 +65,10 @@ const UpdateProjectBodySchema = z
     ignoreConfig: IgnoreConfigSchema,
     deploymentEnabled: z.boolean(),
     deploymentAuth: DeploymentAuth,
+    githubDeploymentEnabled: z.boolean().meta({
+      description:
+        "Turn GitHub deployments on or off. When `true`, Argos reports each deployment to the linked GitHub repository as a GitHub deployment.",
+    }),
     githubActionsOidcEnabled: z.boolean(),
     tokenlessAuthEnabled: z.boolean(),
   })
@@ -114,7 +118,7 @@ export const updateProject: CreateAPIHandler = ({ patch }) => {
     // Shared with the GraphQL API — same admin check, same validation.
     const updated = await updateProjectService({
       project,
-      user: auth.user,
+      auth,
       input: req.ctx.body,
     });
 

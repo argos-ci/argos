@@ -40,7 +40,9 @@ function DefaultStory() {
       <div className="border-thin bg-subtle w-fit rounded-lg">
         <EmojiPicker onEmojiSelect={({ emoji }) => setSelected(emoji)} />
       </div>
-      <p className="text-low mt-2 text-sm">Last selected: {selected ?? "—"}</p>
+      <p className="text-low mt-2 text-sm">
+        Last selected: {selected ?? "None"}
+      </p>
 
       <StoryTitle>In a Popover</StoryTitle>
       <EmojiPickerTrigger>
@@ -74,7 +76,7 @@ function FieldStory() {
           name="emoji"
           aria-label="Pick an emoji"
         />
-        <span className="text-low text-sm">Field value: {value || "—"}</span>
+        <span className="text-low text-sm">Field value: {value || "None"}</span>
       </div>
     </div>
   );

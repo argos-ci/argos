@@ -58,6 +58,9 @@ const test = base.extend<{
     const project = await factory.Project.create({
       accountId: account.id,
       name: "diffs-project",
+    });
+    await factory.createProjectToken({
+      projects: [project],
       token: "token-with-diffs",
     });
     await use(project);
@@ -211,7 +214,7 @@ describe("listBuildDiffs", () => {
             buildNumber: build.number,
           }),
         )
-        .set("Authorization", `Bearer ${project.token}`)
+        .set("Authorization", "Bearer token-with-diffs")
         .expect(200);
 
       expect(res.body.pageInfo).toEqual({
@@ -246,6 +249,11 @@ describe("listBuildDiffs", () => {
       });
       expect(diff.base.url).toContain(files.base.key);
       expect(diff.head.url).toContain(files.compare.key);
+      // API clients save and compare these files: the image CDN must serve
+      // them as uploaded, not converted to another format.
+      for (const url of [diff.url, diff.base.url, diff.head.url]) {
+        expect(new URL(url).searchParams.get("tr")).toBe("orig-true");
+      }
     });
 
     test("returns diffs with a user access token", async ({ factory }) => {
@@ -451,7 +459,7 @@ describe("listBuildDiffs", () => {
             }),
           )
           .query({ needsReview: "true" })
-          .set("Authorization", `Bearer ${project.token}`)
+          .set("Authorization", "Bearer token-with-diffs")
           .expect(200);
 
         expect(res.body.pageInfo).toEqual({
@@ -476,7 +484,7 @@ describe("listBuildDiffs", () => {
               buildNumber: build.number,
             }),
           )
-          .set("Authorization", `Bearer ${project.token}`)
+          .set("Authorization", "Bearer token-with-diffs")
           .expect(200);
 
         expect(res.body.pageInfo).toEqual({
@@ -564,7 +572,7 @@ describe("listBuildDiffs", () => {
           }),
         )
         .query({ needsReview: "true" })
-        .set("Authorization", `Bearer ${project.token}`)
+        .set("Authorization", "Bearer token-with-diffs")
         .expect(200);
 
       expect(res.body.pageInfo).toEqual({

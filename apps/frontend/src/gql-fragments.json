@@ -5,6 +5,7 @@
       "User"
     ],
     "CommentAnchor": [
+      "CommentAreaAnchor",
       "CommentLinesAnchor",
       "CommentPointAnchor"
     ],
@@ -64,6 +65,7 @@
       "Project",
       "ProjectContributor",
       "ProjectCustomDomain",
+      "ProjectToken",
       "Screenshot",
       "ScreenshotBucket",
       "ScreenshotDiff",

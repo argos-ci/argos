@@ -1,20 +1,13 @@
 import pRetry from "p-retry";
 
 import { fetchImage } from "../image";
-import type { MessageData, Rect } from "./types";
+import type { MessageData, MessageInput, Rect } from "./types";
 
 // Listens for messages from the main thread and detects colored zones in an image.
-self.onmessage = (event) => {
-  const { url, blockSize } = event.data;
-  if (typeof url !== "string") {
-    throw new Error("Expected url to be a string");
-  }
-  if (typeof blockSize !== "number") {
-    throw new Error("Expected blockSize to be a number");
-  }
+self.onmessage = (event: MessageEvent<MessageInput>) => {
   pRetry(
     async () => {
-      const rects = await detectColoredZones({ url, blockSize });
+      const rects = await detectColoredZones(event.data);
       self.postMessage(rects satisfies MessageData);
     },
     { retries: 3 },
@@ -43,11 +36,8 @@ async function fetchBitmapFromURL(url: string) {
 /**
  * Detects colored zones in an image.
  */
-async function detectColoredZones(input: {
-  url: string;
-  blockSize: number;
-}): Promise<Rect[] | null> {
-  const { url, blockSize } = input;
+async function detectColoredZones(input: MessageInput): Promise<Rect[] | null> {
+  const { url, blockSize, exclude } = input;
 
   // If OffscreenCanvas is not supported, return null.
   if (typeof OffscreenCanvas === "undefined") {
@@ -72,6 +62,11 @@ async function detectColoredZones(input: {
   canvas.height = bitmap.height;
   context.drawImage(bitmap, 0, 0);
   bitmap.close();
+  // Black is what the detector reads as uncolored.
+  context.fillStyle = "#000";
+  for (const rect of exclude) {
+    context.fillRect(rect.x, rect.y, rect.width, rect.height);
+  }
 
   // Get the image data.
   const imageData = context.getImageData(0, 0, canvas.width, canvas.height);

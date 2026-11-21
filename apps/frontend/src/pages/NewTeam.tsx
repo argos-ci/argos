@@ -1,13 +1,17 @@
-import { useEffect, useEffectEvent } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { AccountNameSchema } from "@argos/schemas/account";
 import { Helmet } from "react-helmet";
 import { useSearchParams } from "react-router";
 
 import { AuthGuard } from "@/containers/AuthGuard";
+import { AutoInviteList } from "@/containers/Team/Join";
 import {
   TeamNewForm,
   useCreateTeamAndRedirect,
 } from "@/containers/Team/NewForm";
+import { graphql } from "@/gql";
+import { Button } from "@/ui/Button";
 import { Heading } from "@/ui/Heading";
 import {
   Page,
@@ -15,9 +19,19 @@ import {
   PageHeader,
   PageHeaderContent,
   PageHeaderHeadline,
+  StandalonePage,
 } from "@/ui/Layout";
 import { PageLoader } from "@/ui/PageLoader";
 import { Separator } from "@/ui/Separator";
+
+const AutoInvitesQuery = graphql(`
+  query NewTeam_autoInvites {
+    autoInvites {
+      id
+      ...TeamJoin_AutoInvite
+    }
+  }
+`);
 
 const AutoCreateTeam = ({ name }: { name: string }) => {
   const createTeamAndRedirect = useCreateTeamAndRedirect();
@@ -32,6 +46,44 @@ const AutoCreateTeam = ({ name }: { name: string }) => {
   return <PageLoader />;
 };
 
+/**
+ * Signup sends people who picked team projects here, and their email domain
+ * may already lead to a team. Creating a second one without a word splits the
+ * company across two teams, so the existing ones are offered first.
+ */
+function JoinOrCreateTeam(props: { name: string }) {
+  const { name } = props;
+  const { data } = useSuspenseQuery(AutoInvitesQuery);
+  const [isCreating, setIsCreating] = useState(false);
+
+  if (isCreating || data.autoInvites.length === 0) {
+    return <AutoCreateTeam name={name} />;
+  }
+
+  return (
+    <StandalonePage>
+      <Helmet>
+        <title>Join your team</title>
+      </Helmet>
+      <div className="flex w-full max-w-lg flex-col gap-8">
+        <div className="flex flex-col gap-2">
+          <Heading>Your colleagues are already on Argos</Heading>
+          <p className="text-low text-center text-balance">
+            Join their team to work on the same projects, or go ahead and create{" "}
+            <strong>{name}</strong>.
+          </p>
+        </div>
+        <AutoInviteList autoInvites={data.autoInvites} />
+        <div className="flex justify-center">
+          <Button variant="secondary" onClick={() => setIsCreating(true)}>
+            Create {name}
+          </Button>
+        </div>
+      </div>
+    </StandalonePage>
+  );
+}
+
 export function Component() {
   const [searchParams] = useSearchParams();
   const name = searchParams.get("name");
@@ -42,7 +94,7 @@ export function Component() {
   // so a name that cannot be a team goes to the form instead, prefilled and
   // editable.
   if (name && autoSubmit && AccountNameSchema.safeParse(name).success) {
-    return <AutoCreateTeam name={name} />;
+    return <AuthGuard>{() => <JoinOrCreateTeam name={name} />}</AuthGuard>;
   }
 
   return (

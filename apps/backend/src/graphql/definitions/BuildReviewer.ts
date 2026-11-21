@@ -1,12 +1,12 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
+import type { AuthViewer } from "@/auth/payload";
 import {
   addBuildReviewers,
   removeBuildReviewers,
 } from "@/build/requestedReviewers";
 import { Build } from "@/database/models/Build";
-import { User } from "@/database/models/User";
 
 import type { IResolvers } from "../__generated__/resolver-types";
 import { forbidden, notFound, unauthenticated } from "../util";
@@ -41,7 +41,7 @@ export const typeDefs = gql`
  */
 async function loadBuildForReviewerMutation(
   buildId: string,
-  user: User,
+  auth: AuthViewer,
 ): Promise<Build> {
   const build = await Build.query()
     .findById(buildId)
@@ -50,7 +50,7 @@ async function loadBuildForReviewerMutation(
     throw notFound("Build not found");
   }
   invariant(build.project?.account);
-  const permissions = await build.project.$getPermissions(user);
+  const permissions = await build.project.$getPermissions(auth);
   if (!permissions.includes("review")) {
     throw forbidden("You cannot request reviewers for this build");
   }
@@ -66,7 +66,7 @@ export const resolvers: IResolvers = {
       }
       const build = await loadBuildForReviewerMutation(
         args.input.buildId,
-        auth.user,
+        auth,
       );
       await addBuildReviewers({
         build,
@@ -82,7 +82,7 @@ export const resolvers: IResolvers = {
       }
       const build = await loadBuildForReviewerMutation(
         args.input.buildId,
-        auth.user,
+        auth,
       );
       await removeBuildReviewers({
         build,

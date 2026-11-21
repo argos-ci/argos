@@ -29,7 +29,7 @@ export const TestId = z.string().meta({
 
 const TestStatusSchema = z.enum(["ongoing", "removed"]).meta({
   description:
-    "`ongoing` when the test still runs — it showed up in the latest build of its build name. `removed` when it did not, so it was deleted, renamed or skipped.",
+    "`ongoing` when the test still runs: it showed up in the latest build of its build name. `removed` when it did not, so it was deleted, renamed or skipped.",
   id: "TestStatus",
 });
 

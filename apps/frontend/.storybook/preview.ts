@@ -19,13 +19,10 @@ window.clientData ??= {
     releaseVersion: "storybook",
     contactEmail: "",
     github: {
-      appUrl: "",
       clientId: "",
-      loginUrl: "",
       marketplaceUrl: "",
     },
     githubLight: { appUrl: "" },
-    gitlab: { loginUrl: "" },
     stripe: { pricingTableId: "", publishableKey: "" },
     server: { url: "" },
     api: { baseUrl: "" },

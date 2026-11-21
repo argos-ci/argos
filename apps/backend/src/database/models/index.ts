@@ -48,6 +48,8 @@ export * from "./OAuthRefreshToken";
 export * from "./Plan";
 export * from "./Project";
 export * from "./ProjectDomain";
+export * from "./ProjectToken";
+export * from "./ProjectTokenProject";
 export * from "./ProjectUser";
 export * from "./Screenshot";
 export * from "./ScreenshotBucket";

@@ -4,7 +4,13 @@ import { useScaleContext } from "./ScaleContext";
 import { useZoomTransform, type PaneSize } from "./Zoomer";
 
 export type NormalizedPoint = { x: number; y: number };
+/** A rectangle in normalized coordinates, `x`/`y` being its top-left corner. */
+export type NormalizedRect = NormalizedPoint & {
+  width: number;
+  height: number;
+};
 export type ScreenPoint = { left: number; top: number };
+export type ScreenRect = ScreenPoint & { width: number; height: number };
 
 /**
  * Maps between an image's normalized coordinates (0–1 of its width/height) and
@@ -71,7 +77,26 @@ export function useImageProjection(params: {
     [paneSize, getOffsets, imgSize.width, imgSize.height, imgScale, transform],
   );
 
-  return { toScreen, toNormalized, ready: Boolean(paneSize && imgScale) };
+  const toScreenRect = useCallback(
+    (rect: NormalizedRect): ScreenRect => {
+      const start = toScreen(rect);
+      const end = toScreen({ x: rect.x + rect.width, y: rect.y + rect.height });
+      return {
+        left: start.left,
+        top: start.top,
+        width: end.left - start.left,
+        height: end.top - start.top,
+      };
+    },
+    [toScreen],
+  );
+
+  return {
+    toScreen,
+    toScreenRect,
+    toNormalized,
+    ready: Boolean(paneSize && imgScale),
+  };
 }
 
 /** Whether a normalized point falls within the image bounds. */

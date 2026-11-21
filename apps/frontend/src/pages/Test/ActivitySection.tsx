@@ -7,7 +7,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { CommentCard } from "@/containers/Comment/CommentCard";
 import { applyCommentChange } from "@/containers/Comment/commentChangeCache";
 import { getCommentThreads } from "@/containers/Comment/commentThreads";
-import { MentionableUsersProvider } from "@/containers/Comment/MentionableUsersContext";
 import { SubscribeToggleButton } from "@/containers/Comment/SubscribeToggleButton";
 import { useHighlightedCommentId } from "@/containers/Comment/useHighlightedCommentId";
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
@@ -15,6 +14,7 @@ import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { Activity, ActivityItem } from "@/ui/Activity";
 import type { EditorValue } from "@/ui/Editor/Editor";
+import { MentionableUsersProvider } from "@/ui/Editor/MentionableUsersContext";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Time } from "@/ui/Time";
@@ -191,7 +191,6 @@ export function ActivitySection(props: { test: Test }) {
               <StandaloneEditor
                 onSubmit={handleSubmit}
                 draftKey={`test.${test.id}.comment`}
-                mentions={mentionableUsers}
                 placeholder="Leave a comment…"
                 submitLabel="Submit the comment"
                 emptyMessage={{

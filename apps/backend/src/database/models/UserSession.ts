@@ -7,6 +7,15 @@ import { User } from "./User";
 export class UserSession extends Model {
   static override tableName = "user_sessions";
 
+  static authMethods = [
+    "email",
+    "google",
+    "github",
+    "gitlab",
+    "saml",
+    "passkey",
+  ] as const;
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,
@@ -25,6 +34,11 @@ export class UserSession extends Model {
           city: { type: ["string", "null"] },
           region: { type: ["string", "null"] },
           country: { type: ["string", "null"] },
+          authMethod: {
+            type: ["string", "null"],
+            enum: [...UserSession.authMethods, null],
+          },
+          samlTeamId: { type: ["string", "null"] },
         },
       },
     ],
@@ -41,6 +55,13 @@ export class UserSession extends Model {
   city!: string | null;
   region!: string | null;
   country!: string | null;
+  /** How the session was opened. Null on sessions predating the column. */
+  authMethod!: (typeof UserSession.authMethods)[number] | null;
+  /**
+   * The team whose SAML IdP vouched for the user when the session was opened:
+   * the one team whose SAML enforcement this session satisfies.
+   */
+  samlTeamId!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

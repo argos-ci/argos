@@ -42,7 +42,7 @@ export const resolvers: IResolvers = {
       }
       const account = await getAdminAccount({
         id: args.accountId,
-        user: ctx.auth.user,
+        auth: ctx.auth,
       });
       if (!account.gitlabAccessToken) {
         throw notFound("Account has no GitLab access token.");

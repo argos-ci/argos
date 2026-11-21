@@ -1,5 +1,5 @@
+import type { AuthViewer } from "@/auth/payload";
 import { Build, Project, ScreenshotBucket } from "@/database/models";
-import type { User } from "@/database/models";
 import { queryBuilds } from "@/database/services/build";
 
 /**
@@ -22,9 +22,9 @@ export async function getSiblingBuilds(input: {
   build: Build;
   /** The build's compare bucket, which carries its branch and commit. */
   compareBucket: ScreenshotBucket;
-  user: User | null;
+  auth: AuthViewer | null;
 }): Promise<Build[]> {
-  const { build, compareBucket, user } = input;
+  const { build, compareBucket, auth } = input;
 
   // Without a branch we cannot tell a sibling from any other build that
   // happens to share the commit.
@@ -38,7 +38,7 @@ export async function getSiblingBuilds(input: {
     build,
     branch,
     commit,
-    user,
+    auth,
   });
 
   // One build per name, per project: a suite that was re-run leaves older
@@ -87,13 +87,13 @@ async function getReachableProjectIds(input: {
   build: Build;
   branch: string;
   commit: string;
-  user: User | null;
+  auth: AuthViewer | null;
 }): Promise<string[]> {
-  const { build, branch, commit, user } = input;
+  const { build, branch, commit, auth } = input;
 
   // An anonymous visitor is a member of nothing, so no other project can be
   // reached — skip the lookup entirely.
-  if (!user) {
+  if (!auth) {
     return [build.projectId];
   }
 
@@ -108,7 +108,7 @@ async function getReachableProjectIds(input: {
     .withGraphFetched("account");
   const memberOf = await Promise.all(
     projects.map(async (project) => {
-      const permissions = await Project.getMembershipPermissions(project, user);
+      const permissions = await Project.getMembershipPermissions(project, auth);
       return permissions.includes("view") ? project.id : null;
     }),
   );

@@ -27,7 +27,7 @@ const MemberPathSchema = z.object({
   accountSlug: AccountSlug.meta({ description: "Slug of the team." }),
   userId: z.string().meta({
     description:
-      "Identifier of the user to act on — the `user.id` returned by `listAccountMembers`, which is the user's account id.",
+      "Identifier of the user to act on: the `user.id` returned by `listAccountMembers`, which is the user's account id.",
   }),
 });
 
@@ -70,7 +70,7 @@ export const setAccountMemberLevel: CreateAPIHandler = ({ patch }) => {
     // Shared with the GraphQL API — same admin check, same rules.
     const teamUser = await setTeamMemberLevel({
       account,
-      user: auth.user,
+      auth,
       userAccountId: req.ctx.params.userId,
       level: req.ctx.body.level,
     });
@@ -110,7 +110,7 @@ export const removeAccountMember: CreateAPIHandler = ({ delete: del }) => {
 
     await removeTeamMember({
       account,
-      user: auth.user,
+      auth,
       userAccountId: req.ctx.params.userId,
     });
 

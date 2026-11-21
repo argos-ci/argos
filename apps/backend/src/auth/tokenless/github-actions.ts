@@ -280,6 +280,15 @@ export async function resolveTokenlessGitHubActionsContext(
     );
   }
 
+  // The app without content access has no Actions permission, so GitHub
+  // refuses it the workflow run.
+  if (installation.app === "light") {
+    throw boom(
+      400,
+      "Tokenless authentication is not supported for repositories connected through GitHub without content access, because Argos cannot look up their workflow runs. Authenticate with GitHub Actions OIDC or set the ARGOS_TOKEN environment variable. Learn more: https://argos-ci.com/docs/learn/integrations/github-actions-authentication#tokenless-limitations",
+    );
+  }
+
   const run = await inProgressRunStore.get({
     bearerToken,
     installation,

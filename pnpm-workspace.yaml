@@ -6,17 +6,21 @@ packages:
 catalog:
   '@types/react': ^19.3.0
   '@types/react-dom': ^19.3.0
-  react: ^19.3.0
-  react-dom: ^19.3.0
-  react-router: ^8.4.0
+  react: ^19.3.1
+  react-dom: ^19.3.1
+  react-router: ^8.5.1
   # tsrs ports one exact TypeScript build (`tsrs --version` prints it), and
   # `typescript` is pinned to that build so the editor and every tool peering on
   # it see the compiler CI checks with. Bump the two together.
-  tsrs: 0.21.0-ts7.1.0-beta
+  tsrs: 0.25.0-ts7.1.0-beta
   typescript: 7.1.0-beta
   zod: ^4.6.7
 
 overrides:
+  # A CVE floor: GHSA-c4qx-w738-7hr3 is fixed in 12.0.2, but @apollo/server
+  # 5.5.2 caps the range below it. The cap only keeps Node 20 installs off
+  # @whatwg-node/promise-helpers@2 (engines >=22.15), which Node 26 accepts.
+  '@graphql-tools/utils@<12.0.2': ^12.0.2
   '@types/react': "catalog:"
   '@types/react-dom': "catalog:"
   browserslist: ^4.28.7
@@ -24,11 +28,11 @@ overrides:
   esbuild: ^0.28.1
   file-type: ^22.1.1
   # A CVE floor across a major: GHSA-3g3m-2fjr-6pw4 is fixed only in 14.0.2,
-  # while react-email, @sentry/bundler-plugins and the Storybook docgen plugin
-  # still ask for ^13. None of them uses what 14 removed (the `debug` option)
-  # or changed (ignore patterns starting with `/`).
+  # while the Storybook docgen plugin still asks for ^13. It uses neither what
+  # 14 removed (the `debug` option) nor what it changed (ignore patterns
+  # starting with `/`).
   glob: ^14.0.3
-  # Apollo Server only supports graphql 16 (@apollo/server 5.5.1 peers on
+  # Apollo Server only supports graphql 16 (@apollo/server 5.5.2 peers on
   # ^16.11.0), so 17 waits for apollographql/apollo-server#8220. The override
   # rewrites that peer range too: pnpm reports no conflict even when it is
   # raised past what Apollo supports.
@@ -36,9 +40,11 @@ overrides:
   ip-address: ^10.7.4
   lodash: ^4.17.23
   lodash-es: ^4.18.1
-  # A floor, not a cap: graphql-config still needs minimatch 10, while glob 14
-  # and the backend, which matches user-defined globs, take 11.
-  minimatch@<10.2.6: ^10.2.6
+  # A CVE floor across a major: GHSA-g3hv-75wg-m249 is fixed only in 11.0.1,
+  # while graphql-config (through @graphql-codegen/cli) still asks for ^10. It
+  # only calls `minimatch()`, which 11 keeps; 11 removed `makeRe()`, the `AST`
+  # class and the `debug` option.
+  minimatch@<11.0.1: ^11.0.1
   react: "catalog:"
   react-dom: "catalog:"
   react-router: "catalog:"
@@ -62,7 +68,6 @@ allowBuilds:
   # top it up in src/util/public-email-domains.ts.
   free-email-domains: false
   msw: true
-  odiff-bin: true
   oxc-resolver: true
   sharp: true
 
@@ -73,5 +78,12 @@ minimumReleaseAgeExclude:
 # unmounts, leaving a tooltip open after the pointer leaves. Re-check on every
 # upgrade: the Tooltip story "Closes When Another Trigger Unmounts" fails
 # without the patch.
+#
+# Base UI also keeps a closing part mounted until its animations finish, and a
+# scroll-driven animation (our `scroll-mask-*` fades) never finishes, so a tab
+# panel switched away from stayed on screen, inert. The patch leaves those out
+# of the wait. The e2e test "switches the build sidebar between its tabs"
+# fails without it: Storybook cannot catch it, since its setup turns the wait
+# off.
 patchedDependencies:
   '@base-ui/react@1.9.0': patches/@base-ui__react@1.9.0.patch

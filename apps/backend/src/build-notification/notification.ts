@@ -240,24 +240,24 @@ function getNotificationDescription(input: {
         return "Everything's good!";
       }
       if (isAutoApproved) {
-        return `Auto-approved, no changes found — ${statsMessage}`;
+        return `Auto-approved, no changes found (${statsMessage})`;
       }
-      return `${statsMessage} — no changes found`;
+      return `${statsMessage}, no changes found`;
     }
     case "diff-detected": {
       const statsMessage = getBuildStatsMessage(build);
       if (isAutoApproved) {
         return `${statsMessage}, automatically approved`;
       }
-      return `${statsMessage} — waiting for your decision`;
+      return `${statsMessage}, waiting for your decision`;
     }
     case "diff-accepted": {
       const statsMessage = getBuildStatsMessage(build);
-      return `${statsMessage} — approved`;
+      return `${statsMessage}, approved`;
     }
     case "diff-rejected": {
       const statsMessage = getBuildStatsMessage(build);
-      return `${statsMessage} — rejected`;
+      return `${statsMessage}, rejected`;
     }
     default: {
       assertNever(buildNotificationType);

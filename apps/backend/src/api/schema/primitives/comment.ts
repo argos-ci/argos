@@ -39,34 +39,64 @@ const CommentReactionGroupSchema = z
   .meta({ description: "Reactions of a single emoji on a comment." });
 
 /**
- * Where on the referenced screenshot diff a comment points. A point uses
- * normalized (0–1) coordinates; lines is a 1-based inclusive range. Shared by
- * the comment output and the comment-creation input so both speak the same
- * anchor shape.
+ * Where on the referenced screenshot diff a comment points. Shared by the
+ * comment output and the comment-creation input so both speak the same anchor
+ * shape.
  */
 export const CommentAnchorSchema = z
   .discriminatedUnion("type", [
-    z.object({
-      type: z.literal("point"),
-      x: z.number(),
-      y: z.number(),
-    }),
-    z.object({
-      type: z.literal("lines"),
-      from: z.number().int(),
-      to: z.number().int(),
-    }),
+    z
+      .object({
+        type: z.literal("point"),
+        x: z.number(),
+        y: z.number(),
+      })
+      .meta({
+        description:
+          "A spot on the image, in normalized coordinates (0-1 of the image's width and height).",
+      }),
+    z
+      .object({
+        type: z.literal("area"),
+        x: z.number().meta({
+          description: "Left edge of the area, normalized (0-1).",
+        }),
+        y: z.number().meta({
+          description: "Top edge of the area, normalized (0-1).",
+        }),
+        width: z.number().meta({
+          description:
+            "Width of the area, normalized (0-1). `x + width` is at most 1.",
+        }),
+        height: z.number().meta({
+          description:
+            "Height of the area, normalized (0-1). `y + height` is at most 1.",
+        }),
+      })
+      .meta({
+        description:
+          "A rectangle on the image, in normalized coordinates (0-1 of the image's width and height). Use it for feedback about a whole region, like a component or a section, rather than a single spot.",
+      }),
+    z
+      .object({
+        type: z.literal("lines"),
+        from: z.number().int(),
+        to: z.number().int(),
+      })
+      .meta({
+        description: "A 1-based inclusive line range on a text-based snapshot.",
+      }),
   ])
   .meta({
     description:
-      "Where on the referenced screenshot diff the comment points. A point uses normalized (0–1) coordinates; lines is a 1-based inclusive range.",
+      "Where on the image or snapshot the comment points: a point, an area, or a line range.",
   });
 
 export const CommentSchema = z
   .object({
     id: z.string().meta({
       description:
-        "Public ID of the comment (e.g. `comment-xf23d`) — the one the app links to, and the one every endpoint taking a comment ID expects.",
+        "Public ID of the comment (e.g. `comment-xf23d`): the one the app links to, and the one every endpoint taking a comment ID expects.",
     }),
     buildId: z.string().nullable().meta({
       description:
@@ -82,7 +112,7 @@ export const CommentSchema = z
     }),
     mediaVersionId: z.string().nullable().meta({
       description:
-        "Version of the media the comment was written against. A pin describes a spot on the bytes its author was looking at, so feedback on an older upload has to be read against that upload — match this id against `GET /media/{mediaId}/versions` to get the right file.",
+        "Version of the media the comment was written against. A pin describes a spot on the bytes its author was looking at, so feedback on an older upload has to be read against that upload. Match this id against `GET /media/{mediaId}/versions` to get the right file.",
     }),
     threadId: z
       .string()

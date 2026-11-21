@@ -9,15 +9,6 @@ exports[`diff E2E > generates different images 1`] = `
 }
 `;
 
-exports[`diff E2E > generates different sizes images 1`] = `
-{
-  "contentType": "image/png",
-  "height": 15,
-  "score": 0.5156000000000001,
-  "width": 15,
-}
-`;
-
 exports[`diff E2E > generates images with big diff 1`] = `
 {
   "contentType": "image/png",

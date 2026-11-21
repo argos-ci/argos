@@ -20,7 +20,10 @@ export const loggedTest = seedTest.extend<{
     // Create a real server-side session and set the session cookies, mirroring
     // what the backend does on login: the HttpOnly credential plus the
     // JS-readable hint the app uses to know it's logged in.
-    const { rawToken } = await createSession({ userId: auth.user.id });
+    const { rawToken } = await createSession({
+      userId: auth.user.id,
+      method: "email",
+    });
     const url = argosConfig.get("server.url");
     await page.context().addCookies([
       { name: SESSION_COOKIE_NAME, value: rawToken, url, httpOnly: true },

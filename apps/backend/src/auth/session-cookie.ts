@@ -16,7 +16,11 @@ export const SESSION_COOKIE_NAME = "argos_session";
  */
 export const LOGGED_IN_COOKIE_NAME = "argos_logged_in";
 
-function getBaseCookieOptions() {
+/**
+ * Scope shared by every cookie the API host must read back: set on the app
+ * host, sent to the API host.
+ */
+export function getBaseCookieOptions() {
   const domain = config.get("session.domain") || undefined;
   return {
     domain,
@@ -59,6 +63,16 @@ export function clearSessionCookies(res: Response): void {
 export function readSessionCookie(
   req: Pick<Request, "headers">,
 ): string | null {
+  return readCookie(req, SESSION_COOKIE_NAME);
+}
+
+/**
+ * Read a cookie from the request. Returns `null` when it is absent or empty.
+ */
+export function readCookie(
+  req: Pick<Request, "headers">,
+  name: string,
+): string | null {
   const header = req.headers.cookie;
   if (!header) {
     return null;
@@ -69,7 +83,7 @@ export function readSessionCookie(
     if (eq === -1) {
       continue;
     }
-    if (trimmed.slice(0, eq) === SESSION_COOKIE_NAME) {
+    if (trimmed.slice(0, eq) === name) {
       return decodeURIComponent(trimmed.slice(eq + 1)) || null;
     }
   }

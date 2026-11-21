@@ -29,7 +29,7 @@ import { Separator } from "@/ui/Separator";
 import { SwitchField } from "@/ui/Switch";
 import { formatCurrency } from "@/util/intl";
 
-import { TeamOwnersLink } from "./TeamOwnersLink";
+import { TeamBillingMembersLink, TeamOwnersLink } from "./TeamOwnersLink";
 
 const _AccountFragment = graphql(`
   fragment TeamSpendManagement_Account on Account {
@@ -87,14 +87,14 @@ function SpendManagementForm(props: {
   invariant(account.subscription, "Subscription is required");
 
   const { permissions } = useAccountContext();
-  const hasAdminPermission = permissions.includes(AccountPermission.Admin);
+  const canManageBilling = permissions.includes(AccountPermission.Billing);
   const defaultValues: Inputs = {
     isSpendLimitEnabled: typeof account.meteredSpendLimitByPeriod === "number",
     meteredSpendLimitByPeriod: account.meteredSpendLimitByPeriod ?? null,
     blockWhenSpendLimitIsReached: account.blockWhenSpendLimitIsReached,
   };
   const form = useForm<Inputs>({
-    disabled: !hasAdminPermission,
+    disabled: !canManageBilling,
     defaultValues,
   });
 
@@ -146,8 +146,8 @@ function SpendManagementForm(props: {
         <CardBody>
           <CardTitle id="spend-management">Spend Management</CardTitle>
           <CardParagraph>
-            Set a spend amount towards additional screenshots cost. All account
-            owners will be notified when the spend amount reaches{" "}
+            Set a spend amount towards additional screenshots cost. Argos emails
+            owners and billing members when the spend amount reaches{" "}
             <strong>50%</strong>, <strong>75%</strong>, and{" "}
             <strong>100%</strong> of the set amount. You can choose to pause
             builds when the spend amount limit is reached.
@@ -180,7 +180,7 @@ function SpendManagementForm(props: {
                     </div>
                   ) : (
                     <div className="font-medium">
-                      Current period additional costs —{" "}
+                      Current period additional costs:{" "}
                       {formatCurrency(additionalScreenshotsCost, currency)}
                     </div>
                   )}
@@ -198,7 +198,7 @@ function SpendManagementForm(props: {
               </div>
               <SwitchField control={form.control} name="isSpendLimitEnabled" />
             </div>
-            {isSpendLimitEnabled && hasAdminPermission ? (
+            {isSpendLimitEnabled && canManageBilling ? (
               <>
                 <Separator orientation="horizontal" />
                 <div className="bg-subtle grid grid-cols-2 p-4">
@@ -248,12 +248,18 @@ function SpendManagementForm(props: {
               </>
             ) : null}
           </div>
-          {hasAdminPermission ? null : (
+          {canManageBilling ? null : (
             <p className="text-low mt-4 text-sm">
               Only{" "}
               <TeamOwnersLink account={{ slug: account.slug, permissions }}>
                 team owners
               </TeamOwnersLink>{" "}
+              and{" "}
+              <TeamBillingMembersLink
+                account={{ slug: account.slug, permissions }}
+              >
+                billing members
+              </TeamBillingMembersLink>{" "}
               can change the spend limit.
             </p>
           )}
@@ -358,7 +364,7 @@ function ConfirmDialog(props: {
               </DialogText>
               <DialogText>
                 <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
-                Notifications are sent to all team owner members.
+                Argos emails owners and billing members.
               </DialogText>
               {data.blockWhenSpendLimitIsReached && (
                 <DialogText>
@@ -383,7 +389,7 @@ function ConfirmDialog(props: {
               </DialogText>
               <DialogText>
                 <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
-                Notifications will be sent to all team owner members.
+                Argos will email owners and billing members.
               </DialogText>
               {data.blockWhenSpendLimitIsReached && (
                 <DialogText>

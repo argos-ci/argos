@@ -53,17 +53,17 @@ function AuthCallback(props: { provider: AuthProvider }) {
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const errorParam = searchParams.get("error");
-  const redirectUri = state ? getRedirectFromState({ state, provider }) : null;
+  const redirectUri = state ? getRedirectFromState(state) : null;
   const [authError, setAuthError] = useState<Error | null>(null);
   useEffect(() => {
-    if (!code || !redirectUri) {
+    if (!code || !state || !redirectUri) {
       return;
     }
 
     fetchApi<{ creation: boolean; hasAutoInvite: boolean }>(
       `/auth/${provider}`,
       {
-        data: { code },
+        data: { code, state },
       },
     )
       .then((data) => {
@@ -80,7 +80,7 @@ function AuthCallback(props: { provider: AuthProvider }) {
       .catch((error) => {
         setAuthError(error);
       });
-  }, [code, provider, redirectUri]);
+  }, [code, state, provider, redirectUri]);
 
   // If a authError is thrown, it will be caught by the ErrorBoundary.
   if (authError) {
@@ -99,16 +99,14 @@ function AuthCallback(props: { provider: AuthProvider }) {
   return null;
 }
 
-function ErrorFallback(props: { error: unknown; provider: AuthProvider }) {
-  const { error, provider } = props;
+function ErrorFallback(props: { error: unknown }) {
+  const { error } = props;
   const auth = useAuth();
   const [searchParams] = useSearchParams();
 
   if (auth.status === "authenticated") {
     const state = searchParams.get("state");
-    const redirectUri = state
-      ? getRedirectFromState({ state, provider })
-      : null;
+    const redirectUri = state ? getRedirectFromState(state) : null;
     const errorMessage = extractErrorMessage(error);
     if (errorMessage) {
       return (
@@ -145,9 +143,7 @@ export function Component() {
 
   return (
     <Sentry.ErrorBoundary
-      fallback={({ error }) => (
-        <ErrorFallback error={error} provider={provider} />
-      )}
+      fallback={({ error }) => <ErrorFallback error={error} />}
     >
       <AuthCallback provider={provider} />
     </Sentry.ErrorBoundary>

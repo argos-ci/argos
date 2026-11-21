@@ -40,6 +40,7 @@ export async function sessionAuthFromExpressReq(
     account,
     user: account.user,
     sessionId: resolved.sid,
+    samlTeamId: resolved.samlTeamId,
   };
 }
 

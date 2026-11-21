@@ -202,7 +202,18 @@ describe("media comments", () => {
       })
       .expect(400);
 
-    expect(res.body.error).toContain("anchored to a point");
+    expect(res.body.error).toContain("can't be anchored to lines");
+  });
+
+  test("pins a comment to an area of the image", async ({ token, media }) => {
+    const anchor = { type: "area", x: 0.1, y: 0.2, width: 0.5, height: 0.3 };
+    const res = await request(app)
+      .post(`/media/${media.id}/comments`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ body: body("This whole header is off"), anchor })
+      .expect(201);
+
+    expect(res.body.anchor).toEqual(anchor);
   });
 
   test("rejects coordinates outside the image", async ({ token, media }) => {

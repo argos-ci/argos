@@ -5,6 +5,7 @@ import DataLoader from "dataloader";
 import { memoize } from "lodash-es";
 import type { ModelClass } from "objection";
 
+import type { AuthViewer } from "@/auth/payload";
 import { getPresences, type UserPresence } from "@/auth/presence";
 import {
   filterVisibleComments,
@@ -58,7 +59,9 @@ import {
   TeamUser,
   Test,
   User,
+  UserSession,
 } from "@/database/models";
+import type { AccountPermission } from "@/database/models/Account";
 import type { ProjectPermission } from "@/database/models/Project";
 import {
   getAccountBillings,
@@ -66,6 +69,7 @@ import {
   type AccountBilling,
   type AccountStorybookTotals,
 } from "@/database/services/period-usage";
+import { getProjectsByTokenId } from "@/database/services/project-token";
 import {
   getSubscriptionRevenues,
   type SubscriptionRevenue,
@@ -87,6 +91,7 @@ import { getLatestMediaVersions } from "@/media/version";
 import { getTestAllMetrics } from "@/metrics/test";
 
 import { ISignupSource, ITestStatus } from "./__generated__/resolver-types";
+import { getVisibleProjectIds } from "./services/project";
 
 function createModelLoader<TModelClass extends ModelClass<Model>>(
   Model: TModelClass,
@@ -582,6 +587,67 @@ function createDiscordWebhooksByAccountIdLoader() {
     );
     return accountIds.map((accountId) => webhooksMap[accountId] ?? []);
   });
+}
+
+function createProjectTokenProjectsLoader() {
+  return new DataLoader<string, Project[]>(async (tokenIds) => {
+    const projectsByTokenId = await getProjectsByTokenId(tokenIds);
+    return tokenIds.map((tokenId) => projectsByTokenId.get(tokenId) ?? []);
+  });
+}
+
+/**
+ * The projects of an account a viewer can see, once per request: a list of
+ * project tokens asks it for each token, always about the same account.
+ */
+function createVisibleProjectIdsLoader() {
+  return new DataLoader<
+    { account: Account; auth: AuthViewer },
+    Set<string>,
+    string
+  >(
+    async (inputs) =>
+      Promise.all(
+        inputs.map(async (input) => new Set(await getVisibleProjectIds(input))),
+      ),
+    { cacheKeyFn: (input) => `${input.account.id}:${input.auth.user.id}` },
+  );
+}
+
+/**
+ * A viewer's permissions on an account, once per request. The calls are still
+ * made one by one: the check reads an `Account` instance rather than an id.
+ */
+function createAccountPermissionsLoader() {
+  return new DataLoader<
+    { account: Account; auth: AuthViewer },
+    AccountPermission[],
+    string
+  >(
+    async (inputs) =>
+      Promise.all(
+        inputs.map((input) => input.account.$getPermissions(input.auth)),
+      ),
+    { cacheKeyFn: (input) => `${input.account.id}:${input.auth.user.id}` },
+  );
+}
+
+/**
+ * A viewer's permissions on a project, once per request. The calls are still
+ * made one by one: the check reads a `Project` instance rather than an id.
+ */
+function createProjectPermissionsLoader() {
+  return new DataLoader<
+    { project: Project; auth: AuthViewer },
+    ProjectPermission[],
+    string
+  >(
+    async (inputs) =>
+      Promise.all(
+        inputs.map((input) => input.project.$getPermissions(input.auth)),
+      ),
+    { cacheKeyFn: (input) => `${input.project.id}:${input.auth.user.id}` },
+  );
 }
 
 function createAutomationRunActionRunsLoader() {
@@ -1255,18 +1321,20 @@ function createMediaVersionsLoader() {
  */
 function createProjectMembershipPermissionsLoader() {
   return new DataLoader<
-    { project: Project; user: User | null },
+    { project: Project; auth: AuthViewer | null },
     ProjectPermission[],
     string
   >(
     async (inputs) =>
       Promise.all(
         inputs.map((input) =>
-          Project.getMembershipPermissions(input.project, input.user),
+          Project.getMembershipPermissions(input.project, input.auth),
         ),
       ),
     {
-      cacheKeyFn: (input) => `${input.project.id}:${input.user?.id ?? ""}`,
+      // The loaders live for one request, so one viewer: the user id is
+      // enough to key on.
+      cacheKeyFn: (input) => `${input.project.id}:${input.auth?.user.id ?? ""}`,
     },
   );
 }
@@ -1998,6 +2066,32 @@ async function loadLatestCompareScreenshots(
   return results;
 }
 
+/**
+ * When each user last used the web app, read off their sessions.
+ *
+ * Revoked and expired sessions count too: signing out revokes the session that
+ * holds the last activity. Unlike presence, which Redis forgets after a week,
+ * sessions are kept, though only since they were introduced in June 2026.
+ */
+function createUserLastSeenAtByUserIdLoader() {
+  return new DataLoader<string, Date | null>(async (userIds) => {
+    const rows = (await UserSession.query()
+      .select("userId")
+      .max("lastSeenAt as lastSeenAt")
+      .whereIn("userId", userIds as string[])
+      .groupBy("userId")) as unknown as Array<{
+      userId: string | number;
+      lastSeenAt: string;
+    }>;
+
+    const lastSeenAtByUserId = new Map(
+      rows.map((row) => [String(row.userId), new Date(row.lastSeenAt)]),
+    );
+
+    return userIds.map((userId) => lastSeenAtByUserId.get(userId) ?? null);
+  });
+}
+
 function createPresenceLoader() {
   return new DataLoader<string, UserPresence | null>(async (userIds) =>
     getPresences(userIds as string[]),
@@ -2050,10 +2144,15 @@ function createUsersShareTeamLoader() {
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   Presence: createPresenceLoader(),
+  UserLastSeenAtByUserId: createUserLastSeenAtByUserIdLoader(),
   UsersShareTeam: createUsersShareTeamLoader(),
   AccountFromRelation: createAccountFromRelationLoader(),
   ProjectTeamUserLevel: createProjectTeamUserLevelLoader(),
   AutomationRunActionRuns: createAutomationRunActionRunsLoader(),
+  ProjectTokenProjects: createProjectTokenProjectsLoader(),
+  VisibleProjectIds: createVisibleProjectIdsLoader(),
+  AccountPermissions: createAccountPermissionsLoader(),
+  ProjectPermissions: createProjectPermissionsLoader(),
   MsTeamsWebhooksByAccountId: createMsTeamsWebhooksByAccountIdLoader(),
   DiscordWebhooksByAccountId: createDiscordWebhooksByAccountIdLoader(),
   Build: createModelLoader(Build),

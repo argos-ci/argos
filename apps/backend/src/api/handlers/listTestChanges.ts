@@ -48,7 +48,7 @@ export const listTestChangesOperation = {
   operationId: "listTestChanges",
   summary: "List a test's changes",
   description:
-    "List the distinct changes a test produced over a period, the ones that came back most often first. Each change is one exact visual difference, with how many times it reappeared, whether it is ignored, and the diff of its latest occurrence — so you can look at what moved. A change that keeps reappearing while nothing in the UI changed is a flaky one: fix what makes it unstable, or silence it with `ignoreChange`.",
+    "List the distinct changes a test produced over a period, the ones that came back most often first. Each change is one exact visual difference, with how many times it reappeared, whether it is ignored, and the diff of its latest occurrence, so you can look at what moved. A change that keeps reappearing while nothing in the UI changed is a flaky one: fix what makes it unstable, or silence it with `ignoreChange`.",
   tags: ["Tests"],
   security: anyTokenOrOAuthAuth(["projects:read"]),
   requestParams: {

@@ -7,7 +7,6 @@ import logger from "@/logger";
 import { diffImages } from "@/screenshot-diff/diff/image";
 import type { DiffResult } from "@/screenshot-diff/diff/types";
 import { S3FileHandle } from "@/storage";
-import { hashFileSha256 } from "@/util/hash";
 
 import { getMediaDiffKey } from "./key";
 import { headMediaObject } from "./object";
@@ -130,7 +129,7 @@ async function uploadMediaDiffMask(args: {
   projectId: string;
   resultFile: NonNullable<DiffResult["file"]>;
   context: MediaDiffContext;
-}): Promise<{ key: string; width: number | null; height: number | null }> {
+}): Promise<{ key: string; width: number; height: number }> {
   const { projectId, resultFile, context } = args;
   return Sentry.startSpan(
     {
@@ -142,8 +141,7 @@ async function uploadMediaDiffMask(args: {
       },
     },
     async () => {
-      const hash = await hashFileSha256(resultFile.path);
-      const key = getMediaDiffKey({ projectId, hash });
+      const key = getMediaDiffKey({ projectId, hash: resultFile.sha256 });
       const fileHandle = new S3FileHandle({
         ...context,
         key,
@@ -158,11 +156,7 @@ async function uploadMediaDiffMask(args: {
 
       await fileHandle.unlink();
 
-      return {
-        key,
-        width: resultFile.width ?? null,
-        height: resultFile.height ?? null,
-      };
+      return { key, width: resultFile.width, height: resultFile.height };
     },
   );
 }

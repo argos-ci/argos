@@ -7,7 +7,10 @@ import { getCIBase } from "./base";
 import { getCIMergeQueueBase } from "./merge-queue";
 
 export type CIStrategyContext = {
+  /** Whether this build, pushed to `branch`, is auto-approved. */
   checkIsAutoApproved: (branch: string) => boolean;
+  /** Whether the project auto-approves builds of `branch`, whatever the build. */
+  isAutoApprovedBranch: (branch: string) => boolean;
 };
 
 export const CIStrategy: BuildStrategy<CIStrategyContext> = {
@@ -18,6 +21,7 @@ export const CIStrategy: BuildStrategy<CIStrategyContext> = {
     const isAutoApprovedBranch =
       await build.project.$getAutoApprovedBranchMatcher();
     return {
+      isAutoApprovedBranch,
       checkIsAutoApproved: (branch: string) => {
         // If there is a pull request, we never auto-approve the build.
         if (build.githubPullRequestId || build.originPullRequestId) {

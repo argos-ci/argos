@@ -1,3 +1,4 @@
+import { PROJECT_TOKEN_PERMISSION_LIST } from "@argos/schemas/project-token";
 import type { ScreenshotMetadata } from "@argos/schemas/screenshot-metadata";
 import { invariant } from "@argos/util/invariant";
 
@@ -27,6 +28,7 @@ import { OAuthClient } from "./models/OAuthClient";
 import { Plan } from "./models/Plan";
 import { Project } from "./models/Project";
 import { ProjectDomain } from "./models/ProjectDomain";
+import { ProjectToken } from "./models/ProjectToken";
 import { Screenshot } from "./models/Screenshot";
 import { ScreenshotBucket } from "./models/ScreenshotBucket";
 import { ScreenshotDiff } from "./models/ScreenshotDiff";
@@ -39,6 +41,7 @@ import { Test } from "./models/Test";
 import { User } from "./models/User";
 import { UserPasskey } from "./models/UserPasskey";
 import { ignoreChange } from "./services/ignored-change";
+import { insertProjectToken } from "./services/project-token";
 
 function duplicate<T>(obj: T, count: number): T[] {
   return Array.from({ length: count }, () => obj);
@@ -145,16 +148,22 @@ export async function createProject(input: {
   private?: boolean;
   defaultBaseBranch?: string;
 }): Promise<Project> {
-  return Project.query().insertAndFetch({
+  const project = await Project.query().insertAndFetch({
     name: input.name,
-    token:
-      input.token ?? `${input.name}-${Math.random().toString(36).slice(2)}`,
     accountId: input.accountId,
     private: input.private ?? false,
     ...(input.defaultBaseBranch !== undefined && {
       defaultBaseBranch: input.defaultBaseBranch,
     }),
   });
+  await insertProjectToken({
+    accountId: project.accountId,
+    name: "Default token",
+    token: input.token ?? ProjectToken.generateToken(),
+    permissions: PROJECT_TOKEN_PERMISSION_LIST,
+    projectIds: [project.id],
+  });
+  return project;
 }
 
 /**
@@ -1250,6 +1259,130 @@ export async function createFallbackBaselineScenario(input: {
 }
 
 /**
+ * A page that grew by 304 px: the baseline is the 720 px tall placeholder, the
+ * changes the 1024 px one. Their centre text changed, and their footer moved
+ * down with the gray block above it, which is what iris reports as a layout
+ * shift. The shift below is what iris returns for these two images.
+ */
+export async function createLayoutShiftScenario(input: {
+  projectId: string;
+}): Promise<{ build: Build; screenshotDiff: ScreenshotDiff }> {
+  const { projectId } = input;
+  const seededAt = getSeedInstant();
+
+  const bucketProps = {
+    name: "default",
+    branch: "main",
+    projectId,
+    complete: true,
+    valid: true,
+    screenshotCount: 1,
+    storybookScreenshotCount: 0,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const [baseBucket, compareBucket] =
+    await ScreenshotBucket.query().insertAndFetch([
+      { ...bucketProps, commit: "3b5d7f9a1c3e5a7b9d1f3a5c7e9b1d3f5a7c9e1b" },
+      { ...bucketProps, commit: "9e7c5a3f1d9b7e5c3a1f9d7b5e3c1a9f7d5b3e1c" },
+    ]);
+  invariant(baseBucket && compareBucket);
+
+  const [baseFile, compareFile, diffFile] = await Promise.all([
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 720,
+      key: "dummy-375x720.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 1024,
+      key: "dummy-375x1024.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshotDiff",
+      width: 375,
+      height: 1024,
+      key: "diff-1024-to-720.png",
+      contentType: "image/png",
+    }),
+  ]);
+
+  const [test] = await Test.query().insertAndFetch([
+    { name: "pricing.png", buildName: "default", projectId },
+  ]);
+  invariant(test);
+
+  const [baseScreenshot, compareScreenshot] =
+    await Screenshot.query().insertAndFetch([
+      {
+        screenshotBucketId: baseBucket.id,
+        testId: test.id,
+        name: test.name,
+        s3Id: baseFile.key,
+        fileId: baseFile.id,
+      },
+      {
+        screenshotBucketId: compareBucket.id,
+        testId: test.id,
+        name: test.name,
+        s3Id: compareFile.key,
+        fileId: compareFile.id,
+      },
+    ]);
+  invariant(baseScreenshot && compareScreenshot);
+
+  const [build] = await Build.query().insertAndFetch([
+    {
+      name: "default",
+      number: 1,
+      type: "check" as const,
+      jobStatus: "complete" as const,
+      baseScreenshotBucketId: baseBucket.id,
+      compareScreenshotBucketId: compareBucket.id,
+      projectId,
+      createdAt: seededAt,
+      updatedAt: seededAt,
+    },
+  ]);
+  invariant(build);
+
+  const screenshotDiff = await ScreenshotDiff.query().insertAndFetch({
+    buildId: build.id,
+    baseScreenshotId: baseScreenshot.id,
+    compareScreenshotId: compareScreenshot.id,
+    testId: test.id,
+    score: 0.3016,
+    jobStatus: "complete" as const,
+    s3Id: diffFile.key,
+    fileId: diffFile.id,
+    layoutShift: {
+      segments: [
+        { x: 0, width: 375, baseY: 416, headY: 720, height: 304, dy: 304 },
+      ],
+      inserted: [
+        { x: 0, y: 346, width: 375, height: 31 },
+        { x: 0, y: 501, width: 375, height: 26 },
+        { x: 0, y: 699, width: 375, height: 14 },
+      ],
+      removed: [{ x: 0, y: 346, width: 375, height: 31 }],
+      shiftedPixels: 113753,
+    },
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  });
+
+  // Computes the build stats and conclusion the build page relies on.
+  await concludeBuild({ build, notify: false });
+
+  return { build, screenshotDiff };
+}
+
+/**
  * One snapshot captured across two browsers and two viewports — what a
  * Playwright matrix produces, and the only shape in which the toolbar's variant
  * switchers have anywhere to switch to. The four diffs become siblings of one
@@ -1682,10 +1815,14 @@ export async function createJourneyScenario(input: {
  *
  * With `withNewerBuild`, the `default` suite also ran on a later commit of the
  * branch, which leaves the first `default` build outdated.
+ *
+ * With `withPullRequest`, the branch has an open GitHub pull request, and the
+ * builds of the given project belong to it.
  */
 export async function createSiblingBuildsScenario(input: {
   projectId: string;
   withNewerBuild?: boolean;
+  withPullRequest?: boolean;
   /** Further suites the commit ran in this project. */
   extraSuites?: string[];
 }): Promise<{
@@ -1699,6 +1836,9 @@ export async function createSiblingBuildsScenario(input: {
   const { projectId, extraSuites = [] } = input;
   const seededAt = getSeedInstant();
   const branch = "feat/sparkle";
+  const githubPullRequestId = input.withPullRequest
+    ? await createGithubPullRequest(projectId)
+    : null;
   const baseCommit = "b1a7a4a1e5f0c3d2b9a8e7f6c5d4b3a2f1e0d9c8";
   const headCommit = "c2b8b5b2f6a1d4e3c0b9f8a7d6e5c4b3a2f1e0d9";
 
@@ -1790,6 +1930,8 @@ export async function createSiblingBuildsScenario(input: {
       baseScreenshotBucketId: baseBucket.id,
       compareScreenshotBucketId: compareBucket.id,
       projectId,
+      githubPullRequestId:
+        projectId === input.projectId ? githubPullRequestId : null,
       createdAt,
       updatedAt: createdAt,
     });
@@ -1901,6 +2043,7 @@ type RealWorldScreenshot = {
   score?: number;
   /** Attach a Playwright trace file (a non-screenshot file). */
   trace?: boolean;
+  description?: string;
 };
 
 const CHROMIUM = { name: "chromium", version: "131.0.6778.85" };
@@ -1929,6 +2072,8 @@ const realWorldScreenshots: RealWorldScreenshot[] = [
     browser: CHROMIUM,
     score: 0.0698,
     trace: true,
+    description:
+      "Dashboard after the analytics redesign (#142).\nKPI cards sit above the revenue chart, and the date range picker moved to the header: https://acme-analytics.dev/changelog/dashboard-redesign",
   },
   {
     name: "dashboard/overview.mobile.png",
@@ -2027,6 +2172,7 @@ function getRealWorldMetadata(s: RealWorldScreenshot): ScreenshotMetadata {
   if (isRealWorldImage(s)) {
     return {
       url: s.url,
+      description: s.description,
       viewport: s.viewport,
       colorScheme: "light",
       mediaType: "screen",
@@ -2038,10 +2184,208 @@ function getRealWorldMetadata(s: RealWorldScreenshot): ScreenshotMetadata {
   }
   return {
     url: s.url,
+    description: s.description,
     test,
     automationLibrary: REALWORLD_AUTOMATION_LIBRARY,
     sdk: REALWORLD_SDK,
   };
+}
+
+/**
+ * Three pull requests stacked on each other. The bottom one merges into `main`
+ * and changed the screenshot; the middle one, compared with it, changed
+ * nothing; the top one has not run the suite yet.
+ */
+export async function createStackedPullRequestsScenario(input: {
+  projectId: string;
+}): Promise<{ bottomBuild: Build; middleBuild: Build }> {
+  const { projectId } = input;
+  const seededAt = getSeedInstant();
+  const githubRepositoryId = await createGithubRepository(projectId);
+
+  const pullRequestProps = {
+    githubRepositoryId,
+    state: "open" as const,
+    merged: false,
+    draft: false,
+    headFromFork: false,
+    jobStatus: "complete" as const,
+    date: seededAt,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const [bottom, middle] = await GithubPullRequest.query().insertAndFetch([
+    {
+      ...pullRequestProps,
+      number: 101,
+      title: "Add the order summary",
+      headRef: "feat/summary",
+      baseRef: "main",
+    },
+    {
+      ...pullRequestProps,
+      number: 102,
+      title: "Refactor the order summary card",
+      headRef: "feat/summary-card",
+      baseRef: "feat/summary",
+    },
+    {
+      ...pullRequestProps,
+      number: 103,
+      title: "Animate the order total",
+      headRef: "feat/summary-total",
+      baseRef: "feat/summary-card",
+    },
+  ]);
+  invariant(bottom && middle);
+
+  const [baseFile, compareFile, diffFile] = await Promise.all([
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 1024,
+      key: "dummy-375x1024.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 720,
+      key: "dummy-375x720.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshotDiff",
+      width: 375,
+      height: 1024,
+      key: "diff-1024-to-720.png",
+      contentType: "image/png",
+    }),
+  ]);
+
+  const test = await Test.query().insertAndFetch({
+    name: "summary.png",
+    buildName: "default",
+    projectId,
+  });
+
+  const bucketProps = {
+    name: "default",
+    projectId,
+    complete: true,
+    valid: true,
+    screenshotCount: 1,
+    storybookScreenshotCount: 0,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const [mainBucket, bottomBucket, middleBucket] =
+    await ScreenshotBucket.query().insertAndFetch([
+      {
+        ...bucketProps,
+        branch: "main",
+        commit: "a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2",
+      },
+      {
+        ...bucketProps,
+        branch: "feat/summary",
+        commit: "b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3",
+      },
+      {
+        ...bucketProps,
+        branch: "feat/summary-card",
+        commit: "c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4",
+      },
+    ]);
+  invariant(mainBucket && bottomBucket && middleBucket);
+
+  const screenshotProps = {
+    testId: test.id,
+    name: "summary.png",
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const [mainScreenshot, bottomScreenshot, middleScreenshot] =
+    await Screenshot.query().insertAndFetch([
+      {
+        ...screenshotProps,
+        screenshotBucketId: mainBucket.id,
+        s3Id: baseFile.key,
+        fileId: baseFile.id,
+      },
+      {
+        ...screenshotProps,
+        screenshotBucketId: bottomBucket.id,
+        s3Id: compareFile.key,
+        fileId: compareFile.id,
+      },
+      {
+        ...screenshotProps,
+        screenshotBucketId: middleBucket.id,
+        s3Id: compareFile.key,
+        fileId: compareFile.id,
+      },
+    ]);
+  invariant(mainScreenshot && bottomScreenshot && middleScreenshot);
+
+  const buildProps = {
+    name: "default",
+    type: "check" as const,
+    jobStatus: "complete" as const,
+    projectId,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+  const diffProps = {
+    testId: test.id,
+    jobStatus: "complete" as const,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  };
+
+  const bottomBuild = await Build.query().insertAndFetch({
+    ...buildProps,
+    number: 1,
+    baseScreenshotBucketId: mainBucket.id,
+    compareScreenshotBucketId: bottomBucket.id,
+    githubPullRequestId: bottom.id,
+    baseBranch: "main",
+    baseBranchResolvedFrom: "pull-request",
+  });
+  await ScreenshotDiff.query().insert({
+    ...diffProps,
+    buildId: bottomBuild.id,
+    baseScreenshotId: mainScreenshot.id,
+    compareScreenshotId: bottomScreenshot.id,
+    score: 0.3,
+    s3Id: diffFile.key,
+    fileId: diffFile.id,
+  });
+
+  const middleBuild = await Build.query().insertAndFetch({
+    ...buildProps,
+    number: 2,
+    baseScreenshotBucketId: bottomBucket.id,
+    compareScreenshotBucketId: middleBucket.id,
+    githubPullRequestId: middle.id,
+    baseBranch: "feat/summary",
+    baseBranchResolvedFrom: "pull-request",
+  });
+  await ScreenshotDiff.query().insert({
+    ...diffProps,
+    buildId: middleBuild.id,
+    baseScreenshotId: bottomScreenshot.id,
+    compareScreenshotId: middleScreenshot.id,
+    score: 0,
+    s3Id: null,
+  });
+
+  await Promise.all([
+    concludeBuild({ build: bottomBuild, notify: false }),
+    concludeBuild({ build: middleBuild, notify: false }),
+  ]);
+
+  return { bottomBuild, middleBuild };
 }
 
 /**
@@ -3338,7 +3682,7 @@ export async function createMediaScenario(input: {
 }) {
   const { projectId, commentAuthorId, withPullRequest } = input;
   const githubPullRequestId = withPullRequest
-    ? await createMediaPullRequest(projectId)
+    ? await createGithubPullRequest(projectId)
     : null;
   const beforeTs = "2026-04-20T08:00:00.000Z";
   const afterV1Ts = "2026-04-20T09:00:00.000Z";
@@ -3555,7 +3899,7 @@ export async function createMediaScenario(input: {
         mediaVersionId: afterV2.id,
         userId: commentAuthorId,
         threadId: pinned.id,
-        content: commentDoc("Agreed — it should align with the input above."),
+        content: commentDoc("Agreed, it should align with the input above."),
         createdAt: commentTs,
         updatedAt: commentTs,
       },
@@ -3799,7 +4143,7 @@ async function createDemoMediaScenario(input: {
         createdByUserId: authorUserId,
         name: "pricing.png",
         state: null,
-        description: "Pricing page — iterating on the plan lineup.",
+        description: "Pricing page: iterating on the plan lineup.",
         visibility: "public" as const,
         shareToken: "demo-versions",
         createdAt: hoursAgo(72),
@@ -3963,7 +4307,7 @@ async function createDemoMediaScenario(input: {
       mediaVersionId: afterVersion.id,
       userId: replierUserId,
       threadId: pinned.id,
-      content: commentDoc("Much better than the before — approving."),
+      content: commentDoc("Much better than the before. Approving."),
       createdAt: hoursAgo(23),
       updatedAt: hoursAgo(23),
     },
@@ -3997,9 +4341,11 @@ async function createDemoMediaScenario(input: {
  * The GitHub rows a pull request needs, plus the pull request.
  *
  * A seeded project is not connected to a repository, so this creates one and
- * links it — enough for the share header to render a real number, title and URL.
+ * links it — enough for the page to render a real number, title and URL. The
+ * repository is `acme-<projectId>/sparkle`.
  */
-async function createMediaPullRequest(projectId: string): Promise<string> {
+/** Connect the project to a GitHub repository of its own. */
+async function createGithubRepository(projectId: string): Promise<string> {
   const project = await Project.query().findById(projectId);
   invariant(project, "project should exist");
 
@@ -4021,15 +4367,18 @@ async function createMediaPullRequest(projectId: string): Promise<string> {
 
   await project.$query().patch({ githubRepositoryId: repository.id });
 
+  return repository.id;
+}
+
+async function createGithubPullRequest(projectId: string): Promise<string> {
   const pullRequest = await GithubPullRequest.query().insertAndFetch({
-    githubRepositoryId: repository.id,
+    githubRepositoryId: await createGithubRepository(projectId),
     number: 1234,
     title: "Tighten the checkout spacing",
     state: "open",
     merged: false,
     draft: false,
     jobStatus: "complete",
-    creatorId: githubAccount.id,
     date: "2026-04-19T09:00:00.000Z",
     createdAt: "2026-04-19T09:00:00.000Z",
     updatedAt: "2026-04-19T09:00:00.000Z",

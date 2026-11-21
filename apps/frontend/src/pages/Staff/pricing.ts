@@ -1,3 +1,5 @@
+import { diffInCalendarDays } from "@argos/util/date";
+
 import { PlanInterval } from "@/gql/graphql";
 
 /**
@@ -97,6 +99,56 @@ export function getPeriodFlatPrice(
 
   const monthly = getFallbackMonthlyPrice(plan);
   return plan.interval === PlanInterval.Year ? monthly * 12 : monthly;
+}
+
+/** The unit a plan's amounts are stated in: a yearly plan's period is a year. */
+export function getIntervalUnit(interval: PlanInterval): "year" | "month" {
+  return interval === PlanInterval.Year ? "year" : "month";
+}
+
+/**
+ * What a team was billed over one period: the invoice the period closed on
+ * when there is one, and otherwise the plan's own amount, its add-ons and the
+ * screenshots it consumed beyond the quota.
+ *
+ * Both halves are taken in the period's own unit rather than brought back to a
+ * month, unlike the rate the trial pipeline quotes. This answers what an
+ * invoice came to, and a yearly subscription's invoice covers a year: dividing
+ * it by twelve would report a figure Stripe never charged.
+ *
+ * No subscription status to check, either. `billingPeriods` only ever holds the
+ * periods Stripe actually invoices (trial periods and periods predating the
+ * subscription are dropped server side), so a period being there is itself what
+ * says it was billed.
+ */
+export function getPeriodAmount(
+  period: { invoicedAmount: number | null; additionalScreenshotsCost: number },
+  staff: {
+    flatPrice: number | null;
+    addOns: readonly { monthlyPrice: number }[];
+  },
+  plan: PricedPlan,
+): number {
+  return (
+    period.invoicedAmount ??
+    getPeriodFlatPrice(staff.flatPrice, plan) +
+      staff.addOns.reduce((total, addOn) => total + addOn.monthlyPrice, 0) +
+      period.additionalScreenshotsCost
+  );
+}
+
+/**
+ * How much of a running period is left, read off `endsAt` rather than the
+ * period's `to`, which on a running period is only the moment it was read.
+ */
+export function formatDaysLeft(endsAt: string): string {
+  // Floored: a period read moments past its own end has not rolled over yet,
+  // and a negative count reads as a bug rather than as a boundary.
+  const remaining = Math.max(
+    0,
+    diffInCalendarDays(new Date(endsAt), new Date()),
+  );
+  return remaining === 1 ? "1 day left" : `${remaining} days left`;
 }
 
 /**

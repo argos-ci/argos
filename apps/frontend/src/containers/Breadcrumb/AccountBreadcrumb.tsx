@@ -14,6 +14,7 @@ import { AccountPlanChip } from "@/containers/AccountPlanChip";
 import { useAuth, type AuthAccount } from "@/containers/Auth";
 import { DocumentType, graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
+import { getStaffTeamURL } from "@/pages/Staff/StaffParams";
 import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
@@ -107,15 +108,6 @@ function AccountBreadcrumbLink(props: {
   );
 }
 
-/**
- * A team's row in the staff directory, otherwise reached by searching for it by
- * hand. Searching by slug rather than name: a name is free text and may be
- * empty, a slug is neither.
- */
-function getStaffDirectoryURL(teamSlug: string) {
-  return `/staff/teams?${new URLSearchParams({ search: teamSlug })}`;
-}
-
 function getStaffPageMenuItems() {
   return [
     <MenuItem key="teams" icon={<Building2Icon />} href="/staff/teams">
@@ -132,8 +124,8 @@ function getStaffPageMenuItems() {
 
 /**
  * The way into the staff pages, from anywhere in the app. On a team, the button
- * takes a staff member to its row in the staff directory; the menu holds every
- * staff page.
+ * takes a staff member to the team's staff page; the menu holds every staff
+ * page.
  *
  * Reads the account from the same query the link beside it already ran, so the
  * cache answers it.
@@ -145,8 +137,8 @@ function StaffButtonGroup(props: { accountSlug: string | undefined }) {
     accountSlug ? { variables: { slug: accountSlug } } : skipToken,
   );
   const team = data?.account?.__typename === "Team" ? data.account : null;
-  const label = team ? "Open in staff directory" : "Open staff directory";
-  const href = team ? getStaffDirectoryURL(team.slug) : "/staff/teams";
+  const label = team ? "Open team staff page" : "Open staff directory";
+  const href = team ? getStaffTeamURL(team.slug) : "/staff/teams";
   return (
     <ButtonGroup>
       <Tooltip content={label}>

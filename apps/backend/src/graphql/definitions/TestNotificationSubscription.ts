@@ -37,7 +37,7 @@ export const resolvers: IResolvers = {
       }
       const test = await getTestForUser({
         id: args.input.testId,
-        user: auth.user,
+        auth,
         permission: "view",
         message: "You cannot access this test",
       });
@@ -51,7 +51,7 @@ export const resolvers: IResolvers = {
       }
       const test = await getTestForUser({
         id: args.input.testId,
-        user: auth.user,
+        auth,
         permission: "view",
         message: "You cannot access this test",
       });

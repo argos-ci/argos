@@ -189,7 +189,7 @@ export const resolvers: IResolvers = {
 
       invariant(build.project?.account);
 
-      const permissions = await build.project.$getPermissions(auth.user);
+      const permissions = await build.project.$getPermissions(auth);
 
       if (!permissions.includes("review")) {
         throw forbidden("You cannot approve or reject this build");
@@ -237,7 +237,7 @@ export const resolvers: IResolvers = {
 
       invariant(build.project?.account);
 
-      const permissions = await build.project.$getPermissions(auth.user);
+      const permissions = await build.project.$getPermissions(auth);
 
       if (!permissions.includes("review_dismiss")) {
         throw forbidden("You cannot dismiss this review");
@@ -261,7 +261,7 @@ export const resolvers: IResolvers = {
       // Authorize before opening the stream so an unpermitted subscription is
       // rejected upfront rather than after the first event.
       subscribe: async (_root, args, ctx) => {
-        await assertCanViewBuild(args.buildId, ctx.auth?.user ?? null);
+        await assertCanViewBuild(args.buildId, ctx.auth);
         return (async function* () {
           for await (const change of subscribeToReviewChanges(args.buildId)) {
             yield {

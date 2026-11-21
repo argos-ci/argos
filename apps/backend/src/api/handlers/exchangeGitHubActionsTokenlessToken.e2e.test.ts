@@ -1,6 +1,6 @@
 import { countBy } from "lodash-es";
 import request from "supertest";
-import { test as base, describe, expect } from "vitest";
+import { test as base, describe, expect, onTestFinished, vi } from "vitest";
 
 import { getAuthProjectPayloadFromBearerToken } from "@/auth/project";
 import { FAILED_RUN_LOOKUPS_LIMIT } from "@/auth/tokenless/github-actions";
@@ -14,6 +14,7 @@ import {
   stubWorkflowRuns,
   type LinkedProject,
 } from "@/auth/tokenless/github-actions.test-util";
+import { GithubInstallation } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { setupRedis } from "@/util/redis/testing";
 
@@ -56,7 +57,9 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
     expect(Date.parse(res.body.expiresAt)).toBeGreaterThan(Date.now());
 
     const auth = await getAuthProjectPayloadFromBearerToken(res.body.token);
-    expect(auth.project.id).toBe(linkedProject.project.id);
+    expect(auth.projects.map((project) => project.id)).toEqual([
+      linkedProject.project.id,
+    ]);
   });
 
   test("rejects when no project is linked to the GitHub repository", async () => {
@@ -95,6 +98,24 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
     expect(lookups).toEqual([]);
   });
 
+  test("rejects repositories connected through GitHub without content access, without asking GitHub", async ({
+    linkedProject,
+  }) => {
+    const lookups = stubWorkflowRuns({ 42: {} });
+    await GithubInstallation.query()
+      .where("githubId", 789)
+      .patch({ app: "light" });
+
+    await exchange(linkedProject.bearer)
+      .expect(400)
+      .expect((res) => {
+        expect(res.body.error).toBe(
+          "Tokenless authentication is not supported for repositories connected through GitHub without content access, because Argos cannot look up their workflow runs. Authenticate with GitHub Actions OIDC or set the ARGOS_TOKEN environment variable. Learn more: https://argos-ci.com/docs/learn/integrations/github-actions-authentication#tokenless-limitations",
+        );
+      });
+    expect(lookups).toEqual([]);
+  });
+
   test("rejects when the requested commit does not match the workflow run", async ({
     linkedProject,
   }) => {
@@ -128,6 +149,14 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
   test("stops asking GitHub once an installation has had too many lookups find no run in progress", async ({
     linkedProject,
   }) => {
+    // Failed lookups are counted per window of the clock, so requests
+    // crossing into the next window would start a fresh count. Only `Date` is
+    // frozen: the request path's timers have to keep running.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+
     const lookups = stubWorkflowRuns({ 42: {} });
     const forgeBearer = (runId: number) =>
       createTokenlessBearer({
@@ -223,7 +252,7 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
       const res = await exchange(bearer).expect(200);
 
       const auth = await getAuthProjectPayloadFromBearerToken(res.body.token);
-      expect(auth.project.id).toBe(projectB.id);
+      expect(auth.projects.map((project) => project.id)).toEqual([projectB.id]);
     });
 
     test("rejects when the provided slug does not match any linked project", async () => {

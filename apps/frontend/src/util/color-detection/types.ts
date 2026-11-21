@@ -9,3 +9,9 @@ export type Rect = {
 };
 
 export type MessageData = Rect[] | null;
+
+export type MessageInput = {
+  url: string;
+  blockSize: number;
+  exclude: ReadonlyArray<Rect>;
+};

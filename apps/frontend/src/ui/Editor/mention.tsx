@@ -3,16 +3,14 @@ import Mention from "@tiptap/extension-mention";
 import {
   NodeViewWrapper,
   ReactNodeViewRenderer,
-  ReactRenderer,
   type NodeViewProps,
-  type Editor as TiptapEditor,
 } from "@tiptap/react";
 import { clsx } from "clsx";
 
 import { getMenuItemClassName, menuListClassName } from "../menuStyle";
 import { popupSurfaceClassName } from "../popupSurface";
 import { UserHoverCard } from "../UserCard";
-import { positionSuggestionPopup } from "./suggestionPopup";
+import { suggestionPopup } from "./suggestionPopup";
 
 /**
  * A user that can be mentioned in a comment. `id` is the public account id —
@@ -52,16 +50,6 @@ function filterMentionUsers(
       })
     : users;
   return matches.slice(0, MAX_SUGGESTIONS);
-}
-
-/** Minimal shape of the suggestion props we use (avoids a direct dep on
- * `@tiptap/suggestion`, which isn't a direct dependency). */
-interface SuggestionRenderProps {
-  editor: TiptapEditor;
-  items: MentionUser[];
-  command: (item: { id: string; label: string }) => void;
-  clientRect?: (() => DOMRect | null) | null;
-  event?: KeyboardEvent;
 }
 
 export interface MentionListHandle {
@@ -254,45 +242,7 @@ export function createMentionExtension(options: MentionExtensionOptions) {
       char: "@",
       items: ({ query }: { query: string }) =>
         filterMentionUsers(getSuggestions(), query),
-      render: () => {
-        let component: ReactRenderer<MentionListHandle> | null = null;
-        let popup: HTMLDivElement | null = null;
-
-        return {
-          onStart: (props: SuggestionRenderProps) => {
-            component = new ReactRenderer(MentionList, {
-              props,
-              editor: props.editor,
-            });
-            popup = document.createElement("div");
-            popup.append(component.element);
-            document.body.append(popup);
-            positionSuggestionPopup(popup, props.clientRect);
-          },
-          onUpdate: (props: SuggestionRenderProps) => {
-            component?.updateProps(props);
-            if (popup) {
-              positionSuggestionPopup(popup, props.clientRect);
-            }
-          },
-          onKeyDown: (props: { event: KeyboardEvent }) => {
-            if (props.event.key === "Escape") {
-              popup?.remove();
-              component?.destroy();
-              popup = null;
-              component = null;
-              return true;
-            }
-            return component?.ref?.onKeyDown(props.event) ?? false;
-          },
-          onExit: () => {
-            popup?.remove();
-            component?.destroy();
-            popup = null;
-            component = null;
-          },
-        };
-      },
+      ...suggestionPopup(MentionList),
     },
   }).extend({
     // Persist only the user id. The default Mention extension also stores a

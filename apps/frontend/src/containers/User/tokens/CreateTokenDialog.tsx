@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
-import { AlertCircleIcon } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { CreatedTokenDialog } from "@/containers/CreatedTokenDialog";
 import { graphql, type DocumentType } from "@/gql";
+import { Callout } from "@/ui/Callout";
 import { Checkbox } from "@/ui/Checkbox";
 import { CheckboxGroupField } from "@/ui/CheckboxGroup";
 import {
@@ -250,7 +250,7 @@ export function CreateTokenDialog(props: {
             />
 
             <div>
-              <Label>Scope — accounts this token can access</Label>
+              <Label>Scope: accounts this token can access</Label>
 
               {/* react-aria's group pushed `isInvalid` down to its checkboxes
                   through context; Base UI's does not, so the flag is passed to
@@ -299,13 +299,10 @@ export function CreateTokenDialog(props: {
                 </ListBox>
               </SelectField>
               {expireInDaysValue === "no-expiration" ? (
-                <div className="bg-pending-subtle text-pending-low mt-2 flex items-start gap-2 rounded-md p-2 text-xs">
-                  <AlertCircleIcon className="mt-0.5 size-3.5 shrink-0" />
-                  <span>
-                    Tokens with no expiration never expire. Consider setting an
-                    expiration date for better security.
-                  </span>
-                </div>
+                <Callout className="mt-2">
+                  Tokens with no expiration never expire. Consider setting an
+                  expiration date for better security.
+                </Callout>
               ) : expirationDate ? (
                 <p className="text-low mt-2 text-xs">
                   This token will expire on{" "}
