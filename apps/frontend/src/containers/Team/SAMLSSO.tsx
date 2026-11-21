@@ -23,7 +23,8 @@ import {
   EnableSAMLSSOAddOnButton,
 } from "@/containers/Team/SAMLSSOAddOn";
 import { DocumentType, graphql } from "@/gql";
-import { Button, LinkButton } from "@/ui/Button";
+import { TeamAuthMethod } from "@/gql/graphql";
+import { Button } from "@/ui/Button";
 import {
   Card,
   CardBody,
@@ -50,7 +51,6 @@ import { Link } from "@/ui/Link";
 import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Modal } from "@/ui/Modal";
 import { Separator } from "@/ui/Separator";
-import { Switch } from "@/ui/Switch";
 import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -71,15 +71,14 @@ const _TeamFragment = graphql(`
     samlAcsUrl
     samlMetadataUrl
     samlSsoUrl
+    enforcedAuthMethod
     samlSso {
       id
       idpEntityId
       ssoUrl
       signingCertificate
       enabled
-      enforced
     }
-    viewerSignedInWithSaml
   }
 `);
 
@@ -91,7 +90,6 @@ const ConfigureTeamSamlMutation = graphql(`
       ssoUrl
       signingCertificate
       enabled
-      enforced
     }
   }
 `);
@@ -100,6 +98,7 @@ const RemoveTeamSamlMutation = graphql(`
   mutation TeamSAMLSSO_remove($teamAccountId: ID!) {
     removeTeamSaml(teamAccountId: $teamAccountId) {
       id
+      enforcedAuthMethod
       samlSso {
         id
       }
@@ -161,6 +160,11 @@ export function TeamSAMLSSO(props: {
         removeTeamSaml: {
           __typename: "Team",
           id: team.id,
+          // Removing SAML stops requiring it, as members could no longer sign in.
+          enforcedAuthMethod:
+            team.enforcedAuthMethod === TeamAuthMethod.Saml
+              ? null
+              : (team.enforcedAuthMethod ?? null),
           samlSso: null,
         },
       },
@@ -171,8 +175,8 @@ export function TeamSAMLSSO(props: {
       <CardBody>
         <CardTitle>SAML Single Sign-On</CardTitle>
         <CardParagraph>
-          Customize SAML authentication for your team and enforce SSO access
-          policies.
+          Let members sign in through your identity provider. To require it,
+          choose SAML SSO as the required sign-in method.
         </CardParagraph>
         {team.samlSso ? (
           <div className="border-thin rounded-lg text-sm">
@@ -243,43 +247,6 @@ export function TeamSAMLSSO(props: {
                 </MenuRoot>
               </div>
             </div>
-            {team.viewerSignedInWithSaml ? (
-              <div className="text-low border-t-thin flex items-center justify-between gap-4 p-4">
-                Require Team Members to login with SAML to access this Team.
-                <Switch
-                  checked={team.samlSso.enforced}
-                  // Enforcement only applies while members can log in with SAML.
-                  disabled={!hasSamlAccess || !team.samlSso.enabled}
-                  onCheckedChange={(isSelected) => {
-                    invariant(team.samlSso);
-                    apolloClient.mutate({
-                      mutation: ConfigureTeamSamlMutation,
-                      variables: {
-                        input: {
-                          teamAccountId: team.id,
-                          enforced: isSelected,
-                        },
-                      },
-                      optimisticResponse: {
-                        configureTeamSaml: {
-                          ...team.samlSso,
-                          __typename: "TeamSamlConfig",
-                          enforced: isSelected,
-                        },
-                      },
-                    });
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="text-low border-t-thin flex items-center justify-between gap-4 p-4">
-                Please authenticate with SAML before enforcing SAML for this
-                team.
-                <LinkButton href={getReAuthenticateURL(team.samlSsoUrl)}>
-                  Re-authenticate
-                </LinkButton>
-              </div>
-            )}
           </div>
         ) : (
           <div className="border-thin flex items-center gap-4 rounded-lg p-4 text-sm max-md:grid max-md:grid-cols-[auto_1fr]">

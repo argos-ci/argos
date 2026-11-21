@@ -25,6 +25,7 @@ import { TeamAddOns } from "@/containers/Team/AddOns";
 import { TeamDelete } from "@/containers/Team/Delete";
 import { TeamDiscord } from "@/containers/Team/Discord";
 import { TeamDomains } from "@/containers/Team/Domains";
+import { TeamEnforcedAuthMethod } from "@/containers/Team/EnforcedAuthMethod";
 import { TeamGitHubLight } from "@/containers/Team/GitHubLight";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
 import { TeamMembers } from "@/containers/Team/members/Members";
@@ -89,6 +90,7 @@ const AccountQuery = graphql(`
       ...AccountCursorOrigin_Account
       ...TeamGitHubSSO_Team
       ...TeamSAMLSSO_Team
+      ...TeamEnforcedAuthMethod_Team
       ...TeamSCIMProvisioning_Team
       ...TeamDomains_Team
       ...TeamAccessRole_Team
@@ -263,6 +265,9 @@ function PageContent() {
           {isTeam && hasAdminPermission && <TeamDomains team={account} />}
           {isTeam && hasAdminPermission && <TeamGitHubSSO team={account} />}
           {isTeam && hasAdminPermission && <TeamSAMLSSO team={account} />}
+          {isTeam && hasAdminPermission && (
+            <TeamEnforcedAuthMethod team={account} />
+          )}
           {isTeam && hasAdminPermission && (
             <TeamSCIMProvisioning team={account} />
           )}

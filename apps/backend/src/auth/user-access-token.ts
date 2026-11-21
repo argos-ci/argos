@@ -42,7 +42,7 @@ export async function getAuthPayloadFromUserAccessToken(
 
   if (
     tokenScope.scope.length === 0 &&
-    tokenScope.samlRequiredScope.length === 0
+    tokenScope.restrictedScope.length === 0
   ) {
     throw boom(
       401,

@@ -27,9 +27,17 @@ export function checkIsAuthProvider(
 export function getOAuthURL(input: {
   provider: Exclude<AuthProvider, "saml">;
   redirect: string | null;
+  /**
+   * Open a new session with this provider even when one is signed in, which
+   * otherwise only links the provider to the account.
+   */
+  reauthenticate?: boolean;
 }): string {
   const url = new URL(`/auth/${input.provider}/login`, window.location.origin);
   url.searchParams.set("r", input.redirect ?? window.location.pathname);
+  if (input.reauthenticate) {
+    url.searchParams.set("reauthenticate", "true");
+  }
   return url.toString();
 }
 

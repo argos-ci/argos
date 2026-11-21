@@ -1,20 +1,13 @@
 import type { RelationMappings } from "objection";
 
+import { AUTH_METHODS, type AuthMethod } from "@/auth/auth-method";
+
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { User } from "./User";
 
 export class UserSession extends Model {
   static override tableName = "user_sessions";
-
-  static authMethods = [
-    "email",
-    "google",
-    "github",
-    "gitlab",
-    "saml",
-    "passkey",
-  ] as const;
 
   static override jsonSchema = {
     allOf: [
@@ -36,7 +29,7 @@ export class UserSession extends Model {
           country: { type: ["string", "null"] },
           authMethod: {
             type: ["string", "null"],
-            enum: [...UserSession.authMethods, null],
+            enum: [...AUTH_METHODS, null],
           },
           samlTeamId: { type: ["string", "null"] },
         },
@@ -56,7 +49,7 @@ export class UserSession extends Model {
   region!: string | null;
   country!: string | null;
   /** How the session was opened. Null on sessions predating the column. */
-  authMethod!: (typeof UserSession.authMethods)[number] | null;
+  authMethod!: AuthMethod | null;
   /**
    * The team whose SAML IdP vouched for the user when the session was opened:
    * the one team whose SAML enforcement this session satisfies.

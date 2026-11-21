@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   EXPIRED_LOGIN_MESSAGE,
   getCallbackUrl,
+  getCheckedCallbackState,
   requireCallbackState,
   type OAuthProvider,
 } from "@/auth/callback-binding";
@@ -84,10 +85,12 @@ function withOAuth(
           auth ?? null,
         );
         invariant(account.userId, "Expected account to have userId");
-        if (auth) {
+        if (auth && !getCheckedCallbackState(res)?.reauthenticate) {
           // The provider was linked to the signed-in account. That is no
           // signup, and the session stays the one it was linked from, with the
           // method that opened it: replacing it would drop a SAML login.
+          // Signing in again, for a team that requires this provider, is what
+          // opens a new session.
           res.send({ creation, hasAutoInvite: false } satisfies AuthPayload);
           return;
         }

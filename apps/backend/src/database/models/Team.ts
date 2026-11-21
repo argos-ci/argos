@@ -1,10 +1,16 @@
+import {
+  TEAM_AUTH_METHOD_LABELS,
+  TEAM_AUTH_METHOD_REQUIRED_CODES,
+  TeamAuthMethodSchema,
+  type TeamAuthMethod,
+} from "@argos/schemas/team-auth-method";
 import { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import type { RelationMappings } from "objection";
 
-import { checkAuthSatisfiesTeamSaml, type AuthViewer } from "@/auth/payload";
-import { checkTeamSamlEnforced } from "@/auth/saml";
+import { getAuthMethodForTeam, type AuthViewer } from "@/auth/payload";
+import { checkTeamSamlEnabled } from "@/auth/saml";
 import config from "@/config";
 import { boom } from "@/util/error";
 
@@ -18,13 +24,13 @@ import { User } from "./User";
 
 /**
  * How a request reaches a team. A member is kept out like an outsider while
- * the team enforces SAML and the request did not go through its IdP;
- * `saml_required` lets the entry points tell them so.
+ * the team requires a sign-in method the request did not go through;
+ * `auth_method_required` lets the entry points tell them which one.
  */
 export type TeamAccess =
   | { type: "member"; userLevel: TeamUser["userLevel"] }
   | { type: "outsider" }
-  | { type: "saml_required" };
+  | { type: "auth_method_required"; authMethod: TeamAuthMethod };
 
 function getTeamUserLevelPermissions(
   level: TeamUser["userLevel"],
@@ -71,6 +77,10 @@ export class Team extends Model {
           samlPurchased: { type: "boolean" },
           staticIpEnabled: { type: "boolean" },
           defaultUserLevel: { type: "string", enum: ["member", "contributor"] },
+          enforcedAuthMethod: {
+            type: ["string", "null"],
+            enum: [...TeamAuthMethodSchema.options, null],
+          },
         },
       },
     ],
@@ -85,6 +95,11 @@ export class Team extends Model {
    */
   staticIpEnabled!: boolean;
   defaultUserLevel!: "member" | "contributor";
+  /**
+   * The sign-in method members must use to reach the team. A required SAML
+   * login only applies while members can log in with SAML.
+   */
+  enforcedAuthMethod!: TeamAuthMethod | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -170,7 +185,8 @@ export class Team extends Model {
 
   /**
    * How `auth` reaches the team. Every permission on a team or its projects
-   * derives from this, which is what makes SAML enforcement hold everywhere.
+   * derives from this, which is what makes a required sign-in method hold
+   * everywhere.
    */
   static async getAccess(
     teamId: string,
@@ -179,9 +195,10 @@ export class Team extends Model {
     const teamUser = await TeamUser.query()
       .select(
         "team_users.userLevel",
-        "team_saml_configs.enforced",
-        "team_saml_configs.enabled",
+        "teams.enforcedAuthMethod",
+        "team_saml_configs.enabled as samlEnabled",
       )
+      .join("teams", "teams.id", "team_users.teamId")
       .join("accounts", "accounts.teamId", "team_users.teamId")
       .leftJoin(
         "team_saml_configs",
@@ -194,8 +211,8 @@ export class Team extends Model {
       .castTo<
         | {
             userLevel: TeamUser["userLevel"];
-            enforced: boolean | null;
-            enabled: boolean | null;
+            enforcedAuthMethod: TeamAuthMethod | null;
+            samlEnabled: boolean | null;
           }
         | undefined
       >();
@@ -204,29 +221,27 @@ export class Team extends Model {
       return { type: "outsider" };
     }
 
+    const { enforcedAuthMethod, samlEnabled } = teamUser;
     if (
-      teamUser.enforced &&
-      teamUser.enabled &&
-      !checkAuthSatisfiesTeamSaml(auth, teamId)
+      enforcedAuthMethod &&
+      getAuthMethodForTeam(auth, teamId) !== enforcedAuthMethod &&
+      (enforcedAuthMethod !== "saml" ||
+        // The joined config spares the plan lookup while SAML is off.
+        (samlEnabled && (await checkTeamSamlUsable(teamId))))
     ) {
-      const account = await Account.query()
-        .findOne({ "accounts.teamId": teamId })
-        .withGraphJoined("teamSamlConfig");
-      invariant(account, "Team account not found");
-      if (await checkTeamSamlEnforced(account)) {
-        return { type: "saml_required" };
-      }
+      return { type: "auth_method_required", authMethod: enforcedAuthMethod };
     }
 
     return { type: "member", userLevel: teamUser.userLevel };
   }
 
   /**
-   * Throw `SAML_SSO_REQUIRED` when `auth` is a member kept out of the team by
-   * its SAML enforcement. For entry points that found nothing to show, so
-   * the member is prompted to sign in instead of being told it does not exist.
+   * Throw when `auth` is a member kept out of the team by its required sign-in
+   * method, with a code naming the method. For entry points that found nothing
+   * to show, so the member is prompted to sign in instead of being told it
+   * does not exist.
    */
-  static async assertSamlSatisfied(
+  static async assertAuthMethodSatisfied(
     teamId: string | null,
     auth: AuthViewer | null,
   ): Promise<void> {
@@ -234,10 +249,12 @@ export class Team extends Model {
       return;
     }
     const access = await Team.getAccess(teamId, auth);
-    if (access.type === "saml_required") {
-      throw boom(403, "SAML Single Sign-On required", {
-        code: "SAML_SSO_REQUIRED",
-      });
+    if (access.type === "auth_method_required") {
+      throw boom(
+        403,
+        `Sign in with ${TEAM_AUTH_METHOD_LABELS[access.authMethod]} to access this team.`,
+        { code: TEAM_AUTH_METHOD_REQUIRED_CODES[access.authMethod] },
+      );
     }
   }
 
@@ -277,4 +294,18 @@ export class Team extends Model {
       .whereIn("userLevel", getTeamUserLevelsWithPermission(permission));
     return teamUsers.map((teamUser) => teamUser.userId);
   }
+}
+
+/**
+ * Whether members can log in to the team with SAML, which a required SAML
+ * login needs to apply: it survives SAML being turned off or the plan losing
+ * it, and would otherwise lock every member out.
+ */
+async function checkTeamSamlUsable(teamId: string): Promise<boolean> {
+  const account = await Account.query()
+    .findOne({ "accounts.teamId": teamId })
+    .withGraphJoined("teamSamlConfig");
+  invariant(account, "Team account not found");
+  const { enabled } = await checkTeamSamlEnabled(account);
+  return enabled;
 }

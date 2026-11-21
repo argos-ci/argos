@@ -34,14 +34,17 @@ export function GoogleLogo(props: React.SVGProps<SVGSVGElement>) {
 export function GoogleLoginButton({
   children,
   redirect,
+  reauthenticate,
   ...props
 }: Omit<LinkButtonProps, "children" | "variant" | "href"> & {
   children?: React.ReactNode;
   redirect?: string | null;
+  reauthenticate?: boolean;
 }) {
   const loginUrl = getOAuthURL({
     provider: "google",
     redirect: redirect ?? null,
+    reauthenticate,
   });
   return (
     <LinkButton variant="google" href={loginUrl} target="_parent" {...props}>

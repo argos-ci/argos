@@ -25,8 +25,6 @@ export class TeamSamlConfig extends Model {
           ssoUrl: { type: "string" },
           signingCertificate: { type: "string" },
           enabled: { type: "boolean" },
-          enforced: { type: "boolean" },
-          enforcedAt: { type: ["string", "null"] },
           expirationCheckAt: { type: ["string", "null"] },
         },
       },
@@ -38,8 +36,6 @@ export class TeamSamlConfig extends Model {
   ssoUrl!: string;
   signingCertificate!: string;
   enabled!: boolean;
-  enforced!: boolean;
-  enforcedAt!: string | null;
   expirationCheckAt!: string | null;
 
   static override get relationMappings(): RelationMappings {

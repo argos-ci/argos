@@ -44,7 +44,7 @@ export const setupDatabase = async () => {
   await truncateAll(knex);
 };
 
-/** A request by `user` on a session that went through no SAML IdP. */
+/** A request by `user` on a session opened by an email login. */
 export function sessionViewer(user: User): AuthViewer {
-  return { type: "session", user, samlTeamId: null };
+  return { type: "session", user, authMethod: "email", samlTeamId: null };
 }

@@ -1,4 +1,5 @@
 import { ApolloServer, ApolloServerPlugin } from "@apollo/server";
+import { checkIsTeamAuthMethodRequiredCode } from "@argos/schemas/team-auth-method";
 import { expressMiddleware } from "@as-integrations/express5";
 import * as Sentry from "@sentry/node";
 import { RequestHandler } from "express";
@@ -19,8 +20,8 @@ const apolloSentryPlugin: ApolloServerPlugin<Context> = {
           ) {
             error.extensions["argosErrorCode"] = error.originalError.code;
 
-            // Ignore SAML SSO required errors
-            if (error.originalError.code === "SAML_SSO_REQUIRED") {
+            // A member asked to sign in with the team's method is no bug.
+            if (checkIsTeamAuthMethodRequiredCode(error.originalError.code)) {
               continue;
             }
           }
