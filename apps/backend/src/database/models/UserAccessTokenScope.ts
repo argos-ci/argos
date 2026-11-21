@@ -1,5 +1,7 @@
 import type { RelationMappings } from "objection";
 
+import { AUTH_METHODS, type AuthMethod } from "@/auth/auth-method";
+
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Account } from "./Account";
@@ -17,7 +19,10 @@ export class UserAccessTokenScope extends Model {
         properties: {
           userAccessTokenId: { type: "string" },
           accountId: { type: "string" },
-          samlAuthorized: { type: "boolean" },
+          authMethod: {
+            type: ["string", "null"],
+            enum: [...AUTH_METHODS, null],
+          },
         },
       },
     ],
@@ -26,10 +31,11 @@ export class UserAccessTokenScope extends Model {
   userAccessTokenId!: string;
   accountId!: string;
   /**
-   * Whether the token may reach this account while it is a team enforcing
-   * SAML: set when it was issued from a session opened through the team's IdP.
+   * How the user had signed in for this account, when it is a team, in the
+   * session the token was issued from. A team requiring a sign-in method stays
+   * out of reach unless it matches.
    */
-  samlAuthorized!: boolean;
+  authMethod!: AuthMethod | null;
 
   static override get relationMappings(): RelationMappings {
     return {

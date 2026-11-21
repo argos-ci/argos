@@ -1,13 +1,20 @@
+import {
+  TEAM_AUTH_METHOD_LABELS,
+  TeamAuthMethodSchema,
+  type TeamAuthMethod,
+} from "@argos/schemas/team-auth-method";
 import { invariant } from "@argos/util/invariant";
 import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
 import { captureException } from "@sentry/node";
 import gqlTag from "graphql-tag";
+import type { TransactionOrKnex } from "objection";
 
 import { getAvatarColor } from "@/account/avatar";
 import { startSession } from "@/auth/login";
-import { checkAuthSatisfiesTeamSaml, type AuthViewer } from "@/auth/payload";
+import { getAuthMethodForTeam, type AuthViewer } from "@/auth/payload";
 import {
   checkHasAccessToSAML,
+  checkTeamSamlEnabled,
   getTeamSamlPublicValues,
   parseIdpMetadataXml,
   parseSamlSigningCertificate,
@@ -79,6 +86,7 @@ import {
 import { sanitizeEmail } from "@/util/email";
 
 import {
+  ITeamAuthMethod,
   ITeamMembersOrderBy,
   type IResolvers,
   type ITeamDefaultUserLevel,
@@ -192,8 +200,10 @@ export const typeDefs = gql`
     ssoGithubAccount: GithubAccount
     samlSso: TeamSamlConfig
     samlPurchased: Boolean!
-    "Whether the current session was opened by a login through this team's SAML identity provider"
-    viewerSignedInWithSaml: Boolean!
+    "Sign-in method members must use to reach the team, or null when any method works"
+    enforcedAuthMethod: TeamAuthMethod
+    "How the current request signed in for this team, among the methods a team can require"
+    viewerAuthMethod: TeamAuthMethod
     "Whether Argos reaches GitHub from its static IP addresses for this team"
     staticIpEnabled: Boolean!
     "Argos's static IP addresses, for the team to add to its GitHub IP allow list"
@@ -212,7 +222,18 @@ export const typeDefs = gql`
     ssoUrl: String!
     signingCertificate: String!
     enabled: Boolean!
-    enforced: Boolean!
+  }
+
+  enum TeamAuthMethod {
+    google
+    github
+    saml
+  }
+
+  input SetTeamEnforcedAuthMethodInput {
+    teamAccountId: ID!
+    "Sign-in method to require from members, or null to accept any method"
+    authMethod: TeamAuthMethod
   }
 
   input ConfigureTeamSamlInput {
@@ -221,7 +242,6 @@ export const typeDefs = gql`
     ssoUrl: String
     signingCertificate: String
     enabled: Boolean
-    enforced: Boolean
   }
 
   input ImportTeamSamlMetadataInput {
@@ -473,6 +493,8 @@ export const typeDefs = gql`
     extendTrial(teamAccountId: ID!): ExtendTrialResult!
     "Create or update team SAML settings"
     configureTeamSaml(input: ConfigureTeamSamlInput!): TeamSamlConfig!
+    "Require members to sign in with a method to reach the team"
+    setTeamEnforcedAuthMethod(input: SetTeamEnforcedAuthMethodInput!): Team!
     "Create or update team SAML settings"
     removeTeamSaml(teamAccountId: ID!): Team!
     "Import IdP metadata xml"
@@ -681,14 +703,26 @@ export const resolvers: IResolvers = {
 
       return teamUser;
     },
-    viewerSignedInWithSaml: (account, _args, ctx) => {
-      invariant(account.teamId, "not a team account");
-
+    enforcedAuthMethod: async (account, _args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-
-      return checkAuthSatisfiesTeamSaml(ctx.auth, account.teamId);
+      invariant(account.teamId, "not a team account");
+      const team = await ctx.loaders.Team.load(account.teamId);
+      invariant(team);
+      return team.enforcedAuthMethod
+        ? GRAPHQL_TEAM_AUTH_METHODS[team.enforcedAuthMethod]
+        : null;
+    },
+    viewerAuthMethod: (account, _args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      invariant(account.teamId, "not a team account");
+      const parsed = TeamAuthMethodSchema.safeParse(
+        getAuthMethodForTeam(ctx.auth, account.teamId),
+      );
+      return parsed.success ? GRAPHQL_TEAM_AUTH_METHODS[parsed.data] : null;
     },
     members: async (account, args, ctx) => {
       invariant(account.teamId, "not a team account");
@@ -1670,15 +1704,8 @@ export const resolvers: IResolvers = {
         samlPurchased: false,
       });
 
-      // Without access to SAML, members can no longer login with it,
-      // so we stop enforcing it to avoid locking them out.
       if (!plan?.samlIncluded) {
-        await TeamSamlConfig.query()
-          .where({ accountId: teamAccount.id })
-          .patch({
-            enforced: false,
-            enforcedAt: null,
-          });
+        await clearEnforcedSaml(teamAccount.teamId);
       }
 
       return teamAccount;
@@ -1886,12 +1913,6 @@ export const resolvers: IResolvers = {
         accountId: teamAccount.id,
       });
 
-      const enforcedAt =
-        args.input.enforced === undefined
-          ? undefined
-          : args.input.enforced
-            ? (existing?.enforcedAt ?? new Date().toISOString())
-            : null;
       const signingCertificate = args.input.signingCertificate;
       const hasSigningCertificateInput = signingCertificate != null;
 
@@ -1903,8 +1924,6 @@ export const resolvers: IResolvers = {
           ? new Date().toISOString()
           : undefined,
         enabled: args.input.enabled ?? undefined,
-        enforced: args.input.enforced ?? undefined,
-        enforcedAt,
       });
 
       if (signingCertificate != null) {
@@ -1941,13 +1960,54 @@ export const resolvers: IResolvers = {
         auth: ctx.auth,
       });
 
-      await TeamSamlConfig.query()
-        .where({
-          accountId: teamAccount.id,
-        })
-        .delete();
+      const { teamId } = teamAccount;
+      invariant(teamId, "not a team account");
+      await transaction(async (trx) => {
+        await TeamSamlConfig.query(trx)
+          .where({ accountId: teamAccount.id })
+          .delete();
+        await clearEnforcedSaml(teamId, trx);
+      });
 
       return teamAccount.$query();
+    },
+    setTeamEnforcedAuthMethod: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        auth: ctx.auth,
+        withGraphFetched: "teamSamlConfig",
+      });
+      const { teamId } = teamAccount;
+      invariant(teamId, "not a team account");
+      const { authMethod } = args.input;
+
+      if (authMethod) {
+        if (authMethod === "saml") {
+          const saml = await checkTeamSamlEnabled(teamAccount);
+          if (!saml.enabled) {
+            throw forbidden("Enable SAML SSO before requiring it.");
+          }
+        }
+        // Requiring a method the admin did not sign in with would lock them
+        // out of the team on their next request.
+        if (getAuthMethodForTeam(ctx.auth, teamId) !== authMethod) {
+          const label = TEAM_AUTH_METHOD_LABELS[authMethod];
+          throw forbidden(
+            `You are not signed in with ${label}. Sign in with ${label}, then try again.`,
+          );
+        }
+      }
+
+      await Team.query()
+        .findById(teamId)
+        .patch({ enforcedAuthMethod: authMethod ?? null });
+      ctx.loaders.Team.clear(teamId);
+
+      return teamAccount;
     },
     importTeamSamlMetadata: async (_root, args, ctx) => {
       if (!ctx.auth) {
@@ -2016,4 +2076,21 @@ export const resolvers: IResolvers = {
       return teamAccount;
     },
   },
+};
+
+/**
+ * Stop requiring SAML from the team's members, when it does: once SAML is gone
+ * they could not satisfy it.
+ */
+async function clearEnforcedSaml(teamId: string, trx?: TransactionOrKnex) {
+  await Team.query(trx)
+    .findById(teamId)
+    .where("enforcedAuthMethod", "saml")
+    .patch({ enforcedAuthMethod: null });
+}
+
+const GRAPHQL_TEAM_AUTH_METHODS: Record<TeamAuthMethod, ITeamAuthMethod> = {
+  google: ITeamAuthMethod.Google,
+  github: ITeamAuthMethod.Github,
+  saml: ITeamAuthMethod.Saml,
 };

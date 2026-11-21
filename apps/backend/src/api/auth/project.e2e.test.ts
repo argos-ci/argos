@@ -196,7 +196,7 @@ describe("api/auth/project", () => {
       const auth = {
         type: "pat",
         scope: [{ slug: "acme" }],
-        samlRequiredScope: [{ slug: "saml-team" }],
+        restrictedScope: [{ account: { slug: "saml-team" } }],
       } as AuthPATPayload;
 
       const error = captureSyncError(() =>

@@ -442,19 +442,6 @@ export async function checkTeamSamlEnabled(
   return { enabled: true, samlConfig: account.teamSamlConfig };
 }
 
-/**
- * Whether members must log in to a team with SAML. `enforced` survives SAML
- * being turned off or the plan losing it, so it only counts while members can
- * actually log in with SAML: otherwise it would lock them all out.
- */
-export async function checkTeamSamlEnforced(account: Account) {
-  if (!account.teamSamlConfig?.enforced) {
-    return false;
-  }
-  const { enabled } = await checkTeamSamlEnabled(account);
-  return enabled;
-}
-
 function getStringLocation(location: string | object) {
   if (typeof location === "string") {
     return location;

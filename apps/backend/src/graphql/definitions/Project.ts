@@ -1124,7 +1124,7 @@ export const resolvers: IResolvers = {
       const permissions = await project.$getPermissions(ctx.auth);
 
       if (!permissions.includes("view")) {
-        await Project.assertSamlSatisfied(project, ctx.auth);
+        await Project.assertAuthMethodSatisfied(project, ctx.auth);
         return null;
       }
 
@@ -1148,7 +1148,7 @@ export const resolvers: IResolvers = {
       const permissions = await project.$getPermissions(ctx.auth);
 
       if (!permissions.includes("view")) {
-        await Project.assertSamlSatisfied(project, ctx.auth);
+        await Project.assertAuthMethodSatisfied(project, ctx.auth);
         return null;
       }
 
