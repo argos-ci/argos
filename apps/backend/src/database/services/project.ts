@@ -492,9 +492,9 @@ async function resolveAvailableProjectName(args: {
 /**
  * Move a project to another account, optionally renaming it on the way.
  *
- * The acting user must administer both the project and the account receiving
- * it: without the second check, an admin of a project could push it onto any
- * team whose id they could guess.
+ * Team members administer the team's projects, but only its owners may hand
+ * one to another account. The destination must be administered too: otherwise
+ * an admin of a project could push it onto any team whose id they could guess.
  */
 export async function transferProject(args: {
   project: Project;
@@ -509,7 +509,22 @@ export async function transferProject(args: {
     throw boom(400, "Project is already owned by this account.");
   }
 
-  const targetPermissions = await targetAccount.$getPermissions(auth);
+  await project.$fetchGraph("account", { skipFetched: true });
+  const previousAccount = project.account;
+  invariant(previousAccount, "account is not fetched");
+  // Read before patching: `patchAndFetch` mutates the instance in place.
+  const previousName = project.name;
+
+  const [previousPermissions, targetPermissions] = await Promise.all([
+    previousAccount.$getPermissions(auth),
+    targetAccount.$getPermissions(auth),
+  ]);
+  if (!previousPermissions.includes("admin")) {
+    throw boom(
+      403,
+      "You are not an owner of this project's team. Ask an owner to transfer it.",
+    );
+  }
   if (!targetPermissions.includes("admin")) {
     throw boom(
       403,
@@ -522,42 +537,32 @@ export async function transferProject(args: {
     accountId: targetAccount.id,
   });
 
-  // Capture the source account id and name before patching: `patchAndFetch`
-  // mutates the instance in place, overwriting both.
-  const previousAccountId = project.accountId;
-  const previousName = project.name;
-
-  const [previousAccount, transferredProject] = await Promise.all([
-    Account.query().findById(previousAccountId),
-    transaction(async (trx) => {
-      const transferredProject = await project.$query(trx).patchAndFetch({
-        accountId: targetAccount.id,
-        name: resolvedName,
-      });
-      await Promise.all([
-        moveProjectTokens({
-          projectId: project.id,
-          fromAccountId: previousAccountId,
-          toAccountId: targetAccount.id,
-          trx,
-        }),
-        // A link to the account the project leaves is inert while the project
-        // is away (see `querySubscribedWebhooks`), but would revive if it came back.
-        WebhookProject.query(trx).where("projectId", project.id).delete(),
-      ]);
-      return transferredProject;
-    }),
-  ]);
-
-  if (previousAccount) {
-    await notifyProjectTransfer({
-      project: transferredProject,
-      previousAccount,
-      previousName,
-      targetAccount,
-      email: auth.user.email,
+  const transferredProject = await transaction(async (trx) => {
+    const transferredProject = await project.$query(trx).patchAndFetch({
+      accountId: targetAccount.id,
+      name: resolvedName,
     });
-  }
+    await Promise.all([
+      moveProjectTokens({
+        projectId: project.id,
+        fromAccountId: previousAccount.id,
+        toAccountId: targetAccount.id,
+        trx,
+      }),
+      // A link to the account the project leaves is inert while the project
+      // is away (see `querySubscribedWebhooks`), but would revive if it came back.
+      WebhookProject.query(trx).where("projectId", project.id).delete(),
+    ]);
+    return transferredProject;
+  });
+
+  await notifyProjectTransfer({
+    project: transferredProject,
+    previousAccount,
+    previousName,
+    targetAccount,
+    email: auth.user.email,
+  });
 
   return transferredProject;
 }
