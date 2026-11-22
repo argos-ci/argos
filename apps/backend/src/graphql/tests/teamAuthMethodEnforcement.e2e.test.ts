@@ -1,4 +1,7 @@
 import { createHash } from "node:crypto";
+import type { ErrorCode } from "@argos/error-types";
+import type { AuthMethod } from "@argos/schemas/auth-method";
+import type { TeamAuthMethod } from "@argos/schemas/team-auth-method";
 import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { test as base, beforeAll, describe, expect } from "vitest";
@@ -7,17 +10,21 @@ import z from "zod";
 import { getProject } from "@/api/handlers/getProject";
 import { createTestHandlerApp } from "@/api/test-util";
 import { generateAuthEmailCode } from "@/auth/email";
+import { createSession } from "@/auth/session";
 import { SESSION_COOKIE_NAME } from "@/auth/session-cookie";
 import {
+  GithubAccountMember,
+  GoogleUser,
   OAuthClient,
   Plan,
+  Team,
   TeamSamlConfig,
   UserAccessToken,
+  User,
   UserAccessTokenScope,
   type Account,
   type Project,
   type TeamUser,
-  type User,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { consumeAuthorizationCode } from "@/oauth/authorization-code";
@@ -27,14 +34,12 @@ import { exchangeSamlCode } from "@/web/api/auth.test-util";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
-import { createApolloServerApp } from "./util";
+import { createApolloServerApp, type MockedViewer } from "./util";
 
 setupRedis();
 
 const EMAIL = "jane@acme.com";
 const SSO_SUBJECT = "idp-jane";
-
-type Viewer = { user: User; account: Account; samlTeamId?: string };
 
 /** A request made with a real session cookie rather than a mocked viewer. */
 type SessionCaller = { cookie: string };
@@ -43,7 +48,7 @@ async function createTeamUser(input: {
   teamAccount: Account;
   userLevel: TeamUser["userLevel"];
   ssoSubject?: string;
-}): Promise<Viewer> {
+}): Promise<MockedViewer> {
   invariant(input.teamAccount.teamId, "team account has no team");
   const account = await factory.UserAccount.create();
   await account.$fetchGraph("user");
@@ -71,18 +76,31 @@ async function createSamlEnforcedTeam(plan: Plan): Promise<Account> {
     ssoUrl: "https://idp.example.com/sso",
     signingCertificate: "fake-certificate",
     enabled: true,
-    enforced: true,
-    enforcedAt: new Date().toISOString(),
   });
+  await requireAuthMethod(teamAccount, "saml");
   return teamAccount;
+}
+
+async function requireAuthMethod(
+  teamAccount: Account,
+  authMethod: TeamAuthMethod,
+) {
+  invariant(teamAccount.teamId, "team account has no team");
+  await Team.query()
+    .findById(teamAccount.teamId)
+    .patch({ enforcedAuthMethod: authMethod });
 }
 
 const it = base.extend<{
   plan: Plan;
   teamAccount: Account;
-  owner: Viewer;
-  member: Viewer;
-  samlMember: Viewer;
+  owner: MockedViewer;
+  member: MockedViewer;
+  samlMember: MockedViewer;
+  /** A team requiring no sign-in method, on no plan. */
+  freeTeamAccount: Account;
+  freeTeamOwner: MockedViewer;
+  freeTeamMember: MockedViewer;
 }>({
   plan: async ({}, use) => {
     await setupDatabase();
@@ -110,10 +128,30 @@ const it = base.extend<{
     });
     await use(viewer);
   },
+  freeTeamAccount: async ({}, use) => {
+    await setupDatabase();
+    await use(await factory.TeamAccount.create());
+  },
+  freeTeamOwner: async ({ freeTeamAccount }, use) => {
+    await use(
+      await createTeamUser({
+        teamAccount: freeTeamAccount,
+        userLevel: "owner",
+      }),
+    );
+  },
+  freeTeamMember: async ({ freeTeamAccount }, use) => {
+    await use(
+      await createTeamUser({
+        teamAccount: freeTeamAccount,
+        userLevel: "member",
+      }),
+    );
+  },
 });
 
 async function graphql(
-  caller: Viewer | SessionCaller | null,
+  caller: MockedViewer | SessionCaller | null,
   query: string,
   variables: Record<string, unknown>,
 ) {
@@ -130,7 +168,7 @@ async function graphql(
   return req.send({ query, variables });
 }
 
-function queryAccount(caller: Viewer | SessionCaller, slug: string) {
+function queryAccount(caller: MockedViewer | SessionCaller, slug: string) {
   return graphql(
     caller,
     `
@@ -138,7 +176,7 @@ function queryAccount(caller: Viewer | SessionCaller, slug: string) {
         account(slug: $slug) {
           id
           ... on Team {
-            viewerSignedInWithSaml
+            viewerAuthMethod
           }
         }
       }
@@ -149,7 +187,7 @@ function queryAccount(caller: Viewer | SessionCaller, slug: string) {
 
 /** Configure SAML as an owner signed in with it, as the settings page needs. */
 async function setTeamSamlEnabled(
-  owner: Viewer,
+  owner: MockedViewer,
   teamAccount: Account,
   enabled: boolean,
 ) {
@@ -211,15 +249,39 @@ function expectAccountVisible(res: request.Response, account: Account) {
   expect(res.body.data.account.id).toBe(account.id);
 }
 
+const REQUIRED_CODES = {
+  google: "GOOGLE_AUTH_REQUIRED",
+  github: "GITHUB_AUTH_REQUIRED",
+  saml: "SAML_SSO_REQUIRED",
+} satisfies Record<TeamAuthMethod, ErrorCode>;
+
+/** The field `field` is withheld with a prompt to sign in with `authMethod`. */
+function expectAuthMethodRequired(
+  res: request.Response,
+  authMethod: TeamAuthMethod,
+  field: "account" | "project" | "me" = "account",
+) {
+  expect(res.body.data[field]).toBeNull();
+  expect(res.body.errors[0].extensions.argosErrorCode).toBe(
+    REQUIRED_CODES[authMethod],
+  );
+}
+
 /** The field `field` is withheld with a prompt to sign in with SAML. */
 function expectSamlRequired(
   res: request.Response,
   field: "account" | "project" | "me" = "account",
 ) {
-  expect(res.body.data[field]).toBeNull();
-  expect(res.body.errors[0].extensions.argosErrorCode).toBe(
-    "SAML_SSO_REQUIRED",
-  );
+  expectAuthMethodRequired(res, "saml", field);
+}
+
+/** A real session for `viewer`, as a login with `method` opens. */
+async function openSession(
+  viewer: MockedViewer,
+  method: Exclude<AuthMethod, "saml">,
+): Promise<SessionCaller> {
+  const { rawToken } = await createSession({ userId: viewer.user.id, method });
+  return { cookie: `${SESSION_COOKIE_NAME}=${rawToken}` };
 }
 
 describe("GraphQL team SAML enforcement", () => {
@@ -289,7 +351,7 @@ describe("GraphQL team SAML enforcement", () => {
 
     const res = await queryAccount(session, teamAccount.slug);
     expectAccountVisible(res, teamAccount);
-    expect(res.body.data.account.viewerSignedInWithSaml).toBe(true);
+    expect(res.body.data.account.viewerAuthMethod).toBe("saml");
     expectSamlRequired(await queryAccount(session, otherTeamAccount.slug));
     expectAccountVisible(
       await queryAccount(otherTeamSession, otherTeamAccount.slug),
@@ -312,7 +374,7 @@ describe("GraphQL team SAML enforcement", () => {
 });
 
 function queryProject(
-  caller: Viewer | SessionCaller,
+  caller: MockedViewer | SessionCaller,
   accountSlug: string,
   projectName: string,
 ) {
@@ -545,7 +607,7 @@ describe("REST API team SAML enforcement", () => {
       const res = await getProjectWithToken(token, teamAccount, project);
 
       expect(res.status).toBe(403);
-      expect(res.body.error).toMatch(/requires SAML Single Sign-On/);
+      expect(res.body.error).toMatch(/requires sign-in with SAML SSO/);
     });
   }
 
@@ -560,7 +622,7 @@ describe("REST API team SAML enforcement", () => {
       teamAccount,
     );
     await UserAccessTokenScope.query()
-      .patch({ samlAuthorized: true })
+      .patch({ authMethod: "saml" })
       .whereIn(
         "userAccessTokenId",
         UserAccessToken.query()
@@ -571,5 +633,398 @@ describe("REST API team SAML enforcement", () => {
     const res = await getProjectWithToken(token, teamAccount, project);
 
     expect(res.status).toBe(200);
+  });
+});
+
+const SOCIAL_AUTH_METHODS = ["google", "github"] as const;
+
+type SocialAuthMethod = (typeof SOCIAL_AUTH_METHODS)[number];
+
+const TEAM_DOMAIN = "acme.com";
+
+/**
+ * Give the team what members need to meet a social requirement: a domain for
+ * Google, a GitHub organization (GitHub SSO) for GitHub.
+ */
+async function setUpTeamMethod(
+  teamAccount: Account,
+  authMethod: SocialAuthMethod,
+) {
+  const { teamId } = teamAccount;
+  invariant(teamId, "team account has no team");
+  switch (authMethod) {
+    case "google":
+      await factory.TeamDomain.create({ teamId, domain: TEAM_DOMAIN });
+      return;
+    case "github": {
+      const org = await factory.GithubAccount.create({ type: "organization" });
+      await Team.query().findById(teamId).patch({ ssoGithubAccountId: org.id });
+      return;
+    }
+  }
+}
+
+/**
+ * Link `viewer` to an account of `authMethod`: the team's own (a Workspace
+ * account on its domain, a member of its GitHub organization) unless
+ * `foreign`.
+ */
+async function linkSocialAccount(input: {
+  viewer: MockedViewer;
+  teamAccount: Account;
+  authMethod: SocialAuthMethod;
+  foreign?: boolean;
+}) {
+  const { viewer, teamAccount, authMethod, foreign } = input;
+  switch (authMethod) {
+    case "google": {
+      const googleUser = await GoogleUser.query().insertAndFetch({
+        googleId: `google-${viewer.user.id}`,
+        primaryEmail: foreign ? "jane@gmail.com" : `jane@${TEAM_DOMAIN}`,
+        // A consumer account has no Workspace domain.
+        hostedDomain: foreign ? null : TEAM_DOMAIN,
+      });
+      await User.query()
+        .findById(viewer.user.id)
+        .patch({ googleUserId: googleUser.id });
+      return;
+    }
+    case "github": {
+      const githubAccount = await factory.GithubAccount.create();
+      await viewer.account
+        .$query()
+        .patch({ githubAccountId: githubAccount.id });
+      if (foreign) {
+        return;
+      }
+      invariant(teamAccount.teamId, "team account has no team");
+      const team = await Team.query()
+        .findById(teamAccount.teamId)
+        .throwIfNotFound();
+      invariant(team.ssoGithubAccountId, "GitHub SSO is not set up");
+      await GithubAccountMember.query().insert({
+        githubAccountId: team.ssoGithubAccountId,
+        githubMemberId: githubAccount.id,
+      });
+      return;
+    }
+  }
+}
+
+describe("team requiring a social sign-in", () => {
+  beforeAll(() => {
+    z.globalRegistry.clear();
+  });
+
+  for (const authMethod of SOCIAL_AUTH_METHODS) {
+    it(`requires ${authMethod} from members signed in another way`, async ({
+      freeTeamAccount,
+      freeTeamMember,
+    }) => {
+      await setUpTeamMethod(freeTeamAccount, authMethod);
+      await requireAuthMethod(freeTeamAccount, authMethod);
+
+      const res = await queryAccount(freeTeamMember, freeTeamAccount.slug);
+
+      expectAuthMethodRequired(res, authMethod);
+      expect(res.body.errors[0].extensions.accountSlug).toBe(
+        freeTeamAccount.slug,
+      );
+    });
+
+    it(`lets members signed in with the team's ${authMethod} account in`, async ({
+      freeTeamAccount,
+      freeTeamMember,
+    }) => {
+      await setUpTeamMethod(freeTeamAccount, authMethod);
+      await linkSocialAccount({
+        viewer: freeTeamMember,
+        teamAccount: freeTeamAccount,
+        authMethod,
+      });
+      await requireAuthMethod(freeTeamAccount, authMethod);
+
+      const res = await queryAccount(
+        { ...freeTeamMember, authMethod },
+        freeTeamAccount.slug,
+      );
+
+      expectAccountVisible(res, freeTeamAccount);
+      expect(res.body.data.account.viewerAuthMethod).toBe(authMethod);
+    });
+
+    it(`refuses members signed in with a ${authMethod} account outside the team`, async ({
+      freeTeamAccount,
+      freeTeamMember,
+    }) => {
+      await setUpTeamMethod(freeTeamAccount, authMethod);
+      await linkSocialAccount({
+        viewer: freeTeamMember,
+        teamAccount: freeTeamAccount,
+        authMethod,
+        foreign: true,
+      });
+      await requireAuthMethod(freeTeamAccount, authMethod);
+
+      const res = await queryAccount(
+        { ...freeTeamMember, authMethod },
+        freeTeamAccount.slug,
+      );
+
+      expectAuthMethodRequired(res, authMethod);
+    });
+
+    it(`lets members in while the team lacks what ${authMethod} needs`, async ({
+      freeTeamAccount,
+      freeTeamMember,
+    }) => {
+      await requireAuthMethod(freeTeamAccount, authMethod);
+
+      const res = await queryAccount(freeTeamMember, freeTeamAccount.slug);
+
+      expectAccountVisible(res, freeTeamAccount);
+    });
+
+    it(`accepts only tokens issued from a ${authMethod} session of the team's account`, async ({
+      freeTeamAccount,
+      freeTeamMember,
+    }) => {
+      await setUpTeamMethod(freeTeamAccount, authMethod);
+      await linkSocialAccount({
+        viewer: freeTeamMember,
+        teamAccount: freeTeamAccount,
+        authMethod,
+      });
+      const project = await createTeamProject(freeTeamAccount, {
+        private: true,
+      });
+      const socialToken = await createPersonalAccessToken(
+        await openSession(freeTeamMember, authMethod),
+        freeTeamAccount,
+      );
+      const emailToken = await createPersonalAccessToken(
+        await openSession(freeTeamMember, "email"),
+        freeTeamAccount,
+      );
+      await requireAuthMethod(freeTeamAccount, authMethod);
+
+      const accepted = await getProjectWithToken(
+        socialToken,
+        freeTeamAccount,
+        project,
+      );
+      expect(accepted.status).toBe(200);
+
+      const refused = await getProjectWithToken(
+        emailToken,
+        freeTeamAccount,
+        project,
+      );
+      expect(refused.status).toBe(403);
+      expect(refused.body.error).toMatch(/requires sign-in with/);
+    });
+  }
+
+  it("does not count a SAML login to the team as a social sign-in", async ({
+    teamAccount,
+    samlMember: _samlMember,
+  }) => {
+    await setUpTeamMethod(teamAccount, "google");
+    await requireAuthMethod(teamAccount, "google");
+    const samlSession = await logInWithSaml(teamAccount);
+
+    const res = await queryAccount(samlSession, teamAccount.slug);
+
+    expectAuthMethodRequired(res, "google");
+  });
+});
+
+function setEnforcedAuthMethod(
+  caller: MockedViewer,
+  teamAccount: Account,
+  authMethod: TeamAuthMethod | null,
+) {
+  return graphql(
+    caller,
+    `
+      mutation SetTeamEnforcedAuthMethod(
+        $input: SetTeamEnforcedAuthMethodInput!
+      ) {
+        setTeamEnforcedAuthMethod(input: $input) {
+          id
+          ... on Team {
+            enforcedAuthMethod
+          }
+        }
+      }
+    `,
+    { input: { teamAccountId: teamAccount.id, authMethod } },
+  );
+}
+
+function expectForbidden(res: request.Response, message: string) {
+  expect(res.body.data).toBeNull();
+  expect(res.body.errors[0].extensions.code).toBe("FORBIDDEN");
+  expect(res.body.errors[0].message).toBe(message);
+}
+
+describe("setTeamEnforcedAuthMethod", () => {
+  it("requires the method the owner signed in with", async ({
+    freeTeamAccount,
+    freeTeamOwner,
+    freeTeamMember,
+  }) => {
+    await setUpTeamMethod(freeTeamAccount, "github");
+    await linkSocialAccount({
+      viewer: freeTeamOwner,
+      teamAccount: freeTeamAccount,
+      authMethod: "github",
+    });
+
+    const res = await setEnforcedAuthMethod(
+      { ...freeTeamOwner, authMethod: "github" },
+      freeTeamAccount,
+      "github",
+    );
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.setTeamEnforcedAuthMethod.enforcedAuthMethod).toBe(
+      "github",
+    );
+    expectAuthMethodRequired(
+      await queryAccount(freeTeamMember, freeTeamAccount.slug),
+      "github",
+    );
+  });
+
+  it("refuses a method the owner did not sign in with", async ({
+    freeTeamAccount,
+    freeTeamOwner,
+    freeTeamMember,
+  }) => {
+    await setUpTeamMethod(freeTeamAccount, "google");
+
+    const res = await setEnforcedAuthMethod(
+      { ...freeTeamOwner, authMethod: "github" },
+      freeTeamAccount,
+      "google",
+    );
+
+    expectForbidden(
+      res,
+      "You are not signed in with Google. Sign in with Google, then try again.",
+    );
+    expectAccountVisible(
+      await queryAccount(freeTeamMember, freeTeamAccount.slug),
+      freeTeamAccount,
+    );
+  });
+
+  it("refuses a method the owner meets with an account outside the team", async ({
+    freeTeamAccount,
+    freeTeamOwner,
+  }) => {
+    await setUpTeamMethod(freeTeamAccount, "google");
+    await linkSocialAccount({
+      viewer: freeTeamOwner,
+      teamAccount: freeTeamAccount,
+      authMethod: "google",
+      foreign: true,
+    });
+
+    const res = await setEnforcedAuthMethod(
+      { ...freeTeamOwner, authMethod: "google" },
+      freeTeamAccount,
+      "google",
+    );
+
+    expectForbidden(
+      res,
+      "Your Google account is not a Google Workspace account on one of the team's domains. Sign in with one, then try again.",
+    );
+  });
+
+  it("refuses Google until the team has a domain", async ({
+    freeTeamAccount,
+    freeTeamOwner,
+  }) => {
+    const res = await setEnforcedAuthMethod(
+      { ...freeTeamOwner, authMethod: "google" },
+      freeTeamAccount,
+      "google",
+    );
+
+    expectForbidden(
+      res,
+      "This team has no domain. Add one before requiring Google.",
+    );
+  });
+
+  it("refuses SAML until the team has it enabled", async ({
+    freeTeamAccount,
+    freeTeamOwner,
+  }) => {
+    invariant(freeTeamAccount.teamId, "team account has no team");
+
+    const res = await setEnforcedAuthMethod(
+      { ...freeTeamOwner, samlTeamId: freeTeamAccount.teamId },
+      freeTeamAccount,
+      "saml",
+    );
+
+    expectForbidden(
+      res,
+      "SAML SSO is off for this team. Enable it before requiring it.",
+    );
+  });
+
+  it("lets members sign in with any method again", async ({
+    teamAccount,
+    owner,
+    member,
+  }) => {
+    invariant(teamAccount.teamId, "team account has no team");
+
+    const res = await setEnforcedAuthMethod(
+      { ...owner, samlTeamId: teamAccount.teamId },
+      teamAccount,
+      null,
+    );
+
+    expectNoGraphQLError(res);
+    expectAccountVisible(
+      await queryAccount(member, teamAccount.slug),
+      teamAccount,
+    );
+  });
+
+  it("stops requiring SAML once its configuration is removed", async ({
+    teamAccount,
+    owner,
+    member,
+  }) => {
+    invariant(teamAccount.teamId, "team account has no team");
+
+    const res = await graphql(
+      { ...owner, samlTeamId: teamAccount.teamId },
+      `
+        mutation RemoveTeamSaml($teamAccountId: ID!) {
+          removeTeamSaml(teamAccountId: $teamAccountId) {
+            id
+          }
+        }
+      `,
+      { teamAccountId: teamAccount.id },
+    );
+
+    expectNoGraphQLError(res);
+    const team = await Team.query()
+      .findById(teamAccount.teamId)
+      .throwIfNotFound();
+    expect(team.enforcedAuthMethod).toBeNull();
+    expectAccountVisible(
+      await queryAccount(member, teamAccount.slug),
+      teamAccount,
+    );
   });
 });

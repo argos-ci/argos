@@ -20,10 +20,10 @@ import {
 import { AuthenticationError, logout } from "./containers/Auth";
 import { ErrorPage } from "./pages/ErrorPage";
 import { NotFound } from "./pages/NotFound";
-import { RequireSAMLLogin } from "./pages/RequireSAMLLogin";
+import { RequireTeamSignIn } from "./pages/RequireTeamSignIn";
 import { Loader } from "./ui/Loader";
 import { TooltipProvider } from "./ui/Tooltip";
-import { checkIsErrorCode } from "./util/error";
+import { getRequiredTeamSignIn } from "./util/team-auth-method";
 
 function ViewportRoot() {
   return (
@@ -89,7 +89,8 @@ function checkHasReloaded() {
 function RootErrorBoundary() {
   const error = useRouteError();
   const shouldReload = checkIsFailedToFetchError(error) && !checkHasReloaded();
-  const isSAMLRequired = checkIsErrorCode(error, "SAML_SSO_REQUIRED");
+  const requiredSignIn = getRequiredTeamSignIn(error);
+  const isSignInRequired = requiredSignIn !== null;
   const isAuthError =
     error instanceof AuthenticationError ||
     (CombinedGraphQLErrors.is(error) &&
@@ -102,7 +103,7 @@ function RootErrorBoundary() {
       console.error(error);
     }
 
-    if (isSAMLRequired) {
+    if (isSignInRequired) {
       return;
     }
 
@@ -120,7 +121,7 @@ function RootErrorBoundary() {
     }
 
     Sentry.captureException(error, { level: "fatal" });
-  }, [error, shouldReload, isSAMLRequired, isAuthError]);
+  }, [error, shouldReload, isSignInRequired, isAuthError]);
 
   if (shouldReload) {
     return null;
@@ -131,8 +132,14 @@ function RootErrorBoundary() {
     return null;
   }
 
-  if (isSAMLRequired) {
-    return <RequireSAMLLogin />;
+  if (requiredSignIn) {
+    return (
+      <RequireTeamSignIn
+        authMethod={requiredSignIn.authMethod}
+        teamSlug={requiredSignIn.teamSlug}
+        redirect={window.location.pathname}
+      />
+    );
   }
 
   return <ErrorPage />;

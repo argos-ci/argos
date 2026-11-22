@@ -8,7 +8,7 @@ import {
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Helmet } from "react-helmet";
-import { Navigate, Route, Routes, useLocation } from "react-router";
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router";
 
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
@@ -16,6 +16,7 @@ import { AccountCursorOrigin } from "@/containers/Account/CursorOrigin";
 import { AccountGitLab } from "@/containers/Account/GitLab";
 import { AccountInvoices } from "@/containers/Account/Invoices";
 import { AccountProjectTokens } from "@/containers/Account/ProjectTokens";
+import { AccountWebhooks } from "@/containers/Account/Webhooks";
 import { useAuth } from "@/containers/Auth";
 import { SettingsLayout, SettingsNav, SettingsPage } from "@/containers/Layout";
 import { useOriginEnabled } from "@/containers/Origin";
@@ -25,6 +26,7 @@ import { TeamAddOns } from "@/containers/Team/AddOns";
 import { TeamDelete } from "@/containers/Team/Delete";
 import { TeamDiscord } from "@/containers/Team/Discord";
 import { TeamDomains } from "@/containers/Team/Domains";
+import { TeamEnforcedAuthMethod } from "@/containers/Team/EnforcedAuthMethod";
 import { TeamGitHubLight } from "@/containers/Team/GitHubLight";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
 import { TeamMembers } from "@/containers/Team/members/Members";
@@ -41,6 +43,7 @@ import { UserEmails } from "@/containers/User/Emails";
 import { UserNotificationPreferences } from "@/containers/User/NotificationPreferences";
 import { OAuthApps } from "@/containers/User/OAuthApps";
 import { UserAccessTokens } from "@/containers/User/UserAccessTokens";
+import { WebhookDeliveries } from "@/containers/Webhook/WebhookDeliveries";
 import { graphql } from "@/gql";
 import { AccountPermission, PlanInterval } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
@@ -89,6 +92,7 @@ const AccountQuery = graphql(`
       ...AccountCursorOrigin_Account
       ...TeamGitHubSSO_Team
       ...TeamSAMLSSO_Team
+      ...TeamEnforcedAuthMethod_Team
       ...TeamSCIMProvisioning_Team
       ...TeamDomains_Team
       ...TeamAccessRole_Team
@@ -102,6 +106,7 @@ const AccountQuery = graphql(`
       ...UserNotificationPreferences_Account
       ...UserAccessTokens_Account
       ...AccountProjectTokens_Account
+      ...AccountWebhooks_Account
       ...OAuthApps_Account
     }
   }
@@ -264,6 +269,9 @@ function PageContent() {
           {isTeam && hasAdminPermission && <TeamGitHubSSO team={account} />}
           {isTeam && hasAdminPermission && <TeamSAMLSSO team={account} />}
           {isTeam && hasAdminPermission && (
+            <TeamEnforcedAuthMethod team={account} />
+          )}
+          {isTeam && hasAdminPermission && (
             <TeamSCIMProvisioning team={account} />
           )}
         </>
@@ -284,6 +292,20 @@ function PageContent() {
           {isUser && <UserAccessTokens account={account} />}
           <AccountProjectTokens account={account} />
         </>
+      ),
+    },
+    {
+      name: "Webhooks",
+      slug: "webhooks",
+      hasSubpages: true,
+      element: hasAdminPermission && (
+        <Routes>
+          <Route index element={<AccountWebhooks account={account} />} />
+          <Route
+            path=":webhookId"
+            element={<WebhookDeliveriesRoute accountSlug={accountSlug} />}
+          />
+        </Routes>
       ),
     },
     {
@@ -352,7 +374,13 @@ function PageContent() {
             <Route
               key={route.slug}
               index={!route.slug}
-              path={route.slug || undefined}
+              path={
+                route.slug
+                  ? route.hasSubpages
+                    ? `${route.slug}/*`
+                    : route.slug
+                  : undefined
+              }
               element={route.element}
             />
           ))}
@@ -389,4 +417,10 @@ function checkIsNonEmptyElement(element: ReactNode): boolean {
     );
   }
   return true;
+}
+
+function WebhookDeliveriesRoute(props: { accountSlug: string }) {
+  const { webhookId } = useParams();
+  invariant(webhookId, "webhookId route param required");
+  return <WebhookDeliveries webhookId={webhookId} {...props} />;
 }

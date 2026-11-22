@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   EXPIRED_LOGIN_MESSAGE,
   getCallbackUrl,
+  getCheckedCallbackState,
   requireCallbackState,
   type OAuthProvider,
 } from "@/auth/callback-binding";
@@ -35,7 +36,11 @@ import {
   GITLAB_COM_URL,
   retrieveOAuthToken as retrieveGitlabOAuthToken,
 } from "@/gitlab";
-import { getGoogleAuthenticatedClient, getGoogleUserProfile } from "@/google";
+import {
+  getGoogleAuthenticatedClient,
+  getGoogleHostedDomain,
+  getGoogleUserProfile,
+} from "@/google";
 
 import { allowApp } from "../middlewares/cors";
 import { requireCsrf } from "../middlewares/csrf";
@@ -84,10 +89,12 @@ function withOAuth(
           auth ?? null,
         );
         invariant(account.userId, "Expected account to have userId");
-        if (auth) {
+        if (auth && !getCheckedCallbackState(res).reauthenticate) {
           // The provider was linked to the signed-in account. That is no
           // signup, and the session stays the one it was linked from, with the
           // method that opened it: replacing it would drop a SAML login.
+          // Signing in again, for a team that requires this provider, is what
+          // opens a new session.
           res.send({ creation, hasAutoInvite: false } satisfies AuthPayload);
           return;
         }
@@ -188,9 +195,16 @@ router.use(
       clientSecret: config.get("google.clientSecret"),
       redirectUri: getCallbackUrl("google"),
     });
-    const profile = await getGoogleUserProfile({ client });
+    const [profile, hostedDomain] = await Promise.all([
+      getGoogleUserProfile({ client }),
+      getGoogleHostedDomain({
+        client,
+        clientId: config.get("google.clientId"),
+      }),
+    ]);
     const googleUser = await getOrCreateGoogleUser(profile, {
       lastLoggedAt: new Date().toISOString(),
+      hostedDomain,
     });
     const { account, creation } = await getOrCreateUserAccountFromGoogleUser({
       googleUser,

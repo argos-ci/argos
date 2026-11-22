@@ -10,6 +10,7 @@ import {
 } from "@/database/services/monthly-report";
 import { job as deploymentNotificationJob } from "@/deployment-notification";
 import { reconcilePendingCustomDomains } from "@/deployment/custom-domain";
+import { purgeProjectEvents } from "@/event/feed";
 import { githubDeploymentJob } from "@/github-deployment/job";
 import { githubPullRequestJob } from "@/github-pull-request/job";
 import { syncGithubMarketplacePlanPrices } from "@/github/marketplace";
@@ -28,6 +29,7 @@ import { checkIsStripeConfigured } from "@/stripe";
 import { syncStripeInvoices } from "@/stripe/invoice-mirror";
 import { job as synchronizeJob } from "@/synchronize";
 import { scheduleCron } from "@/util/cron";
+import { webhookDeliveryJob } from "@/webhook/job";
 
 // Even though prod-ro queues are local, every job handler writes to the
 // database and to third parties — nothing a worker does makes sense against
@@ -60,6 +62,31 @@ scheduleCron("project-token-expiration", "40 * * * *", (context) =>
 scheduleCron("media-retention", "15 * * * *", (context) =>
   purgeExpiredMedia(context.date),
 );
+
+scheduleCron("project-event-retention", "55 * * * *", (context) =>
+  purgeProjectEvents(context.date),
+);
+
+// Jobs pushed after their row commits, from a request or a step nothing
+// retries. A job pushed from inside another job is left out: the parent's retry
+// pushes it again. For notification messages that retry inserts new rows, so
+// re-pushing the old ones would send an email twice.
+const requeuedJobs = [
+  automationActionRunJob,
+  buildJob,
+  buildNotificationJob,
+  deploymentNotificationJob,
+  githubPullRequestJob,
+  notificationWorkflowJob,
+  originPullRequestJob,
+  synchronizeJob,
+  webhookDeliveryJob,
+];
+scheduleCron("stalled-job-requeue", "*/10 * * * *", async (context) => {
+  await Promise.all(
+    requeuedJobs.map((job) => job.requeueStalled(context.date)),
+  );
+});
 
 // Anonymous client registrations nobody authorized. Hourly, so an abandoned
 // registration outlives its day by an hour at most.
@@ -112,4 +139,5 @@ createJobWorker(
   synchronizeJob,
   screenshotDiffJob,
   monthlyReportJob,
+  webhookDeliveryJob,
 );

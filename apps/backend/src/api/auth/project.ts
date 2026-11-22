@@ -1,3 +1,4 @@
+import { TEAM_AUTH_METHODS } from "@argos/schemas/team-auth-method";
 import { invariant } from "@argos/util/invariant";
 import type { Request } from "express";
 
@@ -103,20 +104,25 @@ export function assertProjectAccess(
 
 /**
  * Throw for an account a token's scope does not reach: a 403 that says so when
- * it is a team enforcing SAML the token was not issued through, `otherwise`
- * when it is out of the scope altogether.
+ * it is a team requiring a sign-in method the token was not issued through,
+ * `otherwise` when it is out of the scope altogether.
  */
 export function throwOutsideScope(
   auth: AuthPATPayload | AuthOAuthPayload,
   isAccount: (account: Account) => boolean,
   otherwise: HTTPError,
 ): never {
-  const account = auth.samlRequiredScope.find(isAccount);
-  if (account) {
+  const restricted = auth.restrictedScope.find((entry) =>
+    isAccount(entry.account),
+  );
+  if (restricted) {
+    const { account, requiredAuthMethod } = restricted;
+    const { label, requirement, requiredCode } =
+      TEAM_AUTH_METHODS[requiredAuthMethod];
     throw boom(
       403,
-      `The team "${account.slug}" requires SAML Single Sign-On, and this token was not issued from a session signed in with it. Sign in to Argos with SSO, then create a new token or authorize the application again.`,
-      { code: "SAML_SSO_REQUIRED" },
+      `The team "${account.slug}" requires sign-in with ${requirement}, and this token was not issued from such a session. Sign in to Argos with ${label}, then create a new token or authorize the application again.`,
+      { code: requiredCode },
     );
   }
   throw otherwise;

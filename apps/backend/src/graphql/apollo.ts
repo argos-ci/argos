@@ -18,11 +18,6 @@ const apolloSentryPlugin: ApolloServerPlugin<Context> = {
             error.originalError.code
           ) {
             error.extensions["argosErrorCode"] = error.originalError.code;
-
-            // Ignore SAML SSO required errors
-            if (error.originalError.code === "SAML_SSO_REQUIRED") {
-              continue;
-            }
           }
 
           const code = error.extensions?.["code"];

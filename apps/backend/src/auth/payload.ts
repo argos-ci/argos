@@ -1,4 +1,6 @@
+import type { AuthMethod } from "@argos/schemas/auth-method";
 import type { ProjectTokenPermission } from "@argos/schemas/project-token";
+import type { TeamAuthMethod } from "@argos/schemas/team-auth-method";
 import { assertNever } from "@argos/util/assertNever";
 
 import type { Account, Project, User } from "@/database/models";
@@ -37,8 +39,22 @@ export type AuthSessionPayload = {
   user: User;
   /** Id of the `user_sessions` row backing this request. */
   sessionId: string;
+  /** How the session was opened. Null on sessions predating the column. */
+  authMethod: AuthMethod | null;
   /** The team whose SAML login opened this session, if any. */
   samlTeamId: string | null;
+};
+
+/** How the user signed in for a team when a token was issued for it. */
+export type TokenTeamAuthMethod = { teamId: string; authMethod: AuthMethod };
+
+/**
+ * A team left out of a token's scope because it requires a sign-in method the
+ * token was not issued through, kept so the API can say which one.
+ */
+export type RestrictedScopeEntry = {
+  account: Account;
+  requiredAuthMethod: TeamAuthMethod;
 };
 
 export type AuthPATPayload = {
@@ -46,10 +62,9 @@ export type AuthPATPayload = {
   account: Account;
   user: User;
   scope: Account[];
-  /** Teams of the scope the token was issued for through their SAML IdP. */
-  samlTeamIds: string[];
-  /** Teams left out of `scope` because they enforce SAML. */
-  samlRequiredScope: Account[];
+  /** How the user had signed in for each team of the scope. */
+  teamAuthMethods: TokenTeamAuthMethod[];
+  restrictedScope: RestrictedScopeEntry[];
   /** Id of the `user_access_tokens` row backing this request. */
   tokenId: string;
 };
@@ -61,10 +76,9 @@ export type AuthOAuthPayload = {
   user: User;
   /** Accounts the token is allowed to act on (re-validated per request). */
   scope: Account[];
-  /** Teams of the scope the grant was given for through their SAML IdP. */
-  samlTeamIds: string[];
-  /** Teams left out of `scope` because they enforce SAML. */
-  samlRequiredScope: Account[];
+  /** How the user had signed in for each team of the scope. */
+  teamAuthMethods: TokenTeamAuthMethod[];
+  restrictedScope: RestrictedScopeEntry[];
   /** Granted OAuth scope strings carried by this access token. */
   oauthScopes: string[];
   /** Public identifier of the OAuth client that holds the token. */
@@ -80,29 +94,41 @@ export type AuthOAuthPayload = {
 
 /**
  * What permission checks read from a user's request, whichever way they
- * authenticated: who made it, and which teams' SAML IdPs it went through.
+ * authenticated: who made it, and how they signed in.
  */
 export type AuthViewer =
-  | Pick<AuthSessionPayload, "type" | "user" | "samlTeamId">
-  | Pick<AuthPATPayload | AuthOAuthPayload, "type" | "user" | "samlTeamIds">;
+  | Pick<AuthSessionPayload, "type" | "user" | "authMethod" | "samlTeamId">
+  | Pick<
+      AuthPATPayload | AuthOAuthPayload,
+      "type" | "user" | "teamAuthMethods"
+    >;
 
 /**
- * Whether the request went through `teamId`'s SAML IdP: the session was opened
- * by a SAML login to that team, or the token was issued from such a session.
+ * How the request's user signed in, as far as `teamId` is concerned: the
+ * session's method, or for a token, the method of the session it was issued
+ * from. This is what a team's required sign-in method is checked against.
  */
-export function checkAuthSatisfiesTeamSaml(
+export function getAuthMethodForTeam(
   auth: AuthViewer,
   teamId: string | null,
-): boolean {
+): AuthMethod | null {
   if (!teamId) {
-    return false;
+    return null;
   }
   switch (auth.type) {
     case "session":
-      return auth.samlTeamId === teamId;
+      // A SAML login says nothing about the user to a team other than the one
+      // whose IdP answered.
+      if (auth.authMethod === "saml") {
+        return auth.samlTeamId === teamId ? "saml" : null;
+      }
+      return auth.authMethod;
     case "pat":
     case "oauth":
-      return auth.samlTeamIds.includes(teamId);
+      return (
+        auth.teamAuthMethods.find((entry) => entry.teamId === teamId)
+          ?.authMethod ?? null
+      );
     default:
       return assertNever(auth);
   }

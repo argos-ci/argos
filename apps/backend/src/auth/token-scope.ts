@@ -1,35 +1,32 @@
+import type { AuthMethod } from "@argos/schemas/auth-method";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
 import type { Account, User } from "@/database/models";
 
-import { checkTeamSamlEnforced } from "./saml";
+import type { RestrictedScopeEntry, TokenTeamAuthMethod } from "./payload";
+import { getUnmetTeamAuthMethod } from "./team-auth-method";
 
 /**
  * What a user's token reaches, from the accounts it was issued for. Expects
- * each entry's `account.teamSamlConfig` and the user's `teams` to be fetched.
+ * each entry's `account` and the user's `teams` to be fetched.
  */
 export async function resolveTokenScope(
   user: User,
-  entries: { account?: Account; samlAuthorized: boolean }[],
+  entries: { account?: Account; authMethod: AuthMethod | null }[],
 ): Promise<{
   /** Accounts the token may act on. */
   scope: Account[];
-  /** Teams of the scope whose SAML IdP the token was issued through. */
-  samlTeamIds: string[];
-  /**
-   * Teams left out of the scope because they enforce SAML and the token was
-   * not issued through their IdP, kept apart so the API can say why.
-   */
-  samlRequiredScope: Account[];
+  teamAuthMethods: TokenTeamAuthMethod[];
+  restrictedScope: RestrictedScopeEntry[];
 }> {
   invariant(user.teams, "user teams not fetched");
-  const userTeamIds = new Set(user.teams.map((team) => team.id));
+  const userTeams = new Map(user.teams.map((team) => [team.id, team]));
   const scope: Account[] = [];
-  const samlTeamIds: string[] = [];
-  const samlRequiredScope: Account[] = [];
+  const teamAuthMethods: TokenTeamAuthMethod[] = [];
+  const restrictedScope: RestrictedScopeEntry[] = [];
 
-  for (const { account, samlAuthorized } of entries) {
+  for (const { account, authMethod } of entries) {
     invariant(account, "scope account not fetched");
     switch (account.type) {
       case "user": {
@@ -39,16 +36,23 @@ export async function resolveTokenScope(
         break;
       }
       case "team": {
-        invariant(account.teamId);
+        const { teamId } = account;
+        invariant(teamId);
+        const team = userTeams.get(teamId);
         // A team the user has left is out of the scope, silently.
-        if (!userTeamIds.has(account.teamId)) {
+        if (!team) {
           break;
         }
-        if (samlAuthorized) {
-          samlTeamIds.push(account.teamId);
-          scope.push(account);
-        } else if (await checkTeamSamlEnforced(account)) {
-          samlRequiredScope.push(account);
+        if (authMethod) {
+          teamAuthMethods.push({ teamId, authMethod });
+        }
+        const requiredAuthMethod = await getUnmetTeamAuthMethod({
+          team,
+          userId: user.id,
+          signedInWith: authMethod,
+        });
+        if (requiredAuthMethod) {
+          restrictedScope.push({ account, requiredAuthMethod });
         } else {
           scope.push(account);
         }
@@ -59,5 +63,5 @@ export async function resolveTokenScope(
     }
   }
 
-  return { scope, samlTeamIds, samlRequiredScope };
+  return { scope, teamAuthMethods, restrictedScope };
 }

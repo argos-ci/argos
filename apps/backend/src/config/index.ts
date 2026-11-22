@@ -687,6 +687,14 @@ export function createConfig() {
         },
       },
     },
+    webhooks: {
+      allowPrivateNetwork: {
+        doc: "Let webhooks target loopback and private addresses over plain HTTP, for tests and local development. Never enable it in production: any account admin could then make Argos call internal services.",
+        format: Boolean,
+        default: false,
+        env: "WEBHOOKS_ALLOW_PRIVATE_NETWORK",
+      },
+    },
     dynamodb: {
       endpoint: {
         doc: "DynamoDB endpoint (for local development)",

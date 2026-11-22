@@ -76,6 +76,7 @@ import {
   listTestCommentsOperation,
 } from "./handlers/listComments";
 import { listIgnoredChangesOperation } from "./handlers/listIgnoredChanges";
+import { listProjectEventsOperation } from "./handlers/listProjectEvents";
 import { listProjectsOperation } from "./handlers/listProjects";
 import { listReviewsOperation } from "./handlers/listReviews";
 import { listTestChangesOperation } from "./handlers/listTestChanges";
@@ -152,7 +153,17 @@ import {
   updateTestCommentOperation,
 } from "./handlers/updateComment";
 import { updateProjectOperation } from "./handlers/updateProject";
+import {
+  createAccountWebhookOperation,
+  deleteAccountWebhookOperation,
+  getAccountWebhookOperation,
+  getWebhookDeliveryOperation,
+  listAccountWebhooksOperation,
+  listWebhookDeliveriesOperation,
+  resendWebhookDeliveryOperation,
+} from "./handlers/webhooks";
 import { securitySchemes } from "./security";
+import { webhooks } from "./webhooks";
 
 export const zodSchema = {
   openapi: "3.2.0",
@@ -179,54 +190,98 @@ export const zodSchema = {
       description: "API Endpoint",
     },
   ],
+  // GitBook builds the reference's navigation from these tags, in this order,
+  // nesting each one under its `parent`. A group with no description shows
+  // its children as cards. `x-page-icon` is a Font Awesome icon name, the set
+  // GitBook renders, not a Lucide one like the frontend uses: GitBook shows an
+  // unknown name as a placeholder.
   tags: [
-    {
-      name: "Authentication",
-      description:
-        "Exchange CI and CLI credentials for an Argos project token. Use these endpoints to obtain the bearer token that authenticates every other request.",
-      "x-page-icon": "key",
-    },
-    {
-      name: "Users",
-      description:
-        "Retrieve information about the user authenticated by the current personal access token.",
-      "x-page-icon": "user",
-    },
-    {
-      name: "Projects",
-      description:
-        "Retrieve project metadata, either by slug or for the project tied to the current token.",
-      "x-page-icon": "folder-open",
-    },
-    {
-      name: "Analytics",
-      description:
-        "Retrieve account-level build and screenshot metrics over time.",
-      "x-page-icon": "chart-no-axes-combined",
-    },
+    { name: "Visual testing", "x-page-icon": "eye" },
     {
       name: "Builds",
+      parent: "Visual testing",
       description:
         "Create, finalize, update, and inspect visual testing builds, including their screenshot diffs. This is the core of the visual testing workflow.",
       "x-page-icon": "images",
     },
     {
       name: "Reviews",
+      parent: "Visual testing",
       description:
-        "Submit, list, and dismiss reviews to approve or reject the changes captured in a build.",
+        "Submit, list, and dismiss reviews to approve or reject the changes captured in a build, and request reviewers.",
       "x-page-icon": "clipboard-check",
     },
     {
       name: "Tests",
+      parent: "Visual testing",
       description:
         "Inspect a test's flakiness (how often it changed and how erratically), list the changes that keep coming back, and ignore the ones that are only noise.",
       "x-page-icon": "flask",
     },
     {
       name: "Comments",
+      parent: "Visual testing",
       description:
-        "Collaborate on builds with threaded comments: post and edit comments, react with emojis, resolve threads, and manage notification subscriptions.",
+        "Discuss builds, tests and media in threaded comments: post and edit comments, react with emojis, resolve threads, and manage notification subscriptions.",
       "x-page-icon": "comments",
+    },
+    { name: "Projects & teams", "x-page-icon": "building" },
+    {
+      name: "Projects",
+      parent: "Projects & teams",
+      description:
+        "Create, configure and transfer projects, and choose who contributes to them.",
+      "x-page-icon": "folder-open",
+    },
+    {
+      name: "Tokens",
+      parent: "Projects & teams",
+      description:
+        "Manage the project tokens CI authenticates with. A project can have several, so a token is rotated without downtime: create its replacement, update the CI secret, then revoke the old one.",
+      "x-page-icon": "key-skeleton",
+    },
+    {
+      name: "Accounts",
+      parent: "Projects & teams",
+      description:
+        "Get the user behind your token and the accounts it reaches, read an account's plan and usage, and set the role people join a team with.",
+      "x-page-icon": "circle-user",
+    },
+    {
+      name: "Members",
+      parent: "Projects & teams",
+      description:
+        "Manage who is on a team and what they can reach: list members, change their role, remove them, send or cancel invitations, and open the team to an email domain.",
+      "x-page-icon": "users",
+    },
+    {
+      name: "Analytics",
+      parent: "Projects & teams",
+      description:
+        "Retrieve account-level build and screenshot metrics over time.",
+      "x-page-icon": "chart-mixed",
+    },
+    { name: "Integrations", "x-page-icon": "plug" },
+    {
+      name: "Events",
+      parent: "Integrations",
+      description:
+        "Follow what happens in your projects: builds completing and getting reviewed, deployments created and ready. Read them from the events feed, or receive each one on a webhook set up in your account settings.",
+      "x-page-icon": "bolt",
+    },
+    {
+      name: "Webhooks",
+      parent: "Integrations",
+      description:
+        "Manage the webhooks Argos posts your projects' events to, look into their deliveries and resend one that failed.",
+      "x-page-icon": "webhook",
+    },
+    {
+      name: "Automations",
+      parent: "Integrations",
+      description:
+        "Run actions when a build event matches your conditions: post to Slack, Microsoft Teams or Discord when a build completes or is reviewed.",
+      "x-page-icon": "diagram-project",
     },
     {
       name: "Deployments",
@@ -235,28 +290,16 @@ export const zodSchema = {
       "x-page-icon": "rocket",
     },
     {
-      name: "Automations",
-      description:
-        "Run actions when a build event matches your conditions: post to Slack, Microsoft Teams or Discord when a build completes or is reviewed.",
-      "x-page-icon": "workflow",
-    },
-    {
       name: "Media",
       description:
         "Upload standalone images and videos, with no build or test run behind them, and get back a shareable URL plus ready-to-paste Markdown. Built for embedding a screenshot or a screen recording in the pull request an agent just opened.",
-      "x-page-icon": "image-play",
+      "x-page-icon": "photo-film",
     },
     {
-      name: "Members",
+      name: "Authentication",
       description:
-        "Manage who is on a team and what they can reach: list members, change their role, remove them, and send or cancel invitations.",
-      "x-page-icon": "users",
-    },
-    {
-      name: "Tokens",
-      description:
-        "Manage the project tokens CI authenticates with. A project can have several, so a token is rotated without downtime: create its replacement, update the CI secret, then revoke the old one.",
-      "x-page-icon": "key-round",
+        "Exchange CI and CLI credentials for an Argos project token. Use these endpoints to obtain the bearer token that authenticates every other request.",
+      "x-page-icon": "key",
     },
   ],
   components: {
@@ -302,6 +345,24 @@ export const zodSchema = {
     "/accounts/{accountSlug}/project-tokens/{tokenId}": {
       delete: deleteAccountProjectTokenOperation,
     },
+    "/accounts/{accountSlug}/webhooks": {
+      get: listAccountWebhooksOperation,
+      post: createAccountWebhookOperation,
+    },
+    "/accounts/{accountSlug}/webhooks/{webhookId}": {
+      get: getAccountWebhookOperation,
+      delete: deleteAccountWebhookOperation,
+    },
+    "/accounts/{accountSlug}/webhooks/{webhookId}/deliveries": {
+      get: listWebhookDeliveriesOperation,
+    },
+    "/accounts/{accountSlug}/webhooks/{webhookId}/deliveries/{deliveryId}": {
+      get: getWebhookDeliveryOperation,
+    },
+    "/accounts/{accountSlug}/webhooks/{webhookId}/deliveries/{deliveryId}/resend":
+      {
+        post: resendWebhookDeliveryOperation,
+      },
     "/accounts/{accountSlug}/invite-link/reset": {
       post: resetAccountInviteLinkOperation,
     },
@@ -419,6 +480,9 @@ export const zodSchema = {
     "/projects/{owner}/{project}/builds": {
       get: listBuildsOperation,
     },
+    "/projects/{owner}/{project}/events": {
+      get: listProjectEventsOperation,
+    },
     "/projects/{owner}/{project}/builds/{buildNumber}": {
       get: getBuildOperation,
     },
@@ -525,6 +589,7 @@ export const zodSchema = {
         delete: unsubscribeTestCommentThreadOperation,
       },
   },
+  webhooks,
 } satisfies ZodOpenApiObject;
 
 /**

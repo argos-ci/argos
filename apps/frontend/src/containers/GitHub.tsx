@@ -49,12 +49,18 @@ export function getGitHubAppInstallURL(
 export function GitHubLoginButton({
   children,
   redirect,
+  reauthenticate,
   ...props
 }: Omit<LinkButtonProps, "children"> & {
   children?: React.ReactNode;
   redirect?: string | null;
+  reauthenticate?: boolean;
 }) {
-  const url = getOAuthURL({ provider: "github", redirect: redirect ?? null });
+  const url = getOAuthURL({
+    provider: "github",
+    redirect: redirect ?? null,
+    reauthenticate,
+  });
   return (
     <LinkButton variant="github" href={url} {...props}>
       <ButtonIcon>

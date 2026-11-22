@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { checkAuthSatisfiesTeamSaml } from "@/auth/payload";
+import { getAuthMethodForTeam } from "@/auth/payload";
 import { UserAccessToken, UserAccessTokenScope } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { transaction } from "@/database/transaction";
@@ -121,7 +121,7 @@ export const resolvers: IResolvers = {
           accessibleAccounts.map((account) => ({
             userAccessTokenId: userAccessToken.id,
             accountId: account.id,
-            samlAuthorized: checkAuthSatisfiesTeamSaml(auth, account.teamId),
+            authMethod: getAuthMethodForTeam(auth, account.teamId),
           })),
         );
 

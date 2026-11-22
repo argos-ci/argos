@@ -32,5 +32,8 @@
   },
   "amqp": {
     "queuePrefix": "test:"
+  },
+  "webhooks": {
+    "allowPrivateNetwork": true
   }
 }

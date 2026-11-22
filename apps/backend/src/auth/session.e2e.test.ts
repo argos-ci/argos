@@ -32,7 +32,12 @@ describe("session service", () => {
       method: "email",
     });
     const resolved = await resolveSession(rawToken);
-    expect(resolved).toEqual({ sid: session.id, userId, samlTeamId: null });
+    expect(resolved).toEqual({
+      sid: session.id,
+      userId,
+      authMethod: "email",
+      samlTeamId: null,
+    });
   });
 
   test("falls back to Postgres on a cache miss and repopulates", async () => {
@@ -48,7 +53,12 @@ describe("session service", () => {
     await redis.flushDb();
 
     const resolved = await resolveSession(rawToken);
-    expect(resolved).toEqual({ sid: session.id, userId, samlTeamId: team.id });
+    expect(resolved).toEqual({
+      sid: session.id,
+      userId,
+      authMethod: "saml",
+      samlTeamId: team.id,
+    });
 
     // The fallback should have repopulated the cache.
     const cached = await redis.get(`session:${hashToken(rawToken)}`);
@@ -70,7 +80,36 @@ describe("session service", () => {
     await redis.set(`session:${hashToken(rawToken)}`, "}not json{");
 
     const resolved = await resolveSession(rawToken);
-    expect(resolved).toEqual({ sid: session.id, userId, samlTeamId: null });
+    expect(resolved).toEqual({
+      sid: session.id,
+      userId,
+      authMethod: "email",
+      samlTeamId: null,
+    });
+  });
+
+  test("rereads an entry cached without authMethod from Postgres", async () => {
+    const { rawToken, session } = await createSession({
+      userId,
+      method: "google",
+    });
+
+    // Written by a server that predates the field: reading it as "no method"
+    // would lock the session out of a team requiring Google until the entry
+    // expires.
+    const redis = await getRedisClient();
+    await redis.set(
+      `session:${hashToken(rawToken)}`,
+      JSON.stringify({ sid: session.id, userId, samlTeamId: null }),
+    );
+
+    const resolved = await resolveSession(rawToken);
+    expect(resolved).toEqual({
+      sid: session.id,
+      userId,
+      authMethod: "google",
+      samlTeamId: null,
+    });
   });
 
   test("rereads an entry cached without samlTeamId from Postgres", async () => {
@@ -90,7 +129,12 @@ describe("session service", () => {
     );
 
     const resolved = await resolveSession(rawToken);
-    expect(resolved).toEqual({ sid: session.id, userId, samlTeamId: team.id });
+    expect(resolved).toEqual({
+      sid: session.id,
+      userId,
+      authMethod: "saml",
+      samlTeamId: team.id,
+    });
   });
 
   test("revokes a session and never resurrects it from Postgres", async () => {

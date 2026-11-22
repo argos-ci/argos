@@ -49,6 +49,7 @@ import { listBuildDiffs } from "./handlers/listBuildDiffs";
 import { listBuilds } from "./handlers/listBuilds";
 import { listComments } from "./handlers/listComments";
 import { listIgnoredChanges } from "./handlers/listIgnoredChanges";
+import { listProjectEventsHandler } from "./handlers/listProjectEvents";
 import { listProjects } from "./handlers/listProjects";
 import { listReviews } from "./handlers/listReviews";
 import { listTestChanges } from "./handlers/listTestChanges";
@@ -109,6 +110,15 @@ import {
 import { updateBuild } from "./handlers/updateBuild";
 import { updateComment } from "./handlers/updateComment";
 import { updateProject } from "./handlers/updateProject";
+import {
+  createAccountWebhookHandler,
+  deleteAccountWebhookHandler,
+  getAccountWebhookHandler,
+  getWebhookDeliveryHandler,
+  listAccountWebhooksHandler,
+  listWebhookDeliveriesHandler,
+  resendWebhookDeliveryHandler,
+} from "./handlers/webhooks";
 import { schema } from "./schema";
 import { errorHandler, registerHandler } from "./util";
 
@@ -172,6 +182,7 @@ registerHandler(router, getTest);
 registerHandler(router, listTestChanges);
 registerHandler(router, listBuilds);
 registerHandler(router, listProjects);
+registerHandler(router, listProjectEventsHandler);
 registerHandler(router, resolveDeploymentDomain);
 registerHandler(router, updateBuild);
 registerHandler(router, listAccountMembers);
@@ -201,6 +212,13 @@ registerHandler(router, deleteProjectTokenHandler);
 registerHandler(router, listAccountProjectTokensHandler);
 registerHandler(router, createAccountProjectTokenHandler);
 registerHandler(router, deleteAccountProjectTokenHandler);
+registerHandler(router, listAccountWebhooksHandler);
+registerHandler(router, createAccountWebhookHandler);
+registerHandler(router, getAccountWebhookHandler);
+registerHandler(router, deleteAccountWebhookHandler);
+registerHandler(router, listWebhookDeliveriesHandler);
+registerHandler(router, getWebhookDeliveryHandler);
+registerHandler(router, resendWebhookDeliveryHandler);
 registerHandler(router, setProjectContributor);
 registerHandler(router, removeProjectContributorHandler);
 registerHandler(router, listAutomationRules);

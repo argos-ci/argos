@@ -72,9 +72,11 @@ export function SettingsNav(props: {
   return (
     <Nav>
       <NavList className="max-md:hidden">
-        {sections.map((section) => (
+        {sections.map((section, index) => (
           <NavListItem key={section.href}>
-            <NavLink to={section.href} end>
+            {/* The first section's URL prefixes every other one: it is the
+                only one matched exactly. */}
+            <NavLink to={section.href} end={index === 0}>
               {section.name}
             </NavLink>
           </NavListItem>

@@ -3,10 +3,14 @@ import { GraphQLError } from "graphql";
 
 import { HTTPError } from "@/util/error";
 
-export function forbidden(message: string = "Forbidden") {
+export function forbidden(
+  message: string = "Forbidden",
+  extensions?: { argosErrorCode?: ErrorCode; accountSlug?: string },
+) {
   return new GraphQLError(message, {
     extensions: {
       code: "FORBIDDEN",
+      ...extensions,
     },
   });
 }

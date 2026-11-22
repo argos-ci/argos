@@ -45,7 +45,7 @@ export const getMeOperation = {
   summary: "Get the current user",
   description:
     "Retrieve the user associated with the token used to authenticate the request, with the accounts (personal and teams) the token can access. Account slugs are the `owner` used in other API paths.",
-  tags: ["Users"],
+  tags: ["Accounts"],
   security: patOrOAuthAuth(["profile"]),
   responses,
 } satisfies ZodOpenApiOperationObject;

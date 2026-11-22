@@ -1,3 +1,4 @@
+import { AuthMethodSchema, type AuthMethod } from "@argos/schemas/auth-method";
 import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model";
@@ -17,7 +18,10 @@ export class UserAccessTokenScope extends Model {
         properties: {
           userAccessTokenId: { type: "string" },
           accountId: { type: "string" },
-          samlAuthorized: { type: "boolean" },
+          authMethod: {
+            type: ["string", "null"],
+            enum: [...AuthMethodSchema.options, null],
+          },
         },
       },
     ],
@@ -26,10 +30,11 @@ export class UserAccessTokenScope extends Model {
   userAccessTokenId!: string;
   accountId!: string;
   /**
-   * Whether the token may reach this account while it is a team enforcing
-   * SAML: set when it was issued from a session opened through the team's IdP.
+   * How the user had signed in for this account, when it is a team, in the
+   * session the token was issued from. A team requiring a sign-in method stays
+   * out of reach unless it matches.
    */
-  samlAuthorized!: boolean;
+  authMethod!: AuthMethod | null;
 
   static override get relationMappings(): RelationMappings {
     return {

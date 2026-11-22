@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { invariant } from "@argos/util/invariant";
 import type { RequestHandler, Response } from "express";
 import { z } from "zod";
 
@@ -21,6 +22,18 @@ type CallbackProvider = OAuthProvider | "saml";
 const STATE_MAX_AGE_MS = 60 * 60 * 1000;
 
 const StateBodySchema = z.object({ state: z.string() });
+
+const StateSchema = z.object({
+  nonce: z.string(),
+  redirect: z.string(),
+  /** Open a new session even when one is signed in. */
+  reauthenticate: z.boolean().optional(),
+});
+
+type CallbackState = z.infer<typeof StateSchema>;
+
+/** The state each callback request brought back, once checked. */
+const checkedStates = new WeakMap<Response, CallbackState>();
 
 export const EXPIRED_LOGIN_MESSAGE =
   "This login has expired or was started in another browser. Try again.";
@@ -51,11 +64,16 @@ function getCookieOptions() {
  */
 export function issueCallbackState(
   res: Response,
-  input: { provider: CallbackProvider; redirect: string },
+  input: Pick<CallbackState, "redirect" | "reauthenticate"> & {
+    provider: CallbackProvider;
+  },
 ): string {
-  const nonce = randomBytes(32).toString("base64url");
   const state = Buffer.from(
-    JSON.stringify({ nonce, redirect: input.redirect }),
+    JSON.stringify({
+      nonce: randomBytes(32).toString("base64url"),
+      redirect: input.redirect,
+      reauthenticate: input.reauthenticate || undefined,
+    } satisfies CallbackState),
   ).toString("base64");
   res.cookie(getCallbackCookieName(input.provider), state, {
     ...getCookieOptions(),
@@ -84,6 +102,23 @@ export function requireCallbackState(
       next(boom(401, EXPIRED_LOGIN_MESSAGE));
       return;
     }
+    // The cookie only ever holds a state this server issued.
+    checkedStates.set(
+      res,
+      StateSchema.parse(
+        JSON.parse(Buffer.from(body.data.state, "base64").toString()),
+      ),
+    );
     next();
   };
+}
+
+/**
+ * The state {@link requireCallbackState} checked for this callback: the one
+ * this server issued to this browser.
+ */
+export function getCheckedCallbackState(res: Response): CallbackState {
+  const state = checkedStates.get(res);
+  invariant(state, "requireCallbackState did not run");
+  return state;
 }

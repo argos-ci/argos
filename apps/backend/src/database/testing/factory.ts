@@ -9,6 +9,8 @@ import type * as Bolt from "@slack/bolt";
 import { FactoryGirl, ModelAdapter } from "factory-girl-ts";
 import type { Model, ModelClass, PartialModelObject } from "objection";
 
+import { generateWebhookSecret } from "@/webhook/request";
+
 import * as models from "../models";
 import { hashToken } from "../services/crypto";
 import { insertProjectToken } from "../services/project-token";
@@ -422,6 +424,32 @@ export const DiscordWebhook = defineFactory(models.DiscordWebhook, () => ({
     (n) => `https://discord.com/api/webhooks/10000000000000000${n}/token-${n}`,
   ),
   connectedAt: new Date().toISOString(),
+}));
+
+export const Webhook = defineFactory(models.Webhook, () => ({
+  accountId: TeamAccount.associate("id") as unknown as string,
+  url: FactoryGirl.sequence(
+    "webhook.url",
+    (n) => `https://hooks.example.com/argos/${n}`,
+  ),
+  secret: generateWebhookSecret(),
+  events: ["build.completed" as const],
+  allProjects: true,
+}));
+
+export const ProjectEvent = defineFactory(models.ProjectEvent, () => ({
+  projectId: Project.associate("id") as unknown as string,
+  name: "build.completed" as const,
+  data: { build: { id: "1" } },
+}));
+
+export const WebhookDelivery = defineFactory(models.WebhookDelivery, () => ({
+  webhookId: Webhook.associate("id") as unknown as string,
+  eventId: ProjectEvent.associate("id") as unknown as string,
+  jobStatus: "complete" as const,
+  attempts: 1,
+  conclusion: "success" as const,
+  responseStatus: 200,
 }));
 
 export const AutomationRule = defineFactory(models.AutomationRule, () => ({

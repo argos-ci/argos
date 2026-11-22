@@ -73,7 +73,7 @@ export async function getAuthPayloadFromOAuthAccessToken(
   const accessToken = await OAuthAccessToken.query()
     .findOne({ tokenHash: hashToken(token) })
     .withGraphFetched(
-      "grant.[user.[account,teams],grantAccounts.account.teamSamlConfig,client]",
+      "grant.[user.[account,teams],grantAccounts.account,client]",
     );
 
   if (!accessToken) {
@@ -115,7 +115,7 @@ export async function getAuthPayloadFromOAuthAccessToken(
 
   if (
     tokenScope.scope.length === 0 &&
-    tokenScope.samlRequiredScope.length === 0
+    tokenScope.restrictedScope.length === 0
   ) {
     throw boom(
       401,

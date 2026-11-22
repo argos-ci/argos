@@ -1,3 +1,4 @@
+import { TEAM_AUTH_METHODS } from "@argos/schemas/team-auth-method";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { RelationExpression, TransactionOrKnex } from "objection";
@@ -305,5 +306,28 @@ export async function deleteAccount(args: {
   // Cancel the stripe subscription if it exists
   if (stripeSubscriptionId) {
     await cancelStripeSubscription(stripeSubscriptionId);
+  }
+}
+
+/**
+ * Throw when `auth` is a member kept out of the team `account` by its required
+ * sign-in method, naming the method and the team. For entry points that found
+ * nothing to show, so the member is prompted to sign in instead of being told
+ * it does not exist. The team is not always the one the page shows.
+ */
+export async function assertTeamAuthMethodSatisfied(
+  account: Account,
+  auth: AuthViewer | null,
+): Promise<void> {
+  if (!account.teamId || !auth) {
+    return;
+  }
+  const access = await Team.getAccess(account.teamId, auth);
+  if (access.type === "auth_method_required") {
+    const { requirement, requiredCode } = TEAM_AUTH_METHODS[access.authMethod];
+    throw forbidden(
+      `This team requires sign-in with ${requirement}. Sign in with it to access the team.`,
+      { argosErrorCode: requiredCode, accountSlug: account.slug },
+    );
   }
 }
