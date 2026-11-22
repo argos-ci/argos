@@ -67,6 +67,12 @@ export const up = async (knex) => {
     table.text("failureReason");
     table.index(["webhookId", "id"]);
   });
+
+  // What `requeueStalledWebhookDeliveries` scans: only the deliveries no job
+  // has picked up yet, a handful among all those kept.
+  await knex.raw(
+    `CREATE INDEX webhook_deliveries_pending_createdat_index ON webhook_deliveries ("createdAt") WHERE "jobStatus" = 'pending'`,
+  );
 };
 
 /**

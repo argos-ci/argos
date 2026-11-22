@@ -62,6 +62,13 @@ type Inputs = {
   projectIds: string[];
 };
 
+type CreateWebhookInput = {
+  url: string;
+  events: WebhookEvent[];
+  /** `null` for every project of the account. */
+  projectIds: string[] | null;
+};
+
 export function CreateWebhookDialog(props: {
   accountId: string;
   projects: { id: string; name: string }[];
@@ -69,11 +76,79 @@ export function CreateWebhookDialog(props: {
   const { accountId, projects } = props;
   const [secret, setSecret] = useState<string | null>(null);
   const client = useApolloClient();
+
+  if (secret) {
+    return <CreatedWebhookDialog secret={secret} />;
+  }
+
+  return (
+    <CreateWebhookForm
+      projects={projects}
+      onCreate={async (input) => {
+        const result = await client.mutate({
+          mutation: CreateWebhookMutation,
+          variables: { input: { accountId, ...input } },
+          update(cache, { data }) {
+            if (!data) {
+              return;
+            }
+            const { webhook, account } = data.createWebhook;
+            cache.modify({
+              id: cache.identify(account),
+              fields: {
+                webhooks: (
+                  existingRefs: readonly Reference[] | null,
+                  { toReference },
+                ) => {
+                  const ref = toReference(webhook);
+                  return existingRefs && ref
+                    ? [ref, ...existingRefs]
+                    : existingRefs;
+                },
+              },
+            });
+          },
+        });
+        invariant(result.data, "Webhook not created");
+        setSecret(result.data.createWebhook.secret);
+      }}
+    />
+  );
+}
+
+export function CreatedWebhookDialog(props: { secret: string }) {
+  return (
+    <CreatedTokenDialog
+      title="Webhook Created"
+      token={props.secret}
+      noun="secret"
+      description={
+        <>
+          Argos signs each request with this secret, following{" "}
+          <Link href="https://www.standardwebhooks.com" target="_blank">
+            Standard Webhooks
+          </Link>
+          . Verify the <Code>webhook-signature</Code> header to make sure a
+          request comes from Argos.{" "}
+          <span className="font-medium">Keep it secret</span>.
+        </>
+      }
+    />
+  );
+}
+
+export function CreateWebhookForm(props: {
+  projects: { id: string; name: string }[];
+  onCreate: (input: CreateWebhookInput) => Promise<void>;
+  /** Which projects the form starts on, all of them by default. */
+  defaultScope?: Scope;
+}) {
+  const { projects, onCreate, defaultScope = "all" } = props;
   const form = useForm<Inputs>({
     defaultValues: {
       url: "",
       events: WEBHOOK_EVENTS.map((event) => event.value),
-      scope: "all",
+      scope: defaultScope,
       projectIds: [],
     },
   });
@@ -93,61 +168,12 @@ export function CreateWebhookDialog(props: {
       });
       return;
     }
-    const result = await client.mutate({
-      mutation: CreateWebhookMutation,
-      variables: {
-        input: {
-          accountId,
-          url: data.url,
-          events: data.events,
-          projectIds: data.scope === "all" ? null : data.projectIds,
-        },
-      },
-      update(cache, { data }) {
-        if (!data) {
-          return;
-        }
-        const { webhook, account } = data.createWebhook;
-        cache.modify({
-          id: cache.identify(account),
-          fields: {
-            webhooks: (
-              existingRefs: readonly Reference[] | null,
-              { toReference },
-            ) => {
-              const ref = toReference(webhook);
-              return existingRefs && ref
-                ? [ref, ...existingRefs]
-                : existingRefs;
-            },
-          },
-        });
-      },
+    await onCreate({
+      url: data.url,
+      events: data.events,
+      projectIds: data.scope === "all" ? null : data.projectIds,
     });
-    invariant(result.data, "Webhook not created");
-    setSecret(result.data.createWebhook.secret);
   };
-
-  if (secret) {
-    return (
-      <CreatedTokenDialog
-        title="Webhook Created"
-        token={secret}
-        noun="secret"
-        description={
-          <>
-            Argos signs each request with this secret, following{" "}
-            <Link href="https://www.standardwebhooks.com" target="_blank">
-              Standard Webhooks
-            </Link>
-            . Verify the <Code>webhook-signature</Code> header to make sure a
-            request comes from Argos.{" "}
-            <span className="font-medium">Keep it secret</span>.
-          </>
-        }
-      />
-    );
-  }
 
   return (
     <Dialog size="medium">

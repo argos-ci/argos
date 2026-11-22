@@ -1,4 +1,4 @@
-import { useState } from "react";
+import type { ReactNode } from "react";
 import { useApolloClient, useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { ArrowLeftIcon, RotateCwIcon, SearchIcon } from "lucide-react";
@@ -9,7 +9,7 @@ import {
   useQueryStates,
 } from "nuqs";
 
-import { graphql } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { WebhookDeliveryStatus } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
 import { Button, ButtonIcon } from "@/ui/Button";
@@ -35,6 +35,7 @@ const DeliveriesQuery = graphql(`
   query WebhookDeliveries_deliveries(
     $accountSlug: String!
     $webhookId: ID!
+    $after: Int!
     $first: Int!
     $status: WebhookDeliveryStatus
     $eventId: ID
@@ -52,7 +53,7 @@ const DeliveriesQuery = graphql(`
         }
         deliveries(
           first: $first
-          after: 0
+          after: $after
           status: $status
           eventId: $eventId
         ) {
@@ -143,6 +144,15 @@ function formatJson(body: string): string {
   }
 }
 
+type DeliveriesWebhook = NonNullable<
+  NonNullable<DocumentType<typeof DeliveriesQuery>["account"]>["webhook"]
+>;
+
+type DeliveryFilters = {
+  status: WebhookDeliveryStatus | null;
+  eventId: string | null;
+};
+
 /**
  * The deliveries of one webhook: filter them, look into an attempt, resend it.
  */
@@ -151,12 +161,18 @@ export function WebhookDeliveries(props: {
   webhookId: string;
 }) {
   const { accountSlug, webhookId } = props;
+  const client = useApolloClient();
   const [filters, setFilters] = useQueryStates(filtersSchema);
   const [selectedParam, setSelected] = useQueryState("delivery", parseAsString);
-  const [first, setFirst] = useState(PAGE_SIZE);
 
-  const { data, previousData, refetch } = useQuery(DeliveriesQuery, {
-    variables: { accountSlug, webhookId, first, ...filters },
+  const { data, previousData, refetch, fetchMore } = useQuery(DeliveriesQuery, {
+    variables: {
+      accountSlug,
+      webhookId,
+      after: 0,
+      first: PAGE_SIZE,
+      ...filters,
+    },
   });
   const account = (data ?? previousData)?.account;
 
@@ -168,8 +184,87 @@ export function WebhookDeliveries(props: {
     return <NotFound />;
   }
 
+  const selectedId = selectedParam ?? webhook.deliveries.edges[0]?.id ?? null;
+
+  return (
+    <WebhookDeliveriesCard
+      webhook={webhook}
+      filters={filters}
+      onFiltersChange={(next) => {
+        void setFilters(next);
+        void setSelected(null);
+      }}
+      selectedId={selectedId}
+      onSelect={(id) => void setSelected(id)}
+      onRefresh={async () => {
+        // The open delivery is a query of its own: refreshing the list alone
+        // would merge its new status into the previous attempt's details.
+        await client.refetchQueries({
+          include: [DeliveriesQuery, DeliveryQuery],
+        });
+      }}
+      onLoadMore={() => {
+        void fetchMore({
+          variables: { after: webhook.deliveries.edges.length },
+          updateQuery: (prev, { fetchMoreResult }) => {
+            const prevWebhook = prev.account?.webhook;
+            const nextWebhook = fetchMoreResult.account?.webhook;
+            if (!prev.account || !prevWebhook || !nextWebhook) {
+              return prev;
+            }
+            return {
+              ...prev,
+              account: {
+                ...prev.account,
+                webhook: {
+                  ...prevWebhook,
+                  deliveries: {
+                    ...nextWebhook.deliveries,
+                    edges: [
+                      ...prevWebhook.deliveries.edges,
+                      ...nextWebhook.deliveries.edges,
+                    ],
+                  },
+                },
+              },
+            };
+          },
+        });
+      }}
+      detail={
+        selectedId ? (
+          <DeliveryDetail
+            accountSlug={accountSlug}
+            webhookId={webhookId}
+            deliveryId={selectedId}
+            onResent={async (id) => {
+              // The new delivery is pending: a status filter would hide it.
+              // Refetched with the filter's next value, so the list loads
+              // once.
+              await refetch({ status: null });
+              await setFilters({ status: null });
+              await setSelected(id);
+            }}
+          />
+        ) : null
+      }
+    />
+  );
+}
+
+export function WebhookDeliveriesCard(props: {
+  webhook: DeliveriesWebhook;
+  filters: DeliveryFilters;
+  onFiltersChange: (filters: Partial<DeliveryFilters>) => void;
+  selectedId: string | null;
+  onSelect: (deliveryId: string) => void;
+  onRefresh: () => Promise<void>;
+  onLoadMore: () => void;
+  /** The selected delivery, shown next to the list. */
+  detail: ReactNode;
+}) {
+  const { webhook, filters, onFiltersChange, selectedId, onSelect } = props;
   const deliveries = webhook.deliveries.edges;
-  const selectedId = selectedParam ?? deliveries[0]?.id ?? null;
 
   return (
     <Card>
@@ -193,11 +288,10 @@ export function WebhookDeliveries(props: {
             onSubmit={(event) => {
               event.preventDefault();
               const value = new FormData(event.currentTarget).get("eventId");
-              void setFilters({
+              onFiltersChange({
                 eventId:
                   typeof value === "string" ? value.trim() || null : null,
               });
-              void setSelected(null);
             }}
           >
             <TextInputGroup>
@@ -220,10 +314,9 @@ export function WebhookDeliveries(props: {
             value={filters.status ?? "all"}
             onValueChange={(value) => {
               // "all" parses to no filter.
-              void setFilters({
+              onFiltersChange({
                 status: filtersSchema.status.parse(String(value)),
               });
-              void setSelected(null);
             }}
           >
             <SelectButton className="text-sm">
@@ -237,12 +330,7 @@ export function WebhookDeliveries(props: {
               ))}
             </ListBox>
           </Select>
-          <Button
-            variant="secondary"
-            onAsyncAction={async () => {
-              await refetch();
-            }}
-          >
+          <Button variant="secondary" onAsyncAction={props.onRefresh}>
             Refresh
           </Button>
         </div>
@@ -263,7 +351,7 @@ export function WebhookDeliveries(props: {
                     <ListRowButton
                       key={delivery.id}
                       aria-current={delivery.id === selectedId}
-                      onClick={() => void setSelected(delivery.id)}
+                      onClick={() => onSelect(delivery.id)}
                       className="aria-[current=true]:bg-primary-subtle flex items-center gap-3 px-3 py-2 text-left text-sm"
                     >
                       <Chip scale="xs" color={chip.color} className="shrink-0">
@@ -282,26 +370,10 @@ export function WebhookDeliveries(props: {
               </List>
             )}
             {webhook.deliveries.pageInfo.hasNextPage && (
-              <ListLoadMore onClick={() => setFirst((n) => n + PAGE_SIZE)} />
+              <ListLoadMore onClick={props.onLoadMore} />
             )}
           </div>
-          <div className="min-w-0">
-            {selectedId && (
-              <DeliveryDetail
-                accountSlug={accountSlug}
-                webhookId={webhookId}
-                deliveryId={selectedId}
-                onResent={async (id) => {
-                  // The new delivery is pending: a status filter would hide it.
-                  // Refetched with the filter's next value, so the list loads
-                  // once.
-                  await refetch({ status: null });
-                  await setFilters({ status: null });
-                  await setSelected(id);
-                }}
-              />
-            )}
-          </div>
+          <div className="min-w-0">{props.detail}</div>
         </div>
       </CardBody>
     </Card>
@@ -328,13 +400,40 @@ function DeliveryDetail(props: {
   const { data } = useQuery(DeliveryQuery, {
     variables: { accountSlug, webhookId, deliveryId },
   });
-  const delivery = data?.account?.webhook?.delivery;
   if (!data) {
     return <PageLoader />;
   }
+  const delivery = data.account?.webhook?.delivery;
   if (!delivery) {
     return <p className="text-low text-sm">Delivery not found.</p>;
   }
+  return (
+    <WebhookDeliveryDetail
+      delivery={delivery}
+      onResend={async () => {
+        const result = await client.mutate({
+          mutation: ResendMutation,
+          variables: { input: { id: delivery.id } },
+        });
+        invariant(result.data, "Delivery not resent");
+        toast.success("Delivery resent", { id: "webhook-delivery-resent" });
+        await onResent(result.data.resendWebhookDelivery.id);
+      }}
+    />
+  );
+}
+
+type DeliveryDetailData = NonNullable<
+  NonNullable<
+    NonNullable<DocumentType<typeof DeliveryQuery>["account"]>["webhook"]
+  >["delivery"]
+>;
+
+export function WebhookDeliveryDetail(props: {
+  delivery: DeliveryDetailData;
+  onResend: () => Promise<void>;
+}) {
+  const { delivery } = props;
   const chip = getDeliveryChip(delivery);
 
   return (
@@ -346,18 +445,7 @@ function DeliveryDetail(props: {
             {formatWebhookEvents([delivery.event.type])}
           </div>
         </div>
-        <Button
-          variant="secondary"
-          onAsyncAction={async () => {
-            const result = await client.mutate({
-              mutation: ResendMutation,
-              variables: { input: { id: delivery.id } },
-            });
-            invariant(result.data, "Delivery not resent");
-            toast.success("Delivery resent", { id: "webhook-delivery-resent" });
-            await onResent(result.data.resendWebhookDelivery.id);
-          }}
-        >
+        <Button variant="secondary" onAsyncAction={props.onResend}>
           <ButtonIcon>
             <RotateCwIcon />
           </ButtonIcon>

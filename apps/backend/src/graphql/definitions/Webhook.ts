@@ -154,6 +154,9 @@ export const typeDefs = gql`
   }
 `;
 
+/** The most deliveries one page returns. */
+const MAX_DELIVERIES_PER_PAGE = 100;
+
 const EVENT_TO_GRAPHQL = {
   "build.completed": IWebhookEvent.BuildCompleted,
   "build.reviewed": IWebhookEvent.BuildReviewed,
@@ -222,17 +225,39 @@ export const resolvers: IResolvers = {
     },
     lastDelivery: (webhook, _args, ctx) =>
       ctx.loaders.WebhookLastDelivery.load(webhook.id),
-    deliveries: async (webhook, args) => {
+    deliveries: async (webhook, args, ctx) => {
+      const first = Math.min(args.first, MAX_DELIVERIES_PER_PAGE);
       const result = await listWebhookDeliveries({
         webhookId: webhook.id,
         status: args.status ?? null,
         eventId: args.eventId ?? null,
         after: args.after,
-        first: args.first,
+        first,
       });
-      return paginateResult({ result, after: args.after, first: args.first });
+      // The retention purge deletes an event with its deliveries, so a
+      // delivery read just before it can outlive its event: drop those. The
+      // loader then serves `WebhookDelivery.event` the events loaded here.
+      const events = await Promise.all(
+        result.results.map((delivery) =>
+          ctx.loaders.ProjectEvent.load(delivery.eventId),
+        ),
+      );
+      return paginateResult({
+        result: {
+          ...result,
+          results: result.results.filter((_delivery, index) => events[index]),
+        },
+        after: args.after,
+        first,
+      });
     },
-    delivery: (webhook, args) => findWebhookDelivery(webhook, args.id),
+    delivery: async (webhook, args, ctx) => {
+      // Same as `deliveries`: a delivery whose event is gone is gone too.
+      const delivery = await findWebhookDelivery(webhook, args.id);
+      const event =
+        delivery && (await ctx.loaders.ProjectEvent.load(delivery.eventId));
+      return event ? delivery : null;
+    },
   },
   WebhookDeliveryEvent: {
     type: (event) => EVENT_TO_GRAPHQL[event.name],

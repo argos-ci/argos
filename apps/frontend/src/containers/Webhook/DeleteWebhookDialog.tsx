@@ -25,9 +25,32 @@ const DeleteWebhookMutation = graphql(`
 `);
 
 export function DeleteWebhookDialog(props: WebhookDialogValue) {
-  const { id, url } = props;
-  const state = useOverlayTriggerState();
+  const { id } = props;
   const client = useApolloClient();
+  return (
+    <DeleteWebhookConfirmation
+      {...props}
+      onDelete={async () => {
+        await client.mutate({
+          mutation: DeleteWebhookMutation,
+          variables: { input: { id } },
+          update(cache) {
+            cache.evict({
+              id: cache.identify({ __typename: "Webhook", id }),
+            });
+            cache.gc();
+          },
+        });
+      }}
+    />
+  );
+}
+
+export function DeleteWebhookConfirmation(
+  props: WebhookDialogValue & { onDelete: () => Promise<void> },
+) {
+  const { url, onDelete } = props;
+  const state = useOverlayTriggerState();
   return (
     <Dialog size="medium" role="alertdialog">
       <DialogBody>
@@ -43,16 +66,7 @@ export function DeleteWebhookDialog(props: WebhookDialogValue) {
         <DialogActionButton
           variant="destructive"
           onAsyncAction={async () => {
-            await client.mutate({
-              mutation: DeleteWebhookMutation,
-              variables: { input: { id } },
-              update(cache) {
-                cache.evict({
-                  id: cache.identify({ __typename: "Webhook", id }),
-                });
-                cache.gc();
-              },
-            });
+            await onDelete();
             state.close();
             toast.success("Webhook deleted", { id: "webhook-deleted" });
           }}

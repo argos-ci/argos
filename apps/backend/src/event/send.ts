@@ -1,6 +1,7 @@
 import type { ProjectEventName } from "@argos/schemas/project-event";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import * as Sentry from "@sentry/node";
 
 import {
   serializeEventData,
@@ -81,25 +82,45 @@ export async function sendProjectEvent(
     serializeEventData(message, project),
     querySubscribedWebhooks(project, message.name),
   ]);
-  const event = await transaction(async (trx) => {
+  // The deliveries commit with their event: a push that fails after the
+  // commit leaves them pending, for `requeueStalledWebhookDeliveries`.
+  const { event, deliveries } = await transaction(async (trx) => {
     await trx.raw("select pg_advisory_xact_lock(?)", [EVENT_INSERT_LOCK]);
-    return ProjectEvent.query(trx).insert({
+    const event = await ProjectEvent.query(trx).insert({
       projectId: project.id,
       name: message.name,
       data,
     });
+    const deliveries =
+      webhooks.length > 0
+        ? await WebhookDelivery.query(trx).insert(
+            webhooks.map((webhook) => ({
+              webhookId: webhook.id,
+              eventId: event.id,
+              jobStatus: "pending" as const,
+            })),
+          )
+        : [];
+    return { event, deliveries };
   });
 
-  if (webhooks.length > 0) {
-    const deliveries = await WebhookDelivery.query().insert(
-      webhooks.map((webhook) => ({
-        webhookId: webhook.id,
-        eventId: event.id,
-        jobStatus: "pending" as const,
-      })),
-    );
+  if (deliveries.length > 0) {
     await webhookDeliveryJob.push(...deliveries.map((delivery) => delivery.id));
   }
 
   return event;
+}
+
+/**
+ * Send the event of an action that already happened. A failure is reported
+ * rather than thrown, so it cannot fail that action.
+ */
+export async function trySendProjectEvent(
+  message: EventMessage,
+): Promise<void> {
+  try {
+    await sendProjectEvent(message);
+  } catch (error) {
+    Sentry.captureException(error);
+  }
 }

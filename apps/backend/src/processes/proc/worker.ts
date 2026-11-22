@@ -29,7 +29,10 @@ import { checkIsStripeConfigured } from "@/stripe";
 import { syncStripeInvoices } from "@/stripe/invoice-mirror";
 import { job as synchronizeJob } from "@/synchronize";
 import { scheduleCron } from "@/util/cron";
-import { webhookDeliveryJob } from "@/webhook/job";
+import {
+  requeueStalledWebhookDeliveries,
+  webhookDeliveryJob,
+} from "@/webhook/job";
 
 // Even though prod-ro queues are local, every job handler writes to the
 // database and to third parties — nothing a worker does makes sense against
@@ -65,6 +68,10 @@ scheduleCron("media-retention", "15 * * * *", (context) =>
 
 scheduleCron("project-event-retention", "55 * * * *", (context) =>
   purgeProjectEvents(context.date),
+);
+
+scheduleCron("webhook-delivery-requeue", "*/10 * * * *", (context) =>
+  requeueStalledWebhookDeliveries(context.date),
 );
 
 // Anonymous client registrations nobody authorized. Hourly, so an abandoned

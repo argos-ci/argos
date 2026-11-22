@@ -13,6 +13,7 @@ import {
 } from "@/database/models";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { boom } from "@/util/error";
+import { redisLock } from "@/util/redis";
 
 import { webhookDeliveryJob } from "./job";
 import { generateWebhookSecret } from "./request";
@@ -142,36 +143,42 @@ export async function createWebhook(args: {
     throw boom(400, "Select at least one event.", { field: "events" });
   }
 
-  const count = await Webhook.query()
-    .where("accountId", account.id)
-    .resultSize();
-  if (count >= MAX_WEBHOOKS_PER_ACCOUNT) {
-    throw boom(
-      400,
-      `An account can have up to ${MAX_WEBHOOKS_PER_ACCOUNT} webhooks. Delete one to add another.`,
-    );
-  }
-
   const secret = generateWebhookSecret();
 
-  const webhook = await transaction(async (trx) => {
-    const webhook = await Webhook.query(trx).insertAndFetch({
-      accountId: account.id,
-      url,
-      secret,
-      events,
-      allProjects: projects === null,
-    });
-    if (projects) {
-      await WebhookProject.query(trx).insert(
-        projects.map((project) => ({
-          webhookId: webhook.id,
-          projectId: project.id,
-        })),
-      );
-    }
-    return webhook;
-  });
+  // Counted and inserted under one lock: concurrent creations would all pass
+  // the count otherwise.
+  const webhook = await redisLock.acquire(
+    ["create-webhook", account.id],
+    async () => {
+      const count = await Webhook.query()
+        .where("accountId", account.id)
+        .resultSize();
+      if (count >= MAX_WEBHOOKS_PER_ACCOUNT) {
+        throw boom(
+          400,
+          `An account can have up to ${MAX_WEBHOOKS_PER_ACCOUNT} webhooks. Delete one to add another.`,
+        );
+      }
+      return transaction(async (trx) => {
+        const webhook = await Webhook.query(trx).insertAndFetch({
+          accountId: account.id,
+          url,
+          secret,
+          events,
+          allProjects: projects === null,
+        });
+        if (projects) {
+          await WebhookProject.query(trx).insert(
+            projects.map((project) => ({
+              webhookId: webhook.id,
+              projectId: project.id,
+            })),
+          );
+        }
+        return webhook;
+      });
+    },
+  );
 
   return { webhook, secret };
 }

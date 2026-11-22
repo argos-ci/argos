@@ -6235,6 +6235,13 @@ CREATE INDEX webhook_deliveries_eventid_index ON public.webhook_deliveries USING
 
 
 --
+-- Name: webhook_deliveries_pending_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX webhook_deliveries_pending_createdat_index ON public.webhook_deliveries USING btree ("createdAt") WHERE ("jobStatus" = 'pending'::public.job_status);
+
+
+--
 -- Name: webhook_deliveries_webhookid_id_index; Type: INDEX; Schema: public; Owner: postgres
 --
 

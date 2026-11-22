@@ -297,6 +297,7 @@ function PageContent() {
     {
       name: "Webhooks",
       slug: "webhooks",
+      hasSubpages: true,
       element: hasAdminPermission && (
         <Routes>
           <Route index element={<AccountWebhooks account={account} />} />
@@ -362,7 +363,13 @@ function PageContent() {
               <Route
                 key={route.slug}
                 index={index === 0}
-                path={index === 0 ? "" : `${route.slug}/*`}
+                path={
+                  index === 0
+                    ? ""
+                    : route.hasSubpages
+                      ? `${route.slug}/*`
+                      : route.slug
+                }
                 element={route.element}
               />
             );

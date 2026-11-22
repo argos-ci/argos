@@ -8,7 +8,7 @@ import { triggerAndRunAutomation } from "@/automation";
 import { job as buildNotificationJob } from "@/build-notification/job";
 import { transaction } from "@/database";
 import { Build, BuildNotification } from "@/database/models";
-import { sendProjectEvent } from "@/event/send";
+import { trySendProjectEvent } from "@/event/send";
 import { redisLock } from "@/util/redis";
 import { getRedisClient } from "@/util/redis/client";
 
@@ -144,7 +144,7 @@ export async function concludeBuild(input: {
                   payload: { build: updatedBuild, compareScreenshotBucket },
                 },
               }),
-              sendProjectEvent({
+              trySendProjectEvent({
                 name: "build.completed",
                 build: updatedBuild,
               }),

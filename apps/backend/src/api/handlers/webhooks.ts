@@ -2,7 +2,6 @@ import {
   ProjectEventNameSchema,
   type ProjectEventName,
 } from "@argos/schemas/project-event";
-import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -201,16 +200,19 @@ function serializeDelivery(
   };
 }
 
+/**
+ * Deliveries whose event is gone are left out: the retention purge deletes an
+ * event with its deliveries, so one read just before it can outlive its event.
+ */
 async function serializeDeliveries(deliveries: WebhookDelivery[]) {
   // A list only names its events: their payloads stay for the detail.
   const events = await ProjectEvent.query()
     .select("id", "name")
     .findByIds([...new Set(deliveries.map(({ eventId }) => eventId))]);
   const names = new Map(events.map((event) => [event.id, event.name]));
-  return deliveries.map((delivery) => {
+  return deliveries.flatMap((delivery) => {
     const name = names.get(delivery.eventId);
-    invariant(name, `Event not found: ${delivery.eventId}`);
-    return serializeDelivery(delivery, name);
+    return name ? [serializeDelivery(delivery, name)] : [];
   });
 }
 
@@ -218,7 +220,9 @@ async function serializeDeliveryDetail(
   delivery: WebhookDelivery,
 ): Promise<z.infer<typeof WebhookDeliveryDetailSchema>> {
   const event = await ProjectEvent.query().findById(delivery.eventId);
-  invariant(event, `Event not found: ${delivery.eventId}`);
+  if (!event) {
+    throw boom(404, "Delivery not found.");
+  }
   return {
     ...serializeDelivery(delivery, event.name),
     responseBody: delivery.responseBody,
@@ -499,6 +503,9 @@ export const resendWebhookDeliveryHandler: CreateAPIHandler = ({ post }) => {
       );
       const resent = await resendWebhookDelivery(delivery);
       const [serialized] = await serializeDeliveries([resent]);
+      if (!serialized) {
+        throw boom(404, "Delivery not found.");
+      }
       res.status(201).send(serialized);
     },
   );
