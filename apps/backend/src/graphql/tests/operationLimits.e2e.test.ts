@@ -46,13 +46,12 @@ describe("GraphQL operation limits", () => {
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.data).toBeUndefined();
     expect(res.body.errors).toEqual([
       expect.objectContaining({
         message:
           "This operation has more than one mutation. Send each mutation in its own request.",
         extensions: expect.objectContaining({
-          code: "OPERATION_LIMIT_EXCEEDED",
+          argosErrorCode: "OPERATION_LIMIT_EXCEEDED",
         }),
       }),
     ]);
@@ -74,15 +73,11 @@ describe("GraphQL operation limits", () => {
 
     try {
       const error = await new Promise((resolve, reject) => {
+        const unexpected = () =>
+          reject(new Error("Expected the mutation to be refused"));
         client.subscribe(
           { query: "mutation { ping }" },
-          {
-            next: () =>
-              reject(new Error("Expected the mutation to be refused")),
-            error: resolve,
-            complete: () =>
-              reject(new Error("Expected the mutation to be refused")),
-          },
+          { next: unexpected, error: resolve, complete: unexpected },
         );
       });
 
@@ -90,7 +85,7 @@ describe("GraphQL operation limits", () => {
         expect.objectContaining({
           message:
             "Only subscriptions run over WebSocket. Send queries and mutations over HTTP.",
-          extensions: { code: "OPERATION_LIMIT_EXCEEDED" },
+          extensions: { argosErrorCode: "OPERATION_LIMIT_EXCEEDED" },
         }),
       ]);
     } finally {

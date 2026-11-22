@@ -6,11 +6,7 @@ import { RequestHandler } from "express";
 import { HTTPError } from "@/util/error";
 
 import { getContext, type Context } from "./context";
-import {
-  formatOperationLimitError,
-  operationParseOptions,
-  OperationLimitsRule,
-} from "./operation-limits";
+import { operationParseOptions, OperationLimitsRule } from "./operation-limits";
 import { schema } from "./schema";
 
 const apolloSentryPlugin: ApolloServerPlugin<Context> = {
@@ -86,7 +82,6 @@ export const apolloServer = new ApolloServer<Context>({
   hideSchemaDetailsFromClientErrors: true,
   parseOptions: operationParseOptions,
   validationRules: [OperationLimitsRule],
-  formatError: formatOperationLimitError,
 });
 
 export const createApolloMiddleware = (): RequestHandler =>

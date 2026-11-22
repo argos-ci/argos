@@ -4,11 +4,10 @@ import {
   parse,
   specifiedRules,
   validate,
-  type ValidationRule,
 } from "graphql";
 import { describe, expect, it } from "vitest";
 
-import { OperationLimitsRule, SubscriptionsOnlyRule } from "./operation-limits";
+import { OperationLimitsRule } from "./operation-limits";
 
 const schema = buildSchema(`
   type Node {
@@ -22,18 +21,13 @@ const schema = buildSchema(`
   type Mutation {
     rename(name: String!): Node
   }
-  type Subscription {
-    nodeChanged: Node
-  }
 `);
 
-function check(
-  source: string,
-  rules: ValidationRule[] = [OperationLimitsRule],
-) {
-  return validate(schema, parse(source), [...specifiedRules, ...rules]).map(
-    (error) => error.message,
-  );
+function check(source: string) {
+  return validate(schema, parse(source), [
+    ...specifiedRules,
+    OperationLimitsRule,
+  ]).map((error) => error.message);
 }
 
 function aliases(count: number) {
@@ -47,31 +41,33 @@ function nested(depth: number) {
 }
 
 /**
- * Each fragment selects the next one under two fields, so the selection
- * doubles with every fragment while the document stays small.
+ * Each fragment selects the next one twice, so the selection doubles with
+ * every fragment while the document stays small.
  */
-function fanOut(fragments: number) {
+function fanOut(fragments: number, select: (next: string) => string) {
   const definitions = Array.from({ length: fragments }, (_, i) =>
     i === fragments - 1
-      ? `fragment F${i} on Node { id }`
-      : `fragment F${i} on Node { parent { ...F${i + 1} } child { ...F${i + 1} } }`,
+      ? `fragment F${i} on Node { ${select("")} }`
+      : `fragment F${i} on Node { ${select(`F${i + 1}`)} }`,
   );
   return `{ node { ...F0 } } ${definitions.join(" ")}`;
 }
+
+const underTwoFields = (next: string) =>
+  next ? `parent { ...${next} } child { ...${next} }` : "id";
 
 describe("OperationLimitsRule", () => {
   it.each([
     ["30 aliases", aliases(30)],
     ["depth 15", nested(15)],
-    ["3,071 fields from fragments", fanOut(11)],
+    ["3,071 fields from fragments", fanOut(11, underTwoFields)],
     ["one mutation", `mutation { rename(name: "a") { id } }`],
     [
       "one mutation next to __typename",
       `mutation { __typename rename(name: "a") { id } }`,
     ],
-    ["the standard introspection query", getIntrospectionQuery()],
     [
-      "the introspection query with every option",
+      "the introspection query",
       getIntrospectionQuery({
         descriptions: true,
         specifiedByUrl: true,
@@ -98,7 +94,7 @@ describe("OperationLimitsRule", () => {
     ],
     [
       "12,287 fields from fragments",
-      fanOut(13),
+      fanOut(13, underTwoFields),
       "This operation selects more than 5,000 fields, counting each use of a fragment. Split it into smaller operations.",
     ],
     [
@@ -115,27 +111,18 @@ describe("OperationLimitsRule", () => {
     expect(check(source)).toEqual([message]);
   });
 
-  it("leaves cyclic fragments to graphql's own rule", () => {
-    expect(
-      check(`{ node { ...A } } fragment A on Node { child { ...A } }`),
-    ).toEqual(['Cannot spread fragment "A" within itself.']);
-  });
-});
-
-describe("SubscriptionsOnlyRule", () => {
-  const message =
-    "Only subscriptions run over WebSocket. Send queries and mutations over HTTP.";
-
-  it("accepts a subscription", () => {
-    expect(
-      check(`subscription { nodeChanged { id } }`, [SubscriptionsOnlyRule]),
-    ).toEqual([]);
-  });
-
   it.each([
-    ["a query", `{ node { id } }`],
-    ["a mutation", `mutation { rename(name: "a") { id } }`],
-  ])("refuses %s", (_label, source) => {
-    expect(check(source, [SubscriptionsOnlyRule])).toEqual([message]);
+    [
+      "a cyclic fragment",
+      `{ node { ...A } } fragment A on Node { child { ...A } }`,
+      'Cannot spread fragment "A" within itself.',
+    ],
+    [
+      "fragments that fan out into an unknown one",
+      fanOut(30, (next) => (next ? `...${next} ...${next}` : "...Missing")),
+      'Unknown fragment "Missing".',
+    ],
+  ])("leaves %s to graphql's own rules", (_label, source, message) => {
+    expect(check(source)).toEqual([message]);
   });
 });

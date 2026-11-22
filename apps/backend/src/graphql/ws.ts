@@ -16,6 +16,12 @@ import { schema } from "./schema";
 
 const logger = parentLogger.child({ module: "graphql-ws" });
 
+const validationRules = [
+  ...specifiedRules,
+  OperationLimitsRule,
+  SubscriptionsOnlyRule,
+];
+
 /**
  * Only accept WebSocket upgrades coming from our own app. The session cookie is
  * sent automatically on the upgrade request and — unlike the HTTP transport — a
@@ -61,11 +67,7 @@ export function createGraphQLWebSocketServer(httpServer: Server): void {
       schema,
       parse: (source) => parse(source, operationParseOptions),
       validate: (operationSchema, document) =>
-        validate(operationSchema, document, [
-          ...specifiedRules,
-          OperationLimitsRule,
-          SubscriptionsOnlyRule,
-        ]),
+        validate(operationSchema, document, validationRules),
       context: (ctx) => getWebSocketContext(ctx.extra.request),
       onConnect: (ctx) => {
         const { origin } = ctx.extra.request.headers;
