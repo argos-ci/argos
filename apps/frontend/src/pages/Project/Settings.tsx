@@ -26,7 +26,7 @@ import { ProjectTokenlessAuth } from "@/containers/Project/TokenlessAuth";
 import { ProjectTransfer } from "@/containers/Project/Transfer";
 import { ProjectVisibility } from "@/containers/Project/Visibility";
 import { graphql } from "@/gql";
-import { ProjectPermission } from "@/gql/graphql";
+import { AccountPermission, ProjectPermission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
 import { Heading } from "@/ui/Heading";
 import {
@@ -47,6 +47,7 @@ const ProjectQuery = graphql(`
   query ProjectSettings_project($accountSlug: String!, $projectName: String!) {
     account(slug: $accountSlug) {
       id
+      permissions
       ... on Team {
         plan {
           id
@@ -133,6 +134,9 @@ function PageContent() {
 
   const hasAdminPermission = permissions.includes(ProjectPermission.Admin);
   const hasReviewPermission = permissions.includes(ProjectPermission.Review);
+  const hasAccountAdminPermission = account.permissions.includes(
+    AccountPermission.Admin,
+  );
 
   const isTeam = account.__typename === "Team";
   const fineGrainedAccessControlIncluded = Boolean(
@@ -149,7 +153,9 @@ function PageContent() {
         <>
           {hasAdminPermission && <ProjectChangeName project={project} />}
           <ProjectBadge project={project} />
-          {hasAdminPermission && <ProjectTransfer project={project} />}
+          {hasAdminPermission && hasAccountAdminPermission && (
+            <ProjectTransfer project={project} />
+          )}
           {hasAdminPermission && <ProjectDelete project={project} />}
         </>
       ),

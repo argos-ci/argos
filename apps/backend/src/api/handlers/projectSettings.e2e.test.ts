@@ -449,4 +449,42 @@ describe("transferProject", () => {
       .send({ targetAccountSlug: "acme" })
       .expect(400);
   });
+
+  test.for(["member", "billing", "contributor"] as const)(
+    "403s when the user's team role is %s, not owner",
+    async (userLevel, { account, project }) => {
+      const teammate = await factory.User.create();
+      const teammateAccount = await factory.UserAccount.create({
+        userId: teammate.id,
+        slug: "teammate",
+      });
+      invariant(account.teamId);
+      await factory.TeamUser.create({
+        teamId: account.teamId,
+        userId: teammate.id,
+        userLevel,
+      });
+      if (userLevel === "contributor") {
+        await factory.ProjectUser.create({
+          projectId: project.id,
+          userId: teammate.id,
+          userLevel: "admin",
+        });
+      }
+      const token = await createScopedPatToken({
+        user: teammate,
+        accounts: [account, teammateAccount],
+        token: `arp_${"6".repeat(36)}`,
+      });
+
+      await request(app)
+        .post("/projects/acme/web/transfer")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ targetAccountSlug: "teammate" })
+        .expect(403);
+
+      const reloaded = await Project.query().findById(project.id);
+      expect(reloaded?.accountId).toBe(account.id);
+    },
+  );
 });

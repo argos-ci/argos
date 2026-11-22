@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import * as discord from "@/discord";
 
@@ -127,4 +128,56 @@ describe("GraphQL transferProject", () => {
     expectNoGraphQLError(res);
     expect(vi.mocked(notifyDiscord)).not.toHaveBeenCalled();
   });
+
+  it.each(["member", "billing", "contributor"] as const)(
+    "refuses a user whose team role is %s, not owner",
+    async (userLevel) => {
+      const teamAccount = await factory.TeamAccount.create();
+      invariant(teamAccount.teamId, "team account has no team");
+      const teamProject = await factory.Project.create({
+        accountId: teamAccount.id,
+        name: "team-project",
+      });
+
+      const userAccount = await factory.UserAccount.create();
+      await userAccount.$fetchGraph("user");
+      invariant(userAccount.user, "user not fetched");
+      invariant(userAccount.userId, "user account has no user");
+      await factory.TeamUser.create({
+        teamId: teamAccount.teamId,
+        userId: userAccount.userId,
+        userLevel,
+      });
+      if (userLevel === "contributor") {
+        await factory.ProjectUser.create({
+          projectId: teamProject.id,
+          userId: userAccount.userId,
+          userLevel: "admin",
+        });
+      }
+
+      const app = await createApolloServerApp(
+        apolloServer,
+        createApolloMiddleware,
+        { user: userAccount.user, account: userAccount },
+      );
+
+      const res = await request(app)
+        .post("/graphql")
+        .send({
+          query: TransferProjectMutation,
+          variables: {
+            input: {
+              id: teamProject.id,
+              name: "team-project",
+              targetAccountId: userAccount.id,
+            },
+          },
+        });
+
+      expect(res.body.errors?.[0]?.extensions?.code).toBe("FORBIDDEN");
+      const reloaded = await Project.query().findById(teamProject.id);
+      expect(reloaded?.accountId).toBe(teamAccount.id);
+    },
+  );
 });
