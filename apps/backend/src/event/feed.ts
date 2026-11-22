@@ -64,8 +64,17 @@ export async function listProjectEvents(args: {
   limit: number;
 }): Promise<ProjectEventsPage> {
   const { projectId, name, maxAgeMs, limit } = args;
+  // Capped at the retention: nothing older is kept, and a large enough age
+  // would put the floor before the earliest date a `Date` can hold.
   const ageFloor =
-    maxAgeMs === undefined ? undefined : new Date(Date.now() - maxAgeMs);
+    maxAgeMs === undefined
+      ? undefined
+      : new Date(
+          Math.max(
+            Date.now() - maxAgeMs,
+            addDays(new Date(), -EVENT_RETENTION_DAYS).getTime(),
+          ),
+        );
   const [head, oldest, floorId] = await Promise.all([
     getFirstId("desc"),
     getFirstId("asc"),

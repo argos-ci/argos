@@ -183,3 +183,23 @@ export function serializeEvent(
     data: event.data,
   } as z.infer<typeof EventSchema>;
 }
+
+/**
+ * The event as a project token may read it. A project token is a CI
+ * credential: it reaches builds and deployments, never the users who review
+ * them.
+ */
+export function omitEventUsers(
+  event: z.infer<typeof EventSchema>,
+): z.infer<typeof EventSchema> {
+  if (event.type !== "build.reviewed") {
+    return event;
+  }
+  return {
+    ...event,
+    data: {
+      ...event.data,
+      review: { ...event.data.review, user: null, dismissedBy: null },
+    },
+  };
+}
