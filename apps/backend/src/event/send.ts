@@ -83,7 +83,7 @@ export async function sendProjectEvent(
     querySubscribedWebhooks(project, message.name),
   ]);
   // The deliveries commit with their event: a push that fails after the
-  // commit leaves them pending, for `requeueStalledWebhookDeliveries`.
+  // commit leaves them pending, for `webhookDeliveryJob.requeueStalled`.
   const { event, deliveries } = await transaction(async (trx) => {
     await trx.raw("select pg_advisory_xact_lock(?)", [EVENT_INSERT_LOCK]);
     const event = await ProjectEvent.query(trx).insert({

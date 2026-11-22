@@ -1,7 +1,27 @@
 import type { ModelClass } from "objection";
 
 import { createJob } from "./createJob";
-import type { JobContext, JobParams } from "./createJob";
+import type { Job, JobContext, JobParams } from "./createJob";
+
+/**
+ * Far longer than a row waits in the queue, so a job still on its way is not
+ * queued twice.
+ */
+const STALLED_JOB_DELAY_MS = 10 * 60 * 1000;
+
+/**
+ * Older pending rows are left alone: a day outlasts any outage, and the first
+ * sweep must not send every row stranded before it existed.
+ */
+const STALLED_JOB_MAX_AGE_MS = 24 * 3600 * 1000;
+
+export interface ModelJob extends Job<string> {
+  /**
+   * Queue again the pending rows no job ever picked up: the push that follows
+   * their commit can fail, and nothing else would send them.
+   */
+  requeueStalled: (now: Date) => Promise<void>;
+}
 
 export const createModelJob = <TModelConstructor extends ModelClass<any>>(
   queue: string,
@@ -17,10 +37,20 @@ export const createModelJob = <TModelConstructor extends ModelClass<any>>(
      * case it is not committed yet.
      */
     ignoreMissing?: boolean;
+    /**
+     * When a pending row was handed to the queue, what `requeueStalled`
+     * measures its wait from.
+     * @default "createdAt"
+     */
+    queuedAtColumn?: keyof InstanceType<TModelConstructor> & string;
   },
-) => {
-  const { ignoreMissing = false, ...jobParams } = params ?? {};
-  return createJob<string>(
+): ModelJob => {
+  const {
+    ignoreMissing = false,
+    queuedAtColumn = "createdAt",
+    ...jobParams
+  } = params ?? {};
+  const job = createJob<string>(
     queue,
     {
       perform: async (id, ctx) => {
@@ -51,4 +81,26 @@ export const createModelJob = <TModelConstructor extends ModelClass<any>>(
     },
     jobParams,
   );
+  const modelJob: ModelJob = {
+    ...job,
+    async requeueStalled(now) {
+      const stalled: { id: string }[] = await Model.query()
+        .select("id")
+        .where("jobStatus", "pending")
+        .where(
+          queuedAtColumn,
+          "<",
+          new Date(now.getTime() - STALLED_JOB_DELAY_MS).toISOString(),
+        )
+        .where(
+          queuedAtColumn,
+          ">",
+          new Date(now.getTime() - STALLED_JOB_MAX_AGE_MS).toISOString(),
+        );
+      if (stalled.length > 0) {
+        await modelJob.push(...stalled.map((row) => row.id));
+      }
+    },
+  };
+  return modelJob;
 };

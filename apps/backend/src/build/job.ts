@@ -147,4 +147,8 @@ export async function performBuild(build: Build) {
   await Promise.all([updateUsage(project), syncStaleGitlabProject(project)]);
 }
 
-export const job = createModelJob("build", Build, performBuild);
+export const job = createModelJob("build", Build, performBuild, {
+  // A build stays pending while its shards upload, and is only pushed once
+  // finalized.
+  queuedAtColumn: "finalizedAt",
+});
