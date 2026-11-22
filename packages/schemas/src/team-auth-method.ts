@@ -12,6 +12,16 @@ export const TEAM_AUTH_METHOD_LABELS: Record<TeamAuthMethod, string> = {
 };
 
 /**
+ * What satisfies each requirement, to complete "sign in with …". Google and
+ * GitHub count only with the team's own accounts.
+ */
+export const TEAM_AUTH_METHOD_REQUIREMENTS: Record<TeamAuthMethod, string> = {
+  google: "a Google Workspace account on the team's domain",
+  github: "a GitHub account in the team's organization",
+  saml: "SAML SSO",
+};
+
+/**
  * The error code keeping a member out of a team until they sign in with its
  * method, so the app knows which sign-in to offer.
  */

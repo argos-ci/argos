@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict bed2dhGifwIeCeOzK6Ejgoggb3eg051mwppQQBHxofNGU8jb4odwkQgCsr3dQ0g
+\restrict Ksx6anW323FJYCoK4FsteTm7dYVjnOUZyTbw7FNARxh5yMPLsEHQfbtxK46vlqu
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -1328,7 +1328,8 @@ CREATE TABLE public.google_users (
     name character varying(255),
     "primaryEmail" character varying(255),
     emails jsonb,
-    "lastLoggedAt" timestamp with time zone
+    "lastLoggedAt" timestamp with time zone,
+    "hostedDomain" character varying(255)
 );
 
 
@@ -7140,7 +7141,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict bed2dhGifwIeCeOzK6Ejgoggb3eg051mwppQQBHxofNGU8jb4odwkQgCsr3dQ0g
+\unrestrict Ksx6anW323FJYCoK4FsteTm7dYVjnOUZyTbw7FNARxh5yMPLsEHQfbtxK46vlqu
 
 -- Knex migrations
 

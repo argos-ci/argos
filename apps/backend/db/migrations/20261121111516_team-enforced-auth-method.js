@@ -17,6 +17,11 @@ const SCOPE_TABLES = ["user_access_token_scopes", "oauth_grant_accounts"];
  * @param {import('knex').Knex} knex
  */
 export const up = async (knex) => {
+  await knex.schema.alterTable("google_users", (table) => {
+    // The Google Workspace domain of the account (the ID token's `hd` claim),
+    // which a consumer account on a work address does not have.
+    table.string("hostedDomain");
+  });
   await knex.schema.alterTable("teams", (table) => {
     table.enum("enforcedAuthMethod", ["google", "github", "saml"]);
   });
@@ -50,5 +55,8 @@ export const down = async (knex) => {
   }
   await knex.schema.alterTable("teams", (table) => {
     table.dropColumn("enforcedAuthMethod");
+  });
+  await knex.schema.alterTable("google_users", (table) => {
+    table.dropColumn("hostedDomain");
   });
 };

@@ -19,6 +19,9 @@ const apolloSentryPlugin: ApolloServerPlugin<Context> = {
             error.originalError.code
           ) {
             error.extensions["argosErrorCode"] = error.originalError.code;
+            if (error.originalError.accountSlug) {
+              error.extensions["accountSlug"] = error.originalError.accountSlug;
+            }
 
             // A member asked to sign in with the team's method is no bug.
             if (checkIsTeamAuthMethodRequiredCode(error.originalError.code)) {

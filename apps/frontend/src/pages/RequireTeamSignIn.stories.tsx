@@ -2,17 +2,17 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { TeamAuthMethod } from "@/gql/graphql";
 
-import { RequireTeamSignInContent } from "./RequireTeamSignIn";
+import { RequireTeamSignIn } from "./RequireTeamSignIn";
 
 const meta = {
   title: "Pages/RequireTeamSignIn",
-  component: RequireTeamSignInContent,
+  component: RequireTeamSignIn,
   args: {
     authMethod: TeamAuthMethod.Saml,
     teamSlug: "acme",
     redirect: "/acme",
   },
-} satisfies Meta<typeof RequireTeamSignInContent>;
+} satisfies Meta<typeof RequireTeamSignIn>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

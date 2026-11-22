@@ -13,11 +13,14 @@ import { generateAuthEmailCode } from "@/auth/email";
 import { createSession } from "@/auth/session";
 import { SESSION_COOKIE_NAME } from "@/auth/session-cookie";
 import {
+  GithubAccountMember,
+  GoogleUser,
   OAuthClient,
   Plan,
   Team,
   TeamSamlConfig,
   UserAccessToken,
+  User,
   UserAccessTokenScope,
   type Account,
   type Project,
@@ -635,6 +638,79 @@ describe("REST API team SAML enforcement", () => {
 
 const SOCIAL_AUTH_METHODS = ["google", "github"] as const;
 
+type SocialAuthMethod = (typeof SOCIAL_AUTH_METHODS)[number];
+
+const TEAM_DOMAIN = "acme.com";
+
+/**
+ * Give the team what members need to meet a social requirement: a domain for
+ * Google, a GitHub organization (GitHub SSO) for GitHub.
+ */
+async function setUpTeamMethod(
+  teamAccount: Account,
+  authMethod: SocialAuthMethod,
+) {
+  const { teamId } = teamAccount;
+  invariant(teamId, "team account has no team");
+  switch (authMethod) {
+    case "google":
+      await factory.TeamDomain.create({ teamId, domain: TEAM_DOMAIN });
+      return;
+    case "github": {
+      const org = await factory.GithubAccount.create({ type: "organization" });
+      await Team.query().findById(teamId).patch({ ssoGithubAccountId: org.id });
+      return;
+    }
+  }
+}
+
+/**
+ * Link `viewer` to an account of `authMethod`: the team's own (a Workspace
+ * account on its domain, a member of its GitHub organization) unless
+ * `foreign`.
+ */
+async function linkSocialAccount(input: {
+  viewer: MockedViewer;
+  teamAccount: Account;
+  authMethod: SocialAuthMethod;
+  foreign?: boolean;
+}) {
+  const { viewer, teamAccount, authMethod, foreign } = input;
+  switch (authMethod) {
+    case "google": {
+      const googleUser = await GoogleUser.query().insertAndFetch({
+        googleId: `google-${viewer.user.id}`,
+        primaryEmail: foreign ? "jane@gmail.com" : `jane@${TEAM_DOMAIN}`,
+        // A consumer account has no Workspace domain.
+        hostedDomain: foreign ? null : TEAM_DOMAIN,
+      });
+      await User.query()
+        .findById(viewer.user.id)
+        .patch({ googleUserId: googleUser.id });
+      return;
+    }
+    case "github": {
+      const githubAccount = await factory.GithubAccount.create();
+      await viewer.account
+        .$query()
+        .patch({ githubAccountId: githubAccount.id });
+      if (foreign) {
+        return;
+      }
+      invariant(teamAccount.teamId, "team account has no team");
+      const team = await Team.query()
+        .findById(teamAccount.teamId)
+        .throwIfNotFound();
+      invariant(team.ssoGithubAccountId, "GitHub SSO is not set up");
+      await GithubAccountMember.query().insert({
+        githubAccountId: team.ssoGithubAccountId,
+        githubMemberId: githubAccount.id,
+      });
+      return;
+    }
+  }
+}
+
 describe("team requiring a social sign-in", () => {
   beforeAll(() => {
     z.globalRegistry.clear();
@@ -645,17 +721,27 @@ describe("team requiring a social sign-in", () => {
       freeTeamAccount,
       freeTeamMember,
     }) => {
+      await setUpTeamMethod(freeTeamAccount, authMethod);
       await requireAuthMethod(freeTeamAccount, authMethod);
 
       const res = await queryAccount(freeTeamMember, freeTeamAccount.slug);
 
       expectAuthMethodRequired(res, authMethod);
+      expect(res.body.errors[0].extensions.accountSlug).toBe(
+        freeTeamAccount.slug,
+      );
     });
 
-    it(`lets members signed in with ${authMethod} in`, async ({
+    it(`lets members signed in with the team's ${authMethod} account in`, async ({
       freeTeamAccount,
       freeTeamMember,
     }) => {
+      await setUpTeamMethod(freeTeamAccount, authMethod);
+      await linkSocialAccount({
+        viewer: freeTeamMember,
+        teamAccount: freeTeamAccount,
+        authMethod,
+      });
       await requireAuthMethod(freeTeamAccount, authMethod);
 
       const res = await queryAccount(
@@ -667,10 +753,48 @@ describe("team requiring a social sign-in", () => {
       expect(res.body.data.account.viewerAuthMethod).toBe(authMethod);
     });
 
-    it(`accepts only tokens issued from a ${authMethod} session`, async ({
+    it(`refuses members signed in with a ${authMethod} account outside the team`, async ({
       freeTeamAccount,
       freeTeamMember,
     }) => {
+      await setUpTeamMethod(freeTeamAccount, authMethod);
+      await linkSocialAccount({
+        viewer: freeTeamMember,
+        teamAccount: freeTeamAccount,
+        authMethod,
+        foreign: true,
+      });
+      await requireAuthMethod(freeTeamAccount, authMethod);
+
+      const res = await queryAccount(
+        { ...freeTeamMember, authMethod },
+        freeTeamAccount.slug,
+      );
+
+      expectAuthMethodRequired(res, authMethod);
+    });
+
+    it(`lets members in while the team lacks what ${authMethod} needs`, async ({
+      freeTeamAccount,
+      freeTeamMember,
+    }) => {
+      await requireAuthMethod(freeTeamAccount, authMethod);
+
+      const res = await queryAccount(freeTeamMember, freeTeamAccount.slug);
+
+      expectAccountVisible(res, freeTeamAccount);
+    });
+
+    it(`accepts only tokens issued from a ${authMethod} session of the team's account`, async ({
+      freeTeamAccount,
+      freeTeamMember,
+    }) => {
+      await setUpTeamMethod(freeTeamAccount, authMethod);
+      await linkSocialAccount({
+        viewer: freeTeamMember,
+        teamAccount: freeTeamAccount,
+        authMethod,
+      });
       const project = await createTeamProject(freeTeamAccount, {
         private: true,
       });
@@ -705,6 +829,7 @@ describe("team requiring a social sign-in", () => {
     teamAccount,
     samlMember: _samlMember,
   }) => {
+    await setUpTeamMethod(teamAccount, "google");
     await requireAuthMethod(teamAccount, "google");
     const samlSession = await logInWithSaml(teamAccount);
 
@@ -749,6 +874,13 @@ describe("setTeamEnforcedAuthMethod", () => {
     freeTeamOwner,
     freeTeamMember,
   }) => {
+    await setUpTeamMethod(freeTeamAccount, "github");
+    await linkSocialAccount({
+      viewer: freeTeamOwner,
+      teamAccount: freeTeamAccount,
+      authMethod: "github",
+    });
+
     const res = await setEnforcedAuthMethod(
       { ...freeTeamOwner, authMethod: "github" },
       freeTeamAccount,
@@ -770,6 +902,8 @@ describe("setTeamEnforcedAuthMethod", () => {
     freeTeamOwner,
     freeTeamMember,
   }) => {
+    await setUpTeamMethod(freeTeamAccount, "google");
+
     const res = await setEnforcedAuthMethod(
       { ...freeTeamOwner, authMethod: "github" },
       freeTeamAccount,
@@ -786,6 +920,46 @@ describe("setTeamEnforcedAuthMethod", () => {
     );
   });
 
+  it("refuses a method the owner meets with an account outside the team", async ({
+    freeTeamAccount,
+    freeTeamOwner,
+  }) => {
+    await setUpTeamMethod(freeTeamAccount, "google");
+    await linkSocialAccount({
+      viewer: freeTeamOwner,
+      teamAccount: freeTeamAccount,
+      authMethod: "google",
+      foreign: true,
+    });
+
+    const res = await setEnforcedAuthMethod(
+      { ...freeTeamOwner, authMethod: "google" },
+      freeTeamAccount,
+      "google",
+    );
+
+    expectForbidden(
+      res,
+      "Your Google account is not a Google Workspace account on one of the team's domains. Sign in with one, then try again.",
+    );
+  });
+
+  it("refuses Google until the team has a domain", async ({
+    freeTeamAccount,
+    freeTeamOwner,
+  }) => {
+    const res = await setEnforcedAuthMethod(
+      { ...freeTeamOwner, authMethod: "google" },
+      freeTeamAccount,
+      "google",
+    );
+
+    expectForbidden(
+      res,
+      "This team has no domain. Add one before requiring Google.",
+    );
+  });
+
   it("refuses SAML until the team has it enabled", async ({
     freeTeamAccount,
     freeTeamOwner,
@@ -798,7 +972,10 @@ describe("setTeamEnforcedAuthMethod", () => {
       "saml",
     );
 
-    expectForbidden(res, "Enable SAML SSO before requiring it.");
+    expectForbidden(
+      res,
+      "SAML SSO is off for this team. Enable it before requiring it.",
+    );
   });
 
   it("lets members sign in with any method again", async ({

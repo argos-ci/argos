@@ -36,7 +36,11 @@ import {
   GITLAB_COM_URL,
   retrieveOAuthToken as retrieveGitlabOAuthToken,
 } from "@/gitlab";
-import { getGoogleAuthenticatedClient, getGoogleUserProfile } from "@/google";
+import {
+  getGoogleAuthenticatedClient,
+  getGoogleHostedDomain,
+  getGoogleUserProfile,
+} from "@/google";
 
 import { allowApp } from "../middlewares/cors";
 import { requireCsrf } from "../middlewares/csrf";
@@ -101,6 +105,7 @@ function withOAuth(
             userId: account.userId,
             method,
             creation,
+            replacedSession: auth,
           }),
         );
       } catch (error) {
@@ -191,9 +196,16 @@ router.use(
       clientSecret: config.get("google.clientSecret"),
       redirectUri: getCallbackUrl("google"),
     });
-    const profile = await getGoogleUserProfile({ client });
+    const [profile, hostedDomain] = await Promise.all([
+      getGoogleUserProfile({ client }),
+      getGoogleHostedDomain({
+        client,
+        clientId: config.get("google.clientId"),
+      }),
+    ]);
     const googleUser = await getOrCreateGoogleUser(profile, {
       lastLoggedAt: new Date().toISOString(),
+      hostedDomain,
     });
     const { account, creation } = await getOrCreateUserAccountFromGoogleUser({
       googleUser,
@@ -238,6 +250,7 @@ router.use(
         method: "saml",
         samlTeamId: teamAccount.teamId,
         creation,
+        replacedSession: auth,
       }),
     );
   }),

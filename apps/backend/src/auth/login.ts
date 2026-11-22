@@ -2,9 +2,11 @@ import type { Request, Response } from "express";
 
 import { hasAutoInviteForUser } from "@/database/services/team-domain";
 
+import type { AuthSessionPayload } from "./payload";
 import {
   createSession,
   parseDeviceLabel,
+  revokeSession,
   type SessionAuthMethod,
 } from "./session";
 import { setSessionCookies } from "./session-cookie";
@@ -65,15 +67,27 @@ export async function completeLogin(
     userId: string;
     /** Whether this login created the account. */
     creation: boolean;
+    /**
+     * The session the browser was signed in with, revoked once the new one is
+     * set: its cookie is gone, and nothing should keep it alive elsewhere.
+     */
+    replacedSession: Pick<AuthSessionPayload, "sessionId" | "user"> | null;
   } & SessionAuthMethod,
 ): Promise<AuthPayload> {
-  const { req, res, userId, creation } = input;
+  const { req, res, userId, creation, replacedSession } = input;
 
   const hasAutoInvite = creation
     ? await hasAutoInviteForUser({ userId })
     : false;
 
   await startSession(req, res, input);
+
+  if (replacedSession) {
+    await revokeSession({
+      sessionId: replacedSession.sessionId,
+      userId: replacedSession.user.id,
+    });
+  }
 
   return { creation, hasAutoInvite };
 }

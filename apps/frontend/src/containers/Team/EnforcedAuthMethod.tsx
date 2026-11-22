@@ -1,5 +1,8 @@
 import { useApolloClient } from "@apollo/client/react";
-import { TEAM_AUTH_METHOD_LABELS } from "@argos/schemas/team-auth-method";
+import {
+  TEAM_AUTH_METHOD_LABELS,
+  TEAM_AUTH_METHOD_REQUIREMENTS,
+} from "@argos/schemas/team-auth-method";
 import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 
 import { TeamAuthMethodSignInButton } from "@/containers/Team/AuthMethodSignInButton";
@@ -25,6 +28,12 @@ const _TeamFragment = graphql(`
     samlSso {
       id
       enabled
+    }
+    teamDomains {
+      id
+    }
+    ssoGithubAccount {
+      id
     }
   }
 `);
@@ -54,7 +63,11 @@ export function TeamEnforcedAuthMethod(props: {
       teamSlug={team.slug}
       enforcedAuthMethod={team.enforcedAuthMethod ?? null}
       viewerAuthMethod={team.viewerAuthMethod ?? null}
-      samlEnabled={hasSamlAccess && Boolean(team.samlSso?.enabled)}
+      setUp={{
+        [TeamAuthMethod.Google]: team.teamDomains.length > 0,
+        [TeamAuthMethod.Github]: Boolean(team.ssoGithubAccount),
+        [TeamAuthMethod.Saml]: hasSamlAccess && Boolean(team.samlSso?.enabled),
+      }}
       onSave={async (authMethod) => {
         await client.mutate({
           mutation: SetTeamEnforcedAuthMethodMutation,
@@ -73,43 +86,48 @@ function toAuthMethod(value: Inputs["authMethod"]): TeamAuthMethod | null {
   return value === ANY_METHOD ? null : value;
 }
 
-const OPTIONS: {
-  value: Inputs["authMethod"];
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: ANY_METHOD,
-    label: "Any method",
-    description: "Members sign in with any method Argos offers.",
-  },
-  {
-    value: TeamAuthMethod.Google,
-    label: TEAM_AUTH_METHOD_LABELS[TeamAuthMethod.Google],
-    description: "Members sign in with their Google account.",
-  },
-  {
-    value: TeamAuthMethod.Github,
-    label: TEAM_AUTH_METHOD_LABELS[TeamAuthMethod.Github],
-    description: "Members sign in with their GitHub account.",
-  },
-  {
-    value: TeamAuthMethod.Saml,
-    label: TEAM_AUTH_METHOD_LABELS[TeamAuthMethod.Saml],
-    description: "Members sign in through your identity provider.",
-  },
+const METHODS = [
+  TeamAuthMethod.Google,
+  TeamAuthMethod.Github,
+  TeamAuthMethod.Saml,
 ];
+
+const METHOD_COPY: Record<
+  TeamAuthMethod,
+  { description: string; missingSetUp: string; turnedOff: string }
+> = {
+  [TeamAuthMethod.Google]: {
+    description:
+      "Members sign in with a Google Workspace account on one of the team's domains.",
+    missingSetUp: "Add a team domain to require it.",
+    turnedOff:
+      "The team has no domain, so members sign in with any method until you add one.",
+  },
+  [TeamAuthMethod.Github]: {
+    description:
+      "Members sign in with a GitHub account in the team's GitHub organization.",
+    missingSetUp: "Set up GitHub Single Sign-On to require it.",
+    turnedOff:
+      "GitHub Single Sign-On is off, so members sign in with any method until it is back on.",
+  },
+  [TeamAuthMethod.Saml]: {
+    description: "Members sign in through your identity provider.",
+    missingSetUp: "Set up and enable SAML SSO to require it.",
+    turnedOff:
+      "SAML SSO is off, so members sign in with any method until it is back on.",
+  },
+};
 
 export function EnforcedAuthMethodCard(props: {
   teamSlug: string;
   enforcedAuthMethod: TeamAuthMethod | null;
-  /** How the viewer signed in for the team, among the methods it can require. */
+  /** The method the viewer meets for the team, among those it can require. */
   viewerAuthMethod: TeamAuthMethod | null;
-  /** Whether members can sign in with SAML SSO, which requiring it needs. */
-  samlEnabled: boolean;
+  /** Whether the team has what members need to meet each method. */
+  setUp: Record<TeamAuthMethod, boolean>;
   onSave: (authMethod: TeamAuthMethod | null) => Promise<void>;
 }) {
-  const { teamSlug, enforcedAuthMethod, viewerAuthMethod, samlEnabled } = props;
+  const { teamSlug, enforcedAuthMethod, viewerAuthMethod, setUp } = props;
   const form = useForm<Inputs>({
     defaultValues: { authMethod: enforcedAuthMethod ?? ANY_METHOD },
   });
@@ -138,35 +156,42 @@ export function EnforcedAuthMethodCard(props: {
             apps they authorized from another sign-in lose access to it.
           </CardParagraph>
           <FormRadioGroup>
-            {OPTIONS.map((option) => {
-              const disabled =
-                option.value === TeamAuthMethod.Saml && !samlEnabled;
-              return (
-                <FormRadio
-                  key={option.value}
-                  {...form.register("authMethod")}
-                  value={option.value}
-                  disabled={disabled}
-                  label={
-                    <div className="ml-2">
-                      {option.label}
-                      <p className="text-low text-sm font-normal">
-                        {disabled
-                          ? "Set up and enable SAML SSO to require it."
-                          : option.description}
-                      </p>
-                    </div>
-                  }
-                />
-              );
-            })}
+            <FormRadio
+              {...form.register("authMethod")}
+              value={ANY_METHOD}
+              label={
+                <div className="ml-2">
+                  Any method
+                  <p className="text-low text-sm font-normal">
+                    Members sign in with any method Argos offers.
+                  </p>
+                </div>
+              }
+            />
+            {METHODS.map((method) => (
+              <FormRadio
+                key={method}
+                {...form.register("authMethod")}
+                value={method}
+                disabled={!setUp[method]}
+                label={
+                  <div className="ml-2">
+                    {TEAM_AUTH_METHOD_LABELS[method]}
+                    <p className="text-low text-sm font-normal">
+                      {setUp[method]
+                        ? METHOD_COPY[method].description
+                        : METHOD_COPY[method].missingSetUp}
+                    </p>
+                  </div>
+                }
+              />
+            ))}
           </FormRadioGroup>
           {signInMethod ? (
             <Callout className="mt-4">
               <div className="flex flex-col items-start gap-2">
                 <p>
-                  You did not sign in with{" "}
-                  {TEAM_AUTH_METHOD_LABELS[signInMethod]}. Sign in with it
+                  Sign in with {TEAM_AUTH_METHOD_REQUIREMENTS[signInMethod]}{" "}
                   before requiring it, so you keep access to the team.
                 </p>
                 <TeamAuthMethodSignInButton
@@ -178,10 +203,9 @@ export function EnforcedAuthMethodCard(props: {
               </div>
             </Callout>
           ) : null}
-          {enforcedAuthMethod === TeamAuthMethod.Saml && !samlEnabled ? (
+          {enforcedAuthMethod && !setUp[enforcedAuthMethod] ? (
             <Callout className="mt-4">
-              SAML SSO is off, so members sign in with any method until it is
-              back on.
+              {METHOD_COPY[enforcedAuthMethod].turnedOff}
             </Callout>
           ) : null}
         </CardBody>

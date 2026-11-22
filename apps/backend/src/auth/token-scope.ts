@@ -1,11 +1,15 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
-import type { Account, User } from "@/database/models";
+import {
+  checkEnforcedAuthMethodApplies,
+  checkSignInMeetsTeamRequirement,
+  type Account,
+  type User,
+} from "@/database/models";
 
 import type { AuthMethod } from "./auth-method";
 import type { RestrictedScopeEntry, TokenTeamAuthMethod } from "./payload";
-import { checkTeamSamlEnabled } from "./saml";
 
 /**
  * What a user's token reaches, from the accounts it was issued for. Expects
@@ -49,11 +53,17 @@ export async function resolveTokenScope(
         const requiredAuthMethod = team.enforcedAuthMethod;
         if (
           requiredAuthMethod &&
-          requiredAuthMethod !== authMethod &&
-          // A required SAML login only applies while members can log in with
-          // SAML, as in `Team.getAccess`.
-          (requiredAuthMethod !== "saml" ||
-            (await checkTeamSamlEnabled(account)).enabled)
+          !(await checkSignInMeetsTeamRequirement({
+            teamId,
+            userId: user.id,
+            signedInWith: authMethod,
+            required: requiredAuthMethod,
+          })) &&
+          (await checkEnforcedAuthMethodApplies({
+            teamId,
+            authMethod: requiredAuthMethod,
+            samlEnabled: Boolean(account.teamSamlConfig?.enabled),
+          }))
         ) {
           restrictedScope.push({ account, requiredAuthMethod });
         } else {

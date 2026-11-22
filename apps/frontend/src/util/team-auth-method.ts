@@ -1,18 +1,27 @@
+import { CombinedGraphQLErrors } from "@apollo/client";
 import { TEAM_AUTH_METHOD_REQUIRED_CODES } from "@argos/schemas/team-auth-method";
 
 import { TeamAuthMethod } from "@/gql/graphql";
 
-import { checkIsErrorCode } from "./error";
-
 /**
- * The sign-in method a team asks for, when `error` keeps a member out of it.
+ * The sign-in a team asks for, when `error` keeps a member out of it. The team
+ * comes with the error: it is not always the one the page shows.
  */
-export function getRequiredTeamAuthMethod(
+export function getRequiredTeamSignIn(
   error: unknown,
-): TeamAuthMethod | null {
-  return (
-    Object.values(TeamAuthMethod).find((authMethod) =>
-      checkIsErrorCode(error, TEAM_AUTH_METHOD_REQUIRED_CODES[authMethod]),
-    ) ?? null
-  );
+): { authMethod: TeamAuthMethod; teamSlug: string } | null {
+  if (!CombinedGraphQLErrors.is(error)) {
+    return null;
+  }
+  for (const { extensions } of error.errors) {
+    const authMethod = Object.values(TeamAuthMethod).find(
+      (method) =>
+        extensions?.argosErrorCode === TEAM_AUTH_METHOD_REQUIRED_CODES[method],
+    );
+    const teamSlug = extensions?.accountSlug;
+    if (authMethod && typeof teamSlug === "string") {
+      return { authMethod, teamSlug };
+    }
+  }
+  return null;
 }

@@ -33,6 +33,12 @@ type HttpErrorOptions = ErrorOptions & {
    * typed error the caller maps itself.
    */
   field?: string | string[] | undefined;
+  /**
+   * The account the error is about, when the client has to act on it rather
+   * than on the one it shows: a team asking its member to sign in. The GraphQL
+   * layer surfaces it as the `accountSlug` extension.
+   */
+  accountSlug?: string | undefined;
 };
 
 /**
@@ -47,6 +53,7 @@ export class HTTPError extends Error {
       }[]
     | undefined;
   public field: string | string[] | undefined;
+  public accountSlug: string | undefined;
   public [retryableSymbol]: boolean;
 
   constructor(
@@ -59,6 +66,7 @@ export class HTTPError extends Error {
     this.details = options?.details;
     this.code = options?.code || null;
     this.field = options?.field;
+    this.accountSlug = options?.accountSlug;
     this[retryableSymbol] = options?.retryable ?? true;
   }
 }

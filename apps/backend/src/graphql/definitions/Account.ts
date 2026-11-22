@@ -887,6 +887,7 @@ export const resolvers: IResolvers = {
           userId: account.userId,
           method: "email",
           creation,
+          replacedSession: ctx.auth,
         });
       } catch (error) {
         if (error instanceof HTTPError) {

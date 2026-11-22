@@ -5,6 +5,12 @@ import { TeamAuthMethod } from "@/gql/graphql";
 
 import { EnforcedAuthMethodCard } from "./EnforcedAuthMethod";
 
+const allSetUp = {
+  [TeamAuthMethod.Google]: true,
+  [TeamAuthMethod.Github]: true,
+  [TeamAuthMethod.Saml]: true,
+};
+
 const meta = {
   title: "Containers/Team/EnforcedAuthMethodCard",
   component: EnforcedAuthMethodCard,
@@ -12,7 +18,7 @@ const meta = {
     teamSlug: "acme",
     enforcedAuthMethod: null,
     viewerAuthMethod: null,
-    samlEnabled: false,
+    setUp: allSetUp,
     onSave: fn(async () => {}),
   },
   decorators: [
@@ -29,6 +35,16 @@ type Story = StoryObj<typeof meta>;
 
 export const AnyMethod: Story = {};
 
+export const NothingSetUp: Story = {
+  args: {
+    setUp: {
+      [TeamAuthMethod.Google]: false,
+      [TeamAuthMethod.Github]: false,
+      [TeamAuthMethod.Saml]: false,
+    },
+  },
+};
+
 export const GoogleRequired: Story = {
   args: {
     enforcedAuthMethod: TeamAuthMethod.Google,
@@ -40,13 +56,13 @@ export const SamlRequired: Story = {
   args: {
     enforcedAuthMethod: TeamAuthMethod.Saml,
     viewerAuthMethod: TeamAuthMethod.Saml,
-    samlEnabled: true,
   },
 };
 
 export const SamlTurnedOff: Story = {
   args: {
     enforcedAuthMethod: TeamAuthMethod.Saml,
+    setUp: { ...allSetUp, [TeamAuthMethod.Saml]: false },
   },
 };
 

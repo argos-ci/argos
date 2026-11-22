@@ -91,6 +91,7 @@ export function toGraphQLError(error: unknown): unknown {
     code: string;
     argosErrorCode?: ErrorCode;
     field?: string | string[];
+    accountSlug?: string;
   } = { code };
 
   // The Sentry plugin copies this over from `originalError`, which no longer
@@ -104,6 +105,10 @@ export function toGraphQLError(error: unknown): unknown {
   // resolver.
   if (error.field) {
     extensions.field = error.field;
+  }
+
+  if (error.accountSlug) {
+    extensions.accountSlug = error.accountSlug;
   }
 
   return new GraphQLError(error.message, { extensions });

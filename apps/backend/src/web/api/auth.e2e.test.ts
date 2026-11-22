@@ -168,6 +168,10 @@ describe("POST /auth/github", () => {
         userId: userAccount.userId,
         authMethod: "github",
       });
+      // The session it replaces in this browser no longer works anywhere.
+      const replacedToken = sessionCookie.split("=")[1];
+      invariant(replacedToken, "malformed session cookie");
+      expect(await resolveSession(replacedToken)).toBeNull();
     },
   );
 

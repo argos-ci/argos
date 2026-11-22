@@ -23,7 +23,7 @@ import { NotFound } from "./pages/NotFound";
 import { RequireTeamSignIn } from "./pages/RequireTeamSignIn";
 import { Loader } from "./ui/Loader";
 import { TooltipProvider } from "./ui/Tooltip";
-import { getRequiredTeamAuthMethod } from "./util/team-auth-method";
+import { getRequiredTeamSignIn } from "./util/team-auth-method";
 
 function ViewportRoot() {
   return (
@@ -89,7 +89,7 @@ function checkHasReloaded() {
 function RootErrorBoundary() {
   const error = useRouteError();
   const shouldReload = checkIsFailedToFetchError(error) && !checkHasReloaded();
-  const requiredAuthMethod = getRequiredTeamAuthMethod(error);
+  const requiredSignIn = getRequiredTeamSignIn(error);
   const isAuthError =
     error instanceof AuthenticationError ||
     (CombinedGraphQLErrors.is(error) &&
@@ -102,7 +102,7 @@ function RootErrorBoundary() {
       console.error(error);
     }
 
-    if (requiredAuthMethod) {
+    if (requiredSignIn) {
       return;
     }
 
@@ -120,7 +120,7 @@ function RootErrorBoundary() {
     }
 
     Sentry.captureException(error, { level: "fatal" });
-  }, [error, shouldReload, requiredAuthMethod, isAuthError]);
+  }, [error, shouldReload, requiredSignIn, isAuthError]);
 
   if (shouldReload) {
     return null;
@@ -131,8 +131,14 @@ function RootErrorBoundary() {
     return null;
   }
 
-  if (requiredAuthMethod) {
-    return <RequireTeamSignIn authMethod={requiredAuthMethod} />;
+  if (requiredSignIn) {
+    return (
+      <RequireTeamSignIn
+        authMethod={requiredSignIn.authMethod}
+        teamSlug={requiredSignIn.teamSlug}
+        redirect={window.location.pathname}
+      />
+    );
   }
 
   return <ErrorPage />;

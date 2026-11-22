@@ -191,6 +191,7 @@ export const resolvers: IResolvers = {
         userId: passkey.userId,
         method: "passkey",
         creation: false,
+        replacedSession: ctx.auth,
       });
     },
   },
