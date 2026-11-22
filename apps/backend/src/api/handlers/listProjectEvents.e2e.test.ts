@@ -145,6 +145,9 @@ describe("GET /projects/{owner}/{project}/events", () => {
     const recent = await addEvent({ secondsAgo: 30 });
 
     expect(eventIds(await read({ maxAgeMs: "60000" }))).toEqual([recent.id]);
+    expect(
+      eventIds(await read({ maxAgeMs: String(Number.MAX_SAFE_INTEGER) })),
+    ).toHaveLength(2);
   });
 
   test("flags the events purged before being read", async ({
