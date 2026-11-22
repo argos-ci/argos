@@ -14,6 +14,8 @@ export function getGoogleAuthUrl(input: {
   const client = new OAuth2Client(clientId, clientSecret, redirectUri);
   return client.generateAuthUrl({
     scope: [
+      // For the ID token, whose `hd` claim names the Workspace domain.
+      "openid",
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/userinfo.profile",
     ],
@@ -93,4 +95,26 @@ export async function getGoogleUserProfile(input: {
     primaryEmail: emails[0],
     emails,
   };
+}
+
+/** Verifies ID tokens, keeping Google's signing certificates cached. */
+const idTokenVerifier = new OAuth2Client();
+
+/**
+ * The Google Workspace domain of the signed-in account, from the `hd` claim of
+ * its ID token, lowercased. Null for a consumer account.
+ */
+export async function getGoogleHostedDomain(input: {
+  client: OAuth2Client;
+  clientId: string;
+}): Promise<string | null> {
+  const idToken = input.client.credentials.id_token;
+  if (!idToken) {
+    return null;
+  }
+  const ticket = await idTokenVerifier.verifyIdToken({
+    idToken,
+    audience: input.clientId,
+  });
+  return ticket.getPayload()?.hd?.toLowerCase() ?? null;
 }

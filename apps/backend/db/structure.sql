@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict mvLowm4Y3yUVCNcSubZDhdm3nxyVdBJskwbUVDQlwUSnT2rUEtPyfVT3ioARbpB
+\restrict Ksx6anW323FJYCoK4FsteTm7dYVjnOUZyTbw7FNARxh5yMPLsEHQfbtxK46vlqu
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -1328,7 +1328,8 @@ CREATE TABLE public.google_users (
     name character varying(255),
     "primaryEmail" character varying(255),
     emails jsonb,
-    "lastLoggedAt" timestamp with time zone
+    "lastLoggedAt" timestamp with time zone,
+    "hostedDomain" character varying(255)
 );
 
 
@@ -1846,7 +1847,9 @@ CREATE TABLE public.oauth_grant_accounts (
     "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "oauthGrantId" bigint NOT NULL,
     "accountId" bigint NOT NULL,
-    "samlAuthorized" boolean DEFAULT false NOT NULL
+    "samlAuthorized" boolean DEFAULT false NOT NULL,
+    "authMethod" text,
+    CONSTRAINT "oauth_grant_accounts_authMethod_check" CHECK (("authMethod" = ANY (ARRAY['email'::text, 'google'::text, 'github'::text, 'gitlab'::text, 'saml'::text, 'passkey'::text])))
 );
 
 
@@ -3027,7 +3030,9 @@ CREATE TABLE public.teams (
     "defaultUserLevel" text NOT NULL,
     "samlPurchased" boolean DEFAULT false NOT NULL,
     "staticIpEnabled" boolean DEFAULT false NOT NULL,
-    CONSTRAINT "teams_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['member'::text, 'contributor'::text])))
+    "enforcedAuthMethod" text,
+    CONSTRAINT "teams_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['member'::text, 'contributor'::text]))),
+    CONSTRAINT "teams_enforcedAuthMethod_check" CHECK (("enforcedAuthMethod" = ANY (ARRAY['google'::text, 'github'::text, 'saml'::text])))
 );
 
 
@@ -3144,7 +3149,9 @@ CREATE TABLE public.user_access_token_scopes (
     "updatedAt" timestamp with time zone NOT NULL,
     "userAccessTokenId" bigint NOT NULL,
     "accountId" bigint NOT NULL,
-    "samlAuthorized" boolean DEFAULT false NOT NULL
+    "samlAuthorized" boolean DEFAULT false NOT NULL,
+    "authMethod" text,
+    CONSTRAINT "user_access_token_scopes_authMethod_check" CHECK (("authMethod" = ANY (ARRAY['email'::text, 'google'::text, 'github'::text, 'gitlab'::text, 'saml'::text, 'passkey'::text])))
 );
 
 
@@ -7134,7 +7141,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict mvLowm4Y3yUVCNcSubZDhdm3nxyVdBJskwbUVDQlwUSnT2rUEtPyfVT3ioARbpB
+\unrestrict Ksx6anW323FJYCoK4FsteTm7dYVjnOUZyTbw7FNARxh5yMPLsEHQfbtxK46vlqu
 
 -- Knex migrations
 
@@ -7421,3 +7428,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026111
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261119120000_deployment-github-deployment.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261119193529_team-billing-role.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261119200000_pull-request-stack-indexes.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261121111516_team-enforced-auth-method.js', 1, NOW());

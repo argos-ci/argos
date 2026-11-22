@@ -81,6 +81,7 @@ import {
   IResolvers,
 } from "../__generated__/resolver-types";
 import type { Context } from "../context";
+import { assertTeamAuthMethodSatisfied } from "../services/account";
 import { deleteProject, getAdminProject } from "../services/project";
 import { primeActiveTestMetrics } from "../services/test";
 import {
@@ -1124,7 +1125,9 @@ export const resolvers: IResolvers = {
       const permissions = await project.$getPermissions(ctx.auth);
 
       if (!permissions.includes("view")) {
-        await Project.assertSamlSatisfied(project, ctx.auth);
+        const account = await ctx.loaders.Account.load(project.accountId);
+        invariant(account, "Account not found");
+        await assertTeamAuthMethodSatisfied(account, ctx.auth);
         return null;
       }
 
@@ -1148,7 +1151,9 @@ export const resolvers: IResolvers = {
       const permissions = await project.$getPermissions(ctx.auth);
 
       if (!permissions.includes("view")) {
-        await Project.assertSamlSatisfied(project, ctx.auth);
+        const account = await ctx.loaders.Account.load(project.accountId);
+        invariant(account, "Account not found");
+        await assertTeamAuthMethodSatisfied(account, ctx.auth);
         return null;
       }
 

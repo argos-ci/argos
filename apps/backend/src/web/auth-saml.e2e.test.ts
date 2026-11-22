@@ -41,7 +41,6 @@ const test = base.extend<{ teamAccount: Account }>({
       ssoUrl: IDP_SSO_URL,
       signingCertificate: samlTestIdpCertificate,
       enabled: true,
-      enforced: false,
     });
     await use(teamAccount);
   },

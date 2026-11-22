@@ -1,12 +1,14 @@
+import {
+  TeamAuthMethodSchema,
+  type TeamAuthMethod,
+} from "@argos/schemas/team-auth-method";
 import { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
 import { assertNever } from "@argos/util/assertNever";
-import { invariant } from "@argos/util/invariant";
 import type { RelationMappings } from "objection";
 
-import { checkAuthSatisfiesTeamSaml, type AuthViewer } from "@/auth/payload";
-import { checkTeamSamlEnforced } from "@/auth/saml";
+import { getAuthMethodForTeam, type AuthViewer } from "@/auth/payload";
+import { getUnmetTeamAuthMethod } from "@/auth/team-auth-method";
 import config from "@/config";
-import { boom } from "@/util/error";
 
 import { generateRandomString } from "../services/crypto";
 import { Model } from "../util/model";
@@ -18,13 +20,13 @@ import { User } from "./User";
 
 /**
  * How a request reaches a team. A member is kept out like an outsider while
- * the team enforces SAML and the request did not go through its IdP;
- * `saml_required` lets the entry points tell them so.
+ * the team requires a sign-in method the request did not go through;
+ * `auth_method_required` lets the entry points tell them which one.
  */
 export type TeamAccess =
   | { type: "member"; userLevel: TeamUser["userLevel"] }
   | { type: "outsider" }
-  | { type: "saml_required" };
+  | { type: "auth_method_required"; authMethod: TeamAuthMethod };
 
 function getTeamUserLevelPermissions(
   level: TeamUser["userLevel"],
@@ -71,6 +73,10 @@ export class Team extends Model {
           samlPurchased: { type: "boolean" },
           staticIpEnabled: { type: "boolean" },
           defaultUserLevel: { type: "string", enum: ["member", "contributor"] },
+          enforcedAuthMethod: {
+            type: ["string", "null"],
+            enum: [...TeamAuthMethodSchema.options, null],
+          },
         },
       },
     ],
@@ -85,6 +91,11 @@ export class Team extends Model {
    */
   staticIpEnabled!: boolean;
   defaultUserLevel!: "member" | "contributor";
+  /**
+   * The sign-in method members must use to reach the team. See
+   * `getUnmetTeamAuthMethod` for when it applies.
+   */
+  enforcedAuthMethod!: TeamAuthMethod | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -170,7 +181,8 @@ export class Team extends Model {
 
   /**
    * How `auth` reaches the team. Every permission on a team or its projects
-   * derives from this, which is what makes SAML enforcement hold everywhere.
+   * derives from this, which is what makes a required sign-in method hold
+   * everywhere.
    */
   static async getAccess(
     teamId: string,
@@ -179,24 +191,16 @@ export class Team extends Model {
     const teamUser = await TeamUser.query()
       .select(
         "team_users.userLevel",
-        "team_saml_configs.enforced",
-        "team_saml_configs.enabled",
+        "teams.enforcedAuthMethod",
+        "teams.ssoGithubAccountId",
       )
-      .join("accounts", "accounts.teamId", "team_users.teamId")
-      .leftJoin(
-        "team_saml_configs",
-        "team_saml_configs.accountId",
-        "accounts.id",
-      )
+      .join("teams", "teams.id", "team_users.teamId")
       .where("team_users.teamId", teamId)
       .where("team_users.userId", auth.user.id)
       .first()
       .castTo<
-        | {
-            userLevel: TeamUser["userLevel"];
-            enforced: boolean | null;
-            enabled: boolean | null;
-          }
+        | (Pick<TeamUser, "userLevel"> &
+            Pick<Team, "enforcedAuthMethod" | "ssoGithubAccountId">)
         | undefined
       >();
 
@@ -204,41 +208,20 @@ export class Team extends Model {
       return { type: "outsider" };
     }
 
-    if (
-      teamUser.enforced &&
-      teamUser.enabled &&
-      !checkAuthSatisfiesTeamSaml(auth, teamId)
-    ) {
-      const account = await Account.query()
-        .findOne({ "accounts.teamId": teamId })
-        .withGraphJoined("teamSamlConfig");
-      invariant(account, "Team account not found");
-      if (await checkTeamSamlEnforced(account)) {
-        return { type: "saml_required" };
-      }
+    const unmetAuthMethod = await getUnmetTeamAuthMethod({
+      team: {
+        id: teamId,
+        enforcedAuthMethod: teamUser.enforcedAuthMethod,
+        ssoGithubAccountId: teamUser.ssoGithubAccountId,
+      },
+      userId: auth.user.id,
+      signedInWith: getAuthMethodForTeam(auth, teamId),
+    });
+    if (unmetAuthMethod) {
+      return { type: "auth_method_required", authMethod: unmetAuthMethod };
     }
 
     return { type: "member", userLevel: teamUser.userLevel };
-  }
-
-  /**
-   * Throw `SAML_SSO_REQUIRED` when `auth` is a member kept out of the team by
-   * its SAML enforcement. For entry points that found nothing to show, so
-   * the member is prompted to sign in instead of being told it does not exist.
-   */
-  static async assertSamlSatisfied(
-    teamId: string | null,
-    auth: AuthViewer | null,
-  ): Promise<void> {
-    if (!teamId || !auth) {
-      return;
-    }
-    const access = await Team.getAccess(teamId, auth);
-    if (access.type === "saml_required") {
-      throw boom(403, "SAML Single Sign-On required", {
-        code: "SAML_SSO_REQUIRED",
-      });
-    }
   }
 
   /**

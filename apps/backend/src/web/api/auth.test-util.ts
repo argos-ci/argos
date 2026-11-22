@@ -23,7 +23,9 @@ export async function exchangeSamlCode(input: {
     email: input.email,
     ssoSubject: input.ssoSubject,
   });
-  const state = "saml-state";
+  const state = Buffer.from(
+    JSON.stringify({ nonce: "saml-nonce", redirect: "/" }),
+  ).toString("base64");
   const req = request(createTestApp(router)).post("/auth/saml");
   if (!input.fromAnotherBrowser) {
     req.set("Cookie", `${getCallbackCookieName("saml")}=${state}`);

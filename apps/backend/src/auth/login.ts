@@ -5,9 +5,10 @@ import { hasAutoInviteForUser } from "@/database/services/team-domain";
 import {
   createSession,
   parseDeviceLabel,
+  revokeSessionByToken,
   type SessionAuthMethod,
 } from "./session";
-import { setSessionCookies } from "./session-cookie";
+import { readSessionCookie, setSessionCookies } from "./session-cookie";
 
 /** What every login entry point hands back to the client. */
 export type AuthPayload = {
@@ -28,7 +29,8 @@ function getHeaderString(req: Request, name: string): string | null {
  * Start a new authenticated session for a user: create the server-side session
  * row, recording how the user got in, and set the session cookies on the
  * response. Used by every login entry point (OAuth, SAML, email auth, invite
- * sign-up).
+ * sign-up). The session the browser was signed in with is revoked: its cookie
+ * is gone, and nothing should keep it alive elsewhere.
  */
 export async function startSession(
   req: Request,
@@ -47,6 +49,10 @@ export async function startSession(
     country: getHeaderString(req, "cf-ipcountry"),
   });
   setSessionCookies(res, rawToken);
+  const replacedToken = readSessionCookie(req);
+  if (replacedToken) {
+    await revokeSessionByToken(replacedToken);
+  }
 }
 
 /**

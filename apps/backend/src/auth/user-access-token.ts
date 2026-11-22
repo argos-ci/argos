@@ -21,7 +21,7 @@ export async function getAuthPayloadFromUserAccessToken(
 
   const userAccessToken = await UserAccessToken.query()
     .findOne({ token: hashToken(token) })
-    .withGraphFetched("[user.[account,teams],scope.account.teamSamlConfig]");
+    .withGraphFetched("[user.[account,teams],scope.account]");
 
   if (!userAccessToken) {
     throw boom(401, "Access token not found");
@@ -42,7 +42,7 @@ export async function getAuthPayloadFromUserAccessToken(
 
   if (
     tokenScope.scope.length === 0 &&
-    tokenScope.samlRequiredScope.length === 0
+    tokenScope.restrictedScope.length === 0
   ) {
     throw boom(
       401,

@@ -1,3 +1,4 @@
+import { getTeamAuthMethodFromRequiredCode } from "@argos/schemas/team-auth-method";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/react";
 import { createRoot } from "react-dom/client";
@@ -41,8 +42,8 @@ if (process.env["NODE_ENV"] === "production") {
 
       const code = getSingleErrorCode(error);
 
-      // Never notify "SAML_SSO_REQUIRED", it's handled
-      if (code === "SAML_SSO_REQUIRED") {
+      // The app asks the member to sign in with the team's method.
+      if (getTeamAuthMethodFromRequiredCode(code)) {
         return null;
       }
 

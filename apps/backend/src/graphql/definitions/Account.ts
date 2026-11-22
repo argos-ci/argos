@@ -10,7 +10,7 @@ import { disconnectGitLabAuth } from "@/auth/gitlab";
 import { disconnectGoogleAuth } from "@/auth/google";
 import { completeLogin } from "@/auth/login";
 import config from "@/config";
-import { Account, StripeInvoice, Team } from "@/database/models";
+import { Account, StripeInvoice } from "@/database/models";
 import {
   authenticateWithEmail,
   checkAccountSlug,
@@ -53,6 +53,7 @@ import {
 import type { Context } from "../context";
 import {
   assertAccountPermission,
+  assertTeamAuthMethodSatisfied,
   getAccountWithPermission,
   getAdminAccount,
 } from "../services/account";
@@ -336,7 +337,7 @@ async function accountByIdResolver(
 
 /**
  * The account when the viewer may see it, `null` otherwise. A member kept out
- * by the team's SAML enforcement is told to sign in with SAML instead.
+ * by the team's required sign-in method is told to sign in with it instead.
  */
 async function checkAccountVisible(
   account: Account,
@@ -344,7 +345,7 @@ async function checkAccountVisible(
 ): Promise<Account | null> {
   const permissions = await account.$getPermissions(ctx.auth);
   if (!permissions.includes("view")) {
-    await Team.assertSamlSatisfied(account.teamId, ctx.auth);
+    await assertTeamAuthMethodSatisfied(account, ctx.auth);
     return null;
   }
   return account;
@@ -386,7 +387,7 @@ export const commonAccountResolvers: IResolvers["Team"] = {
       visibility: await getProjectVisibility({ account, auth }),
     });
     if (!query) {
-      await Team.assertSamlSatisfied(account.teamId, auth);
+      await assertTeamAuthMethodSatisfied(account, auth);
       throw unauthenticated();
     }
     const result = await query.range(args.after, args.after + args.first - 1);

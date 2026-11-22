@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { AuthMethodSchema, type AuthMethod } from "@argos/schemas/auth-method";
 
 import { UserSession } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
@@ -27,8 +28,6 @@ export const ABSOLUTE_TIMEOUT_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
  */
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-type AuthMethod = (typeof UserSession.authMethods)[number];
-
 /** How a session is opened. A SAML login names the team whose IdP answered. */
 export type SessionAuthMethod =
   | { method: "saml"; samlTeamId: string }
@@ -39,6 +38,7 @@ export type ResolvedSession = {
   /** Session row id. */
   sid: string;
   userId: string;
+  authMethod: AuthMethod | null;
   samlTeamId: string | null;
 };
 
@@ -80,11 +80,14 @@ function parseCacheEntry(raw: string): ResolvedSession | null {
       typeof value === "object" &&
       typeof value.sid === "string" &&
       typeof value.userId === "string" &&
+      (AuthMethodSchema.safeParse(value.authMethod).success ||
+        value.authMethod === null) &&
       (typeof value.samlTeamId === "string" || value.samlTeamId === null)
     ) {
       return {
         sid: value.sid,
         userId: value.userId,
+        authMethod: value.authMethod,
         samlTeamId: value.samlTeamId,
       };
     }
@@ -98,6 +101,7 @@ function getCacheEntry(session: UserSession): ResolvedSession {
   return {
     sid: session.id,
     userId: session.userId,
+    authMethod: session.authMethod,
     samlTeamId: session.samlTeamId,
   };
 }

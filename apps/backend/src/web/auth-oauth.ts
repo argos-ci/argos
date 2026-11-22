@@ -68,6 +68,7 @@ function startOAuth(
     const state = issueCallbackState(res, {
       provider,
       redirect: getLoginRedirect(req.query),
+      reauthenticate: req.query["reauthenticate"] === "true",
     });
     res.set("Cache-Control", "no-store");
     res.redirect(getUrl(state));

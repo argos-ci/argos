@@ -46,7 +46,6 @@ describe("checkExpiringSamlCertificates", () => {
       ssoUrl: "https://idp.example.com/sso",
       signingCertificate: "fake-certificate",
       enabled: true,
-      enforced: false,
       expirationCheckAt: new Date("2026-03-01T10:00:00.000Z").toISOString(),
     });
 
@@ -94,7 +93,6 @@ describe("checkExpiringSamlCertificates", () => {
       ssoUrl: "https://idp.example.com/sso",
       signingCertificate: "fake-certificate",
       enabled: true,
-      enforced: false,
       expirationCheckAt: new Date("2026-03-01T10:00:00.000Z").toISOString(),
     });
 

@@ -1,6 +1,6 @@
 import gqlTag from "graphql-tag";
 
-import { checkAuthSatisfiesTeamSaml } from "@/auth/payload";
+import { getAuthMethodForTeam } from "@/auth/payload";
 import { OAuthGrant, OAuthGrantAccount } from "@/database/models";
 import { transaction } from "@/database/transaction";
 import { createAuthorizationCode } from "@/oauth/authorization-code";
@@ -219,7 +219,7 @@ export const resolvers: IResolvers = {
           accessibleAccounts.map((account) => ({
             oauthGrantId: saved.id,
             accountId: account.id,
-            samlAuthorized: checkAuthSatisfiesTeamSaml(auth, account.teamId),
+            authMethod: getAuthMethodForTeam(auth, account.teamId),
           })),
         );
         return saved;

@@ -4,7 +4,7 @@ import { setupServer } from "msw/node";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
-import { createSession } from "@/auth/session";
+import { createSession, resolveSession } from "@/auth/session";
 import { SESSION_COOKIE_NAME } from "@/auth/session-cookie";
 import { Account } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
@@ -81,10 +81,13 @@ const oauthTest = test.extend<{ userAccount: Account; sessionCookie: string }>({
  * Start a GitHub login the way a login button does, and return the state sent
  * to GitHub with the cookies set in the browser that started it.
  */
-async function startGitHubLogin() {
+async function startGitHubLogin(options?: { reauthenticate?: boolean }) {
   const res = await request(createTestApp(oauthRouter))
     .get("/auth/github/login")
-    .query({ r: "/settings" });
+    .query({
+      r: "/settings",
+      ...(options?.reauthenticate && { reauthenticate: "true" }),
+    });
   expect(res.status).toBe(302);
   const location = res.headers["location"];
   invariant(location, "Expected a redirect to GitHub");
@@ -106,6 +109,19 @@ function postGitHubCallback(input: {
     .set("Cookie", input.cookies)
     .set("X-Argos-CSRF", "1")
     .send({ code: input.code, state: input.state });
+}
+
+/** The session a response opened, if it set one. */
+async function getOpenedSession(res: request.Response) {
+  const cookie = (res.get("Set-Cookie") ?? []).find((header) =>
+    header.startsWith(`${SESSION_COOKIE_NAME}=`),
+  );
+  if (!cookie) {
+    return null;
+  }
+  const rawToken = cookie.split(";")[0]?.slice(SESSION_COOKIE_NAME.length + 1);
+  invariant(rawToken, "malformed session cookie");
+  return resolveSession(rawToken);
 }
 
 async function getLinkedGithubId(account: Account) {
@@ -130,6 +146,32 @@ describe("POST /auth/github", () => {
 
       expect(res.status).toBe(200);
       expect(await getLinkedGithubId(userAccount)).toBe(GITHUB_ID);
+      // Linking keeps the session the user signed in with.
+      expect(await getOpenedSession(res)).toBeNull();
+    },
+  );
+
+  oauthTest(
+    "opens a GitHub session when the signed-in user signs in again",
+    async ({ userAccount, sessionCookie }) => {
+      const login = await startGitHubLogin({ reauthenticate: true });
+
+      const res = await postGitHubCallback({
+        cookies: [sessionCookie, ...login.cookies],
+        code: "code",
+        state: login.state,
+      });
+
+      expect(res.status).toBe(200);
+      expect(await getLinkedGithubId(userAccount)).toBe(GITHUB_ID);
+      expect(await getOpenedSession(res)).toMatchObject({
+        userId: userAccount.userId,
+        authMethod: "github",
+      });
+      // The session it replaces in this browser no longer works anywhere.
+      const replacedToken = sessionCookie.split("=")[1];
+      invariant(replacedToken, "malformed session cookie");
+      expect(await resolveSession(replacedToken)).toBeNull();
     },
   );
 

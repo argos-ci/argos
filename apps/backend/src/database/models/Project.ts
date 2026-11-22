@@ -373,8 +373,8 @@ export class Project extends Model {
       Team.getAccess(project.account.teamId, auth),
     ]);
 
-    // Outside the team, or kept out by its SAML enforcement: a member of
-    // nothing.
+    // Outside the team, or kept out by its required sign-in method: a member
+    // of nothing.
     if (teamAccess.type !== "member") {
       return [];
     }
@@ -413,22 +413,6 @@ export class Project extends Model {
       default:
         assertNever(teamAccess.userLevel);
     }
-  }
-
-  /**
-   * Throw `SAML_SSO_REQUIRED` when `auth` is a member kept out of the project's
-   * team by its SAML enforcement. See {@link Team.assertSamlSatisfied}.
-   */
-  static async assertSamlSatisfied(
-    project: Project,
-    auth: AuthViewer | null,
-  ): Promise<void> {
-    if (!auth) {
-      return;
-    }
-    await project.$fetchGraph("account", { skipFetched: true });
-    invariant(project.account);
-    await Team.assertSamlSatisfied(project.account.teamId, auth);
   }
 
   async $getPermissions(auth: AuthViewer | null) {

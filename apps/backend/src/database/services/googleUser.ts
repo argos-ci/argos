@@ -7,6 +7,7 @@ export async function getOrCreateGoogleUser(
   profile: GoogleUserProfile,
   data?: {
     lastLoggedAt?: string;
+    hostedDomain?: string | null;
   },
 ): Promise<GoogleUser> {
   const existing = await GoogleUser.query().findOne({

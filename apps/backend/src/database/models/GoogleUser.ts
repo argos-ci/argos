@@ -21,6 +21,7 @@ export class GoogleUser extends Model {
           googleId: { type: "string" },
           name: { type: ["string", "null"] },
           primaryEmail: { type: ["string", "null"] },
+          hostedDomain: { type: ["string", "null"] },
           emails: {
             anyOf: [
               { type: "array", items: { type: "string" } },
@@ -36,6 +37,11 @@ export class GoogleUser extends Model {
   googleId!: string;
   name!: string | null;
   primaryEmail!: string | null;
+  /**
+   * The Google Workspace domain of the account, lowercased. Null for a
+   * consumer account, even one on a work address.
+   */
+  hostedDomain!: string | null;
   emails!: string[] | null;
   lastLoggedAt!: string | null;
 
