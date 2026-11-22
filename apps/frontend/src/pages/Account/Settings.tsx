@@ -8,7 +8,7 @@ import {
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Helmet } from "react-helmet";
-import { Route, Routes } from "react-router";
+import { Route, Routes, useParams } from "react-router";
 
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
@@ -16,6 +16,7 @@ import { AccountCursorOrigin } from "@/containers/Account/CursorOrigin";
 import { AccountGitLab } from "@/containers/Account/GitLab";
 import { AccountInvoices } from "@/containers/Account/Invoices";
 import { AccountProjectTokens } from "@/containers/Account/ProjectTokens";
+import { AccountWebhooks } from "@/containers/Account/Webhooks";
 import { useAuth } from "@/containers/Auth";
 import { SettingsLayout, SettingsNav, SettingsPage } from "@/containers/Layout";
 import { useOriginEnabled } from "@/containers/Origin";
@@ -42,6 +43,7 @@ import { UserEmails } from "@/containers/User/Emails";
 import { UserNotificationPreferences } from "@/containers/User/NotificationPreferences";
 import { OAuthApps } from "@/containers/User/OAuthApps";
 import { UserAccessTokens } from "@/containers/User/UserAccessTokens";
+import { WebhookDeliveries } from "@/containers/Webhook/WebhookDeliveries";
 import { graphql } from "@/gql";
 import { AccountPermission, PlanInterval } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
@@ -104,6 +106,7 @@ const AccountQuery = graphql(`
       ...UserNotificationPreferences_Account
       ...UserAccessTokens_Account
       ...AccountProjectTokens_Account
+      ...AccountWebhooks_Account
       ...OAuthApps_Account
     }
   }
@@ -292,6 +295,20 @@ function PageContent() {
       ),
     },
     {
+      name: "Webhooks",
+      slug: "webhooks",
+      hasSubpages: true,
+      element: hasAdminPermission && (
+        <Routes>
+          <Route index element={<AccountWebhooks account={account} />} />
+          <Route
+            path=":webhookId"
+            element={<WebhookDeliveriesRoute accountSlug={accountSlug} />}
+          />
+        </Routes>
+      ),
+    },
+    {
       name: "Applications",
       slug: "applications",
       element: isUser && hasAdminPermission && <OAuthApps account={account} />,
@@ -346,7 +363,13 @@ function PageContent() {
               <Route
                 key={route.slug}
                 index={index === 0}
-                path={index === 0 ? "" : route.slug}
+                path={
+                  index === 0
+                    ? ""
+                    : route.hasSubpages
+                      ? `${route.slug}/*`
+                      : route.slug
+                }
                 element={route.element}
               />
             );
@@ -370,4 +393,10 @@ function checkIsNonEmptyElement(element: ReactNode): boolean {
     );
   }
   return true;
+}
+
+function WebhookDeliveriesRoute(props: { accountSlug: string }) {
+  const { webhookId } = useParams();
+  invariant(webhookId, "webhookId route param required");
+  return <WebhookDeliveries webhookId={webhookId} {...props} />;
 }

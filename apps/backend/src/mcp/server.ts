@@ -20,6 +20,7 @@ import config from "@/config";
 import { getSkillFileUrl, getSkills } from "@/skills/registry";
 
 import { callTool } from "./dispatch";
+import { EVENTS_EXTENSION_ID, registerEventsExtension } from "./events";
 import { mcpTools } from "./tools";
 
 const MCP_INSTRUCTIONS = `Argos is a visual testing platform: CI uploads screenshots as "builds", Argos diffs them against a baseline, and users review and approve or reject the detected changes.
@@ -48,6 +49,7 @@ export const MCP_SERVER_INFO = {
 export const MCP_SERVER_CAPABILITIES = {
   tools: { listChanged: false },
   resources: { listChanged: false },
+  extensions: { [EVENTS_EXTENSION_ID]: {} },
 } as const;
 
 /**
@@ -75,6 +77,7 @@ export function createMcpServer(context: { authorization: string }): McpServer {
   }
 
   registerSkillResources(server);
+  registerEventsExtension(server, context.authorization);
 
   return server;
 }

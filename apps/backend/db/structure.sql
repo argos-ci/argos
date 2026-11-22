@@ -2188,6 +2188,43 @@ ALTER SEQUENCE public.project_domains_id_seq OWNED BY public.project_domains.id;
 
 
 --
+-- Name: project_events; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.project_events (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "projectId" bigint NOT NULL,
+    name character varying(255) NOT NULL,
+    data json NOT NULL
+);
+
+
+ALTER TABLE public.project_events OWNER TO postgres;
+
+--
+-- Name: project_events_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.project_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.project_events_id_seq OWNER TO postgres;
+
+--
+-- Name: project_events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.project_events_id_seq OWNED BY public.project_events.id;
+
+
+--
 -- Name: project_token_projects; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -3403,6 +3440,126 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
+-- Name: webhook_deliveries; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.webhook_deliveries (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "webhookId" bigint NOT NULL,
+    "eventId" bigint NOT NULL,
+    "jobStatus" public.job_status NOT NULL,
+    attempts integer DEFAULT 0 NOT NULL,
+    conclusion text,
+    "attemptedAt" timestamp with time zone,
+    "responseStatus" integer,
+    "durationMs" integer,
+    "responseBody" text,
+    "failureReason" text,
+    CONSTRAINT webhook_deliveries_conclusion_check CHECK ((conclusion = ANY (ARRAY['success'::text, 'failed'::text])))
+);
+
+
+ALTER TABLE public.webhook_deliveries OWNER TO postgres;
+
+--
+-- Name: webhook_deliveries_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.webhook_deliveries_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.webhook_deliveries_id_seq OWNER TO postgres;
+
+--
+-- Name: webhook_deliveries_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.webhook_deliveries_id_seq OWNED BY public.webhook_deliveries.id;
+
+
+--
+-- Name: webhook_projects; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.webhook_projects (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "webhookId" bigint NOT NULL,
+    "projectId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.webhook_projects OWNER TO postgres;
+
+--
+-- Name: webhook_projects_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.webhook_projects_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.webhook_projects_id_seq OWNER TO postgres;
+
+--
+-- Name: webhook_projects_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.webhook_projects_id_seq OWNED BY public.webhook_projects.id;
+
+
+--
+-- Name: webhooks; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.webhooks (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "accountId" bigint NOT NULL,
+    url text NOT NULL,
+    secret text NOT NULL,
+    events jsonb NOT NULL,
+    "allProjects" boolean NOT NULL
+);
+
+
+ALTER TABLE public.webhooks OWNER TO postgres;
+
+--
+-- Name: webhooks_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.webhooks_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.webhooks_id_seq OWNER TO postgres;
+
+--
+-- Name: webhooks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.webhooks_id_seq OWNED BY public.webhooks.id;
+
+
+--
 -- Name: accounts id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3725,6 +3882,13 @@ ALTER TABLE ONLY public.project_domains ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
+-- Name: project_events id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_events ALTER COLUMN id SET DEFAULT nextval('public.project_events_id_seq'::regclass);
+
+
+--
 -- Name: project_token_projects id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3904,6 +4068,27 @@ ALTER TABLE ONLY public.user_sessions ALTER COLUMN id SET DEFAULT nextval('publi
 --
 
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+
+--
+-- Name: webhook_deliveries id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.webhook_deliveries ALTER COLUMN id SET DEFAULT nextval('public.webhook_deliveries_id_seq'::regclass);
+
+
+--
+-- Name: webhook_projects id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.webhook_projects ALTER COLUMN id SET DEFAULT nextval('public.webhook_projects_id_seq'::regclass);
+
+
+--
+-- Name: webhooks id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.webhooks ALTER COLUMN id SET DEFAULT nextval('public.webhooks_id_seq'::regclass);
 
 
 --
@@ -4603,6 +4788,14 @@ ALTER TABLE ONLY public.project_domains
 
 
 --
+-- Name: project_events project_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_events
+    ADD CONSTRAINT project_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: project_token_projects project_token_projects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5016,6 +5209,38 @@ ALTER TABLE ONLY public.user_sessions
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: webhook_deliveries webhook_deliveries_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.webhook_deliveries
+    ADD CONSTRAINT webhook_deliveries_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: webhook_projects webhook_projects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.webhook_projects
+    ADD CONSTRAINT webhook_projects_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: webhook_projects webhook_projects_webhookid_projectid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.webhook_projects
+    ADD CONSTRAINT webhook_projects_webhookid_projectid_unique UNIQUE ("webhookId", "projectId");
+
+
+--
+-- Name: webhooks webhooks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.webhooks
+    ADD CONSTRAINT webhooks_pkey PRIMARY KEY (id);
 
 
 --
@@ -5590,6 +5815,20 @@ CREATE INDEX project_domains_projectid_index ON public.project_domains USING btr
 
 
 --
+-- Name: project_events_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX project_events_createdat_index ON public.project_events USING btree ("createdAt");
+
+
+--
+-- Name: project_events_projectid_id_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX project_events_projectid_id_index ON public.project_events USING btree ("projectId", id);
+
+
+--
 -- Name: project_token_projects_projectid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5986,6 +6225,41 @@ CREATE INDEX user_sessions_active_user ON public.user_sessions USING btree ("use
 --
 
 CREATE INDEX users_googleuserid_fk_index ON public.users USING btree ("googleUserId");
+
+
+--
+-- Name: webhook_deliveries_eventid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX webhook_deliveries_eventid_index ON public.webhook_deliveries USING btree ("eventId");
+
+
+--
+-- Name: webhook_deliveries_pending_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX webhook_deliveries_pending_createdat_index ON public.webhook_deliveries USING btree ("createdAt") WHERE ("jobStatus" = 'pending'::public.job_status);
+
+
+--
+-- Name: webhook_deliveries_webhookid_id_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX webhook_deliveries_webhookid_id_index ON public.webhook_deliveries USING btree ("webhookId", id);
+
+
+--
+-- Name: webhook_projects_projectid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX webhook_projects_projectid_index ON public.webhook_projects USING btree ("projectId");
+
+
+--
+-- Name: webhooks_accountid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX webhooks_accountid_index ON public.webhooks USING btree ("accountId");
 
 
 --
@@ -6701,6 +6975,14 @@ ALTER TABLE ONLY public.project_domains
 
 
 --
+-- Name: project_events project_events_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_events
+    ADD CONSTRAINT project_events_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
 -- Name: project_token_projects project_token_projects_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -7133,6 +7415,46 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: webhook_deliveries webhook_deliveries_eventid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.webhook_deliveries
+    ADD CONSTRAINT webhook_deliveries_eventid_foreign FOREIGN KEY ("eventId") REFERENCES public.project_events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: webhook_deliveries webhook_deliveries_webhookid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.webhook_deliveries
+    ADD CONSTRAINT webhook_deliveries_webhookid_foreign FOREIGN KEY ("webhookId") REFERENCES public.webhooks(id) ON DELETE CASCADE;
+
+
+--
+-- Name: webhook_projects webhook_projects_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.webhook_projects
+    ADD CONSTRAINT webhook_projects_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: webhook_projects webhook_projects_webhookid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.webhook_projects
+    ADD CONSTRAINT webhook_projects_webhookid_foreign FOREIGN KEY ("webhookId") REFERENCES public.webhooks(id) ON DELETE CASCADE;
+
+
+--
+-- Name: webhooks webhooks_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.webhooks
+    ADD CONSTRAINT webhooks_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -7425,3 +7747,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026111
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261119200000_pull-request-stack-indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261121111516_team-enforced-auth-method.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122103709_drop-legacy-saml-enforcement.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122120000_webhooks.js', 1, NOW());

@@ -46,9 +46,13 @@ export interface Job<TValue> {
    */
   push: (...values: TValue[]) => Promise<void>;
   /**
-   * Run a job on a single value.
+   * Run a job on a single value. Outside the queue nothing retries it, so it
+   * runs as a single, last attempt unless told otherwise.
    */
-  run: (value: TValue, ctx: JobContext) => Promise<void>;
+  run: (
+    value: TValue,
+    ctx: Pick<JobContext, "logger"> & Partial<JobContext>,
+  ) => Promise<void>;
   /**
    * Process all job.
    */
@@ -77,8 +81,12 @@ export interface JobParams {
   retryLadder?: RetryTier[];
 }
 
-type JobContext = {
+export type JobContext = {
   logger: Logger;
+  /** Executions of this message before this one: 0 on the first. */
+  attempts: number;
+  /** Whether a failure is final: the retry ladder has no tier left. */
+  isLastAttempt: boolean;
 };
 
 // amqplib emits "error" on a channel before closing it, and an EventEmitter
@@ -395,7 +403,8 @@ export const createJob = <TValue extends string | number>(
         sendAll();
       });
     },
-    async run(id: TValue, ctx: JobContext) {
+    async run(id, runCtx) {
+      const ctx: JobContext = { attempts: 0, isLastAttempt: true, ...runCtx };
       await Sentry.startSpan(
         {
           name: "job.run",
@@ -475,7 +484,12 @@ export const createJob = <TValue extends string | number>(
 
                     const id = payload.args[0];
                     const consumeLogger = logger.child({ id });
-                    const ctx = { logger: consumeLogger };
+                    const ctx: JobContext = {
+                      logger: consumeLogger,
+                      attempts: payload.attempts,
+                      isLastAttempt:
+                        getRetryTier(retryLadder, payload.attempts) === null,
+                    };
                     try {
                       await this.run(id, ctx);
                       channel.ack(msg);

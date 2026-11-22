@@ -23,6 +23,7 @@ import { Button } from "@/ui/Button";
 import { Callout } from "@/ui/Callout";
 import { Checkbox } from "@/ui/Checkbox";
 import { CheckboxGroupField } from "@/ui/CheckboxGroup";
+import { CheckboxListField } from "@/ui/CheckboxListField";
 import { Code } from "@/ui/Code";
 import {
   Dialog,
@@ -279,26 +280,17 @@ function ProjectsField(props: {
   projects: { id: string; name: string }[];
 }) {
   const { control, projects } = props;
-  const { fieldState } = useController({ control, name: "projectIds" });
   return (
     <div>
       <Label>Projects</Label>
-      <div className="max-h-48 overflow-auto rounded-md border p-3">
-        <CheckboxGroupField control={control} name="projectIds">
-          {projects.map((project) => (
-            <Checkbox
-              key={project.id}
-              name={project.id}
-              invalid={Boolean(fieldState.error)}
-            >
-              {project.name}
-            </Checkbox>
-          ))}
-        </CheckboxGroupField>
-      </div>
-      {fieldState.error && (
-        <ErrorMessage className="mt-2">{fieldState.error.message}</ErrorMessage>
-      )}
+      <CheckboxListField
+        control={control}
+        name="projectIds"
+        options={projects.map((project) => ({
+          value: project.id,
+          label: project.name,
+        }))}
+      />
     </div>
   );
 }
