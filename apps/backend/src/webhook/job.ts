@@ -71,29 +71,3 @@ export const webhookDeliveryJob = createModelJob(
     ignoreMissing: true,
   },
 );
-
-/**
- * Far longer than a delivery waits in the queue, so a job still on its way is
- * not queued twice.
- */
-const STALLED_DELIVERY_DELAY_MS = 10 * 60 * 1000;
-
-/**
- * Queue again the deliveries no job ever picked up: the push that follows
- * their commit can fail, and nothing else would send them.
- */
-export async function requeueStalledWebhookDeliveries(
-  now: Date,
-): Promise<void> {
-  const stalled = await WebhookDelivery.query()
-    .select("id")
-    .where("jobStatus", "pending")
-    .where(
-      "createdAt",
-      "<",
-      new Date(now.getTime() - STALLED_DELIVERY_DELAY_MS).toISOString(),
-    );
-  if (stalled.length > 0) {
-    await webhookDeliveryJob.push(...stalled.map((delivery) => delivery.id));
-  }
-}

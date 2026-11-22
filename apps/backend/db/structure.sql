@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict St3WyA9aDEI5tTAGTkN7EXS9PKVSemuUObnfeSMzF8k7yKZpqQYeCwmBYX3MjSX
+\restrict 8gt8ctfmjvyDCOYaG15dsEUtguKE8QnbRLrq62EayZMAc0K7tZeKHCd9iQocrjE
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -5300,6 +5300,13 @@ CREATE INDEX automation_action_runs_automationrunid_index ON public.automation_a
 
 
 --
+-- Name: automation_action_runs_pending_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX automation_action_runs_pending_createdat_index ON public.automation_action_runs USING btree ("createdAt") WHERE (("jobStatus")::text = 'pending'::text);
+
+
+--
 -- Name: automation_runs_automationruleid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5318,6 +5325,13 @@ CREATE INDEX build_notification_subscriptions_userid_index ON public.build_notif
 --
 
 CREATE INDEX build_notifications_buildid_index ON public.build_notifications USING btree ("buildId");
+
+
+--
+-- Name: build_notifications_pending_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX build_notifications_pending_createdat_index ON public.build_notifications USING btree ("createdAt") WHERE ("jobStatus" = 'pending'::public.job_status);
 
 
 --
@@ -5409,6 +5423,13 @@ CREATE INDEX builds_number_index ON public.builds USING btree (number);
 --
 
 CREATE INDEX builds_originpullrequestid_idx ON public.builds USING btree ("originPullRequestId") WHERE ("originPullRequestId" IS NOT NULL);
+
+
+--
+-- Name: builds_pending_finalizedat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_pending_finalizedat_index ON public.builds USING btree ("finalizedAt") WHERE ("jobStatus" = 'pending'::public.job_status);
 
 
 --
@@ -5545,6 +5566,13 @@ CREATE INDEX deployment_notifications_deploymentid_index ON public.deployment_no
 
 
 --
+-- Name: deployment_notifications_pending_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX deployment_notifications_pending_createdat_index ON public.deployment_notifications USING btree ("createdAt") WHERE ("jobStatus" = 'pending'::public.job_status);
+
+
+--
 -- Name: deployments_projectid_commitsha_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5594,6 +5622,13 @@ CREATE INDEX github_pull_requests_githubrepositoryid_headref_index ON public.git
 
 
 --
+-- Name: github_pull_requests_pending_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX github_pull_requests_pending_createdat_index ON public.github_pull_requests USING btree ("createdAt") WHERE (("jobStatus")::text = 'pending'::text);
+
+
+--
 -- Name: github_repositories_githubaccountid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5633,6 +5668,13 @@ CREATE INDEX github_synchronizations_githubinstallationid_index ON public.github
 --
 
 CREATE INDEX github_synchronizations_jobstatus_index ON public.github_synchronizations USING btree ("jobStatus");
+
+
+--
+-- Name: github_synchronizations_pending_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX github_synchronizations_pending_createdat_index ON public.github_synchronizations USING btree ("createdAt") WHERE ("jobStatus" = 'pending'::public.job_status);
 
 
 --
@@ -5738,6 +5780,13 @@ CREATE INDEX notification_workflow_recipients_workflowid_index ON public.notific
 
 
 --
+-- Name: notification_workflows_pending_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX notification_workflows_pending_createdat_index ON public.notification_workflows USING btree ("createdAt") WHERE ("jobStatus" = 'pending'::public.job_status);
+
+
+--
 -- Name: oauth_access_tokens_oauthgrantid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5784,6 +5833,13 @@ CREATE INDEX origin_pull_requests_originrepositoryid_baseref_index ON public.ori
 --
 
 CREATE INDEX origin_pull_requests_originrepositoryid_headref_index ON public.origin_pull_requests USING btree ("originRepositoryId", "headRef");
+
+
+--
+-- Name: origin_pull_requests_pending_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX origin_pull_requests_pending_createdat_index ON public.origin_pull_requests USING btree ("createdAt") WHERE (("jobStatus")::text = 'pending'::text);
 
 
 --
@@ -7458,7 +7514,7 @@ ALTER TABLE ONLY public.webhooks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict St3WyA9aDEI5tTAGTkN7EXS9PKVSemuUObnfeSMzF8k7yKZpqQYeCwmBYX3MjSX
+\unrestrict 8gt8ctfmjvyDCOYaG15dsEUtguKE8QnbRLrq62EayZMAc0K7tZeKHCd9iQocrjE
 
 -- Knex migrations
 
@@ -7748,3 +7804,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026111
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261121111516_team-enforced-auth-method.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122103709_drop-legacy-saml-enforcement.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122120000_webhooks.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122184409_stalled-job-requeue-indexes.js', 1, NOW());
