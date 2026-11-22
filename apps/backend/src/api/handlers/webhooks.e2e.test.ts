@@ -221,6 +221,14 @@ describe("webhooks API", () => {
       attempts: 0,
     });
 
+    const again = await call(
+      "owner",
+      "post",
+      `${deliveries}/${failed.id}/resend`,
+    );
+    expect(again.status).toBe(200);
+    expect(again.body.id).toBe(resent.body.id);
+
     expect(
       (await call("member", "post", `${deliveries}/${failed.id}/resend`))
         .status,

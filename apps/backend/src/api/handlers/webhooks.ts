@@ -480,11 +480,15 @@ export const resendWebhookDeliveryOperation = {
   operationId: "resendWebhookDelivery",
   summary: "Resend a webhook delivery",
   description:
-    "Send a delivery's event to its webhook again, as a new delivery. It keeps the event's `webhook-id`, so an endpoint that already processed the event can skip it. Requires administrator access to the account.",
+    "Send a delivery's event to its webhook again, as a new delivery. It keeps the event's `webhook-id`, so an endpoint that already processed the event can skip it. While the event is still being sent to the webhook, returns that delivery instead of sending it twice. Requires administrator access to the account.",
   tags: ["Webhooks"],
   security,
   requestParams: { path: DeliveryPathSchema },
   responses: {
+    "200": {
+      description: "The delivery still sending the event",
+      content: { "application/json": { schema: WebhookDeliverySchema } },
+    },
     "201": {
       description: "The new delivery",
       content: { "application/json": { schema: WebhookDeliverySchema } },
@@ -502,11 +506,11 @@ export const resendWebhookDeliveryHandler: CreateAPIHandler = ({ post }) => {
         req.ctx.params,
       );
       const resent = await resendWebhookDelivery(delivery);
-      const [serialized] = await serializeDeliveries([resent]);
+      const [serialized] = await serializeDeliveries([resent.delivery]);
       if (!serialized) {
         throw boom(404, "Delivery not found.");
       }
-      res.status(201).send(serialized);
+      res.status(resent.created ? 201 : 200).send(serialized);
     },
   );
 };

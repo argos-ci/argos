@@ -221,21 +221,46 @@ export async function listWebhookDeliveries(args: {
 }
 
 /**
+ * How long a delivery counts as still sending its event. Far past the retry
+ * ladder, so one left behind by a job that died does not block resending.
+ */
+const IN_FLIGHT_DELIVERY_MS = 60 * 60 * 1000;
+
+/**
  * Send a delivery's event to its webhook again, as a new delivery. It keeps
  * the event's id, so an endpoint that already processed it can tell.
+ *
+ * While the event is still being sent to the webhook, that delivery is
+ * returned instead: every resend is a request Argos makes to a URL its caller
+ * chose, so repeating one must not multiply them.
  */
 export async function resendWebhookDelivery(
   delivery: WebhookDelivery,
-): Promise<WebhookDelivery> {
-  const resent = await WebhookDelivery.query()
-    .insert({
-      webhookId: delivery.webhookId,
-      eventId: delivery.eventId,
-      jobStatus: "pending",
-    })
-    .returning("*");
-  await webhookDeliveryJob.push(resent.id);
-  return resent;
+): Promise<{ delivery: WebhookDelivery; created: boolean }> {
+  const { webhookId, eventId } = delivery;
+  return redisLock.acquire(
+    ["resend-webhook-delivery", webhookId, eventId],
+    async () => {
+      const inFlight = await WebhookDelivery.query()
+        .where({ webhookId, eventId })
+        .whereIn("jobStatus", ["pending", "progress"])
+        .where(
+          "createdAt",
+          ">",
+          new Date(Date.now() - IN_FLIGHT_DELIVERY_MS).toISOString(),
+        )
+        .orderBy("id", "desc")
+        .first();
+      if (inFlight) {
+        return { delivery: inFlight, created: false };
+      }
+      const resent = await WebhookDelivery.query()
+        .insert({ webhookId, eventId, jobStatus: "pending" })
+        .returning("*");
+      await webhookDeliveryJob.push(resent.id);
+      return { delivery: resent, created: true };
+    },
+  );
 }
 
 /**

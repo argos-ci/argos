@@ -149,7 +149,7 @@ export const typeDefs = gql`
     createWebhook(input: CreateWebhookInput!): CreateWebhookPayload!
     "Delete a webhook, returning its id"
     deleteWebhook(input: DeleteWebhookInput!): ID!
-    "Send a delivery's event to its webhook again, returning the new delivery"
+    "Send a delivery's event to its webhook again, returning the new delivery, or the one still sending the event"
     resendWebhookDelivery(input: ResendWebhookDeliveryInput!): WebhookDelivery!
   }
 `;
@@ -335,7 +335,8 @@ export const resolvers: IResolvers = {
           throw boom(404, "Delivery not found.");
         }
         await loadAdminWebhook(delivery.webhookId, auth);
-        return await resendWebhookDelivery(delivery);
+        const resent = await resendWebhookDelivery(delivery);
+        return resent.delivery;
       } catch (error) {
         throw toGraphQLError(error);
       }

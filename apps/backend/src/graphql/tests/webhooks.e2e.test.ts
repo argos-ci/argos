@@ -292,4 +292,36 @@ describe("webhooks", () => {
       );
     },
   );
+
+  webhooksTest(
+    "sends an event once, however many times it is resent",
+    async ({ team, project, post }) => {
+      const webhook = await factory.Webhook.create({ accountId: team.id });
+      const event = await factory.ProjectEvent.create({
+        projectId: project.id,
+      });
+      const failed = await factory.WebhookDelivery.create({
+        webhookId: webhook.id,
+        eventId: event.id,
+        conclusion: "failed",
+      });
+
+      const res = await post("owner", {
+        query: `
+          mutation Resend($input: ResendWebhookDeliveryInput!) {
+            first: resendWebhookDelivery(input: $input) { id }
+            second: resendWebhookDelivery(input: $input) { id }
+          }
+        `,
+        variables: { input: { id: failed.id } },
+      });
+      expectNoGraphQLError(res);
+      expect(res.body.data.second.id).toBe(res.body.data.first.id);
+      expect(
+        await WebhookDelivery.query()
+          .where({ webhookId: webhook.id })
+          .resultSize(),
+      ).toBe(2);
+    },
+  );
 });
