@@ -10,6 +10,7 @@ import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormRadio, FormRadioGroup } from "@/ui/FormRadio";
+import { Link } from "@/ui/Link";
 
 const _TeamFragment = graphql(`
   fragment TeamEnforcedAuthMethod_Team on Team {
@@ -206,10 +207,16 @@ export function EnforcedAuthMethodCard(props: {
             </Callout>
           ) : null}
         </CardBody>
-        <FormCardFooter
-          control={form.control}
-          disabled={signInMethod !== null}
-        />
+        <FormCardFooter control={form.control} disabled={signInMethod !== null}>
+          Learn more about{" "}
+          <Link
+            href="https://argos-ci.com/docs/learn/account-and-access/required-sign-in-method"
+            target="_blank"
+          >
+            required sign-in methods
+          </Link>
+          .
+        </FormCardFooter>
       </Form>
     </Card>
   );
