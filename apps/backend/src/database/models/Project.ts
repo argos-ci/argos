@@ -415,22 +415,6 @@ export class Project extends Model {
     }
   }
 
-  /**
-   * Throw when `auth` is a member kept out of the project's team by its
-   * required sign-in method. See {@link Team.assertAuthMethodSatisfied}.
-   */
-  static async assertAuthMethodSatisfied(
-    project: Project,
-    auth: AuthViewer | null,
-  ): Promise<void> {
-    if (!auth) {
-      return;
-    }
-    await project.$fetchGraph("account", { skipFetched: true });
-    invariant(project.account);
-    await Team.assertAuthMethodSatisfied(project.account.teamId, auth);
-  }
-
   async $getPermissions(auth: AuthViewer | null) {
     return Project.getPermissions(this, auth);
   }

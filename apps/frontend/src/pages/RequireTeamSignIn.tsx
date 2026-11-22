@@ -1,4 +1,4 @@
-import { TEAM_AUTH_METHOD_REQUIREMENTS } from "@argos/schemas/team-auth-method";
+import { TEAM_AUTH_METHODS } from "@argos/schemas/team-auth-method";
 import { Helmet } from "react-helmet";
 
 import { TeamAuthMethodSignInButton } from "@/containers/Team/AuthMethodSignInButton";
@@ -25,7 +25,7 @@ export function RequireTeamSignIn(props: {
 
         <p className="mb-8 text-center">
           The team <strong>{teamSlug}</strong> requires members to sign in with{" "}
-          {TEAM_AUTH_METHOD_REQUIREMENTS[authMethod]}.
+          {TEAM_AUTH_METHODS[authMethod].requirement}.
         </p>
 
         <TeamAuthMethodSignInButton

@@ -1,5 +1,4 @@
 import { ApolloServer, ApolloServerPlugin } from "@apollo/server";
-import { checkIsTeamAuthMethodRequiredCode } from "@argos/schemas/team-auth-method";
 import { expressMiddleware } from "@as-integrations/express5";
 import * as Sentry from "@sentry/node";
 import { RequestHandler } from "express";
@@ -19,14 +18,6 @@ const apolloSentryPlugin: ApolloServerPlugin<Context> = {
             error.originalError.code
           ) {
             error.extensions["argosErrorCode"] = error.originalError.code;
-            if (error.originalError.accountSlug) {
-              error.extensions["accountSlug"] = error.originalError.accountSlug;
-            }
-
-            // A member asked to sign in with the team's method is no bug.
-            if (checkIsTeamAuthMethodRequiredCode(error.originalError.code)) {
-              continue;
-            }
           }
 
           const code = error.extensions?.["code"];

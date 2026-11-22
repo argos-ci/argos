@@ -1,4 +1,4 @@
-import { TEAM_AUTH_METHOD_LABELS } from "@argos/schemas/team-auth-method";
+import { TEAM_AUTH_METHODS } from "@argos/schemas/team-auth-method";
 import { assertNever } from "@argos/util/assertNever";
 import { LockIcon } from "lucide-react";
 
@@ -21,7 +21,7 @@ export function TeamAuthMethodSignInButton(props: {
   className?: string;
 }) {
   const { authMethod, teamSlug, redirect, ...buttonProps } = props;
-  const label = `Sign in with ${TEAM_AUTH_METHOD_LABELS[authMethod]}`;
+  const label = `Sign in with ${TEAM_AUTH_METHODS[authMethod].label}`;
   switch (authMethod) {
     case TeamAuthMethod.Google:
       return (

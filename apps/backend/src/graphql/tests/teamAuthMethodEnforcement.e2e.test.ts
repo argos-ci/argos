@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { ErrorCode } from "@argos/error-types";
+import type { AuthMethod } from "@argos/schemas/auth-method";
 import type { TeamAuthMethod } from "@argos/schemas/team-auth-method";
 import { invariant } from "@argos/util/invariant";
 import request from "supertest";
@@ -8,7 +9,6 @@ import z from "zod";
 
 import { getProject } from "@/api/handlers/getProject";
 import { createTestHandlerApp } from "@/api/test-util";
-import type { AuthMethod } from "@/auth/auth-method";
 import { generateAuthEmailCode } from "@/auth/email";
 import { createSession } from "@/auth/session";
 import { SESSION_COOKIE_NAME } from "@/auth/session-cookie";

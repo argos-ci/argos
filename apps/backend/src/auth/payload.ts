@@ -1,10 +1,9 @@
+import type { AuthMethod } from "@argos/schemas/auth-method";
 import type { ProjectTokenPermission } from "@argos/schemas/project-token";
 import type { TeamAuthMethod } from "@argos/schemas/team-auth-method";
 import { assertNever } from "@argos/util/assertNever";
 
 import type { Account, Project, User } from "@/database/models";
-
-import type { AuthMethod } from "./auth-method";
 
 export const AUTH_PROJECT_SOURCES = [
   "project-token",

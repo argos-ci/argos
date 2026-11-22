@@ -90,6 +90,7 @@ function RootErrorBoundary() {
   const error = useRouteError();
   const shouldReload = checkIsFailedToFetchError(error) && !checkHasReloaded();
   const requiredSignIn = getRequiredTeamSignIn(error);
+  const isSignInRequired = requiredSignIn !== null;
   const isAuthError =
     error instanceof AuthenticationError ||
     (CombinedGraphQLErrors.is(error) &&
@@ -102,7 +103,7 @@ function RootErrorBoundary() {
       console.error(error);
     }
 
-    if (requiredSignIn) {
+    if (isSignInRequired) {
       return;
     }
 
@@ -120,7 +121,7 @@ function RootErrorBoundary() {
     }
 
     Sentry.captureException(error, { level: "fatal" });
-  }, [error, shouldReload, requiredSignIn, isAuthError]);
+  }, [error, shouldReload, isSignInRequired, isAuthError]);
 
   if (shouldReload) {
     return null;

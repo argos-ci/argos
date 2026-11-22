@@ -33,7 +33,7 @@ const StateSchema = z.object({
 type CallbackState = z.infer<typeof StateSchema>;
 
 /** The state each callback request brought back, once checked. */
-const checkedStates = new WeakMap<Response, CallbackState | null>();
+const checkedStates = new WeakMap<Response, CallbackState>();
 
 export const EXPIRED_LOGIN_MESSAGE =
   "This login has expired or was started in another browser. Try again.";
@@ -72,7 +72,7 @@ export function issueCallbackState(
     JSON.stringify({
       nonce: randomBytes(32).toString("base64url"),
       redirect: input.redirect,
-      ...(input.reauthenticate && { reauthenticate: true }),
+      reauthenticate: input.reauthenticate || undefined,
     } satisfies CallbackState),
   ).toString("base64");
   res.cookie(getCallbackCookieName(input.provider), state, {
@@ -102,28 +102,23 @@ export function requireCallbackState(
       next(boom(401, EXPIRED_LOGIN_MESSAGE));
       return;
     }
-    checkedStates.set(res, parseCallbackState(body.data.state));
+    // The cookie only ever holds a state this server issued.
+    checkedStates.set(
+      res,
+      StateSchema.parse(
+        JSON.parse(Buffer.from(body.data.state, "base64").toString()),
+      ),
+    );
     next();
   };
-}
-
-function parseCallbackState(state: string): CallbackState | null {
-  try {
-    const parsed = StateSchema.safeParse(
-      JSON.parse(Buffer.from(state, "base64").toString()),
-    );
-    return parsed.success ? parsed.data : null;
-  } catch {
-    return null;
-  }
 }
 
 /**
  * The state {@link requireCallbackState} checked for this callback: the one
  * this server issued to this browser.
  */
-export function getCheckedCallbackState(res: Response): CallbackState | null {
+export function getCheckedCallbackState(res: Response): CallbackState {
   const state = checkedStates.get(res);
-  invariant(state !== undefined, "requireCallbackState did not run");
+  invariant(state, "requireCallbackState did not run");
   return state;
 }

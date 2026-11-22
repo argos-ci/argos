@@ -1,5 +1,4 @@
 import {
-  TEAM_AUTH_METHOD_LABELS,
   TeamAuthMethodSchema,
   type TeamAuthMethod,
 } from "@argos/schemas/team-auth-method";
@@ -18,13 +17,15 @@ import {
   parseIdpMetadataXml,
   parseSamlSigningCertificate,
 } from "@/auth/saml";
+import {
+  checkAccountBelongsToTeam,
+  checkTeamAuthMethodAvailable,
+} from "@/auth/team-auth-method";
 import config from "@/config";
 import { transaction } from "@/database";
 import {
   Account,
-  checkEnforcedAuthMethodApplies,
   checkIsActiveSubscriptionStatus,
-  checkSignInMeetsTeamRequirement,
   GithubAccountMember,
   GithubInstallation,
   Team,
@@ -709,7 +710,10 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
       invariant(account.teamId, "not a team account");
-      const permissions = await Team.getPermissions(account.teamId, ctx.auth);
+      const permissions = await ctx.loaders.AccountPermissions.load({
+        account,
+        auth: ctx.auth,
+      });
       if (!permissions.includes("admin")) {
         return null;
       }
@@ -725,15 +729,15 @@ export const resolvers: IResolvers = {
       }
       const { teamId } = account;
       invariant(teamId, "not a team account");
-      const signedInWith = getAuthMethodForTeam(ctx.auth, teamId);
-      const parsed = TeamAuthMethodSchema.safeParse(signedInWith);
+      const parsed = TeamAuthMethodSchema.safeParse(
+        getAuthMethodForTeam(ctx.auth, teamId),
+      );
       if (
         !parsed.success ||
-        !(await checkSignInMeetsTeamRequirement({
+        !(await checkAccountBelongsToTeam({
           teamId,
           userId: ctx.auth.user.id,
-          signedInWith,
-          required: parsed.data,
+          authMethod: parsed.data,
         }))
       ) {
         return null;
@@ -1995,46 +1999,37 @@ export const resolvers: IResolvers = {
       const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
         auth: ctx.auth,
-        withGraphFetched: "teamSamlConfig",
+        withGraphFetched: "team",
       });
-      const { teamId } = teamAccount;
-      invariant(teamId, "not a team account");
+      const { team } = teamAccount;
+      invariant(team, "not a team account");
       const { authMethod } = args.input;
 
       if (authMethod) {
-        if (
-          !(await checkEnforcedAuthMethodApplies({
-            teamId,
-            authMethod,
-            samlEnabled: Boolean(teamAccount.teamSamlConfig?.enabled),
-          }))
-        ) {
-          throw forbidden(MISSING_AUTH_METHOD_SETUP_MESSAGES[authMethod]);
+        const messages = AUTH_METHOD_REFUSAL_MESSAGES[authMethod];
+        if (!(await checkTeamAuthMethodAvailable(team, authMethod))) {
+          throw forbidden(messages.missingSetUp);
         }
         // Requiring a sign-in the admin does not meet would lock them out of
         // the team on their next request.
-        const signedInWith = getAuthMethodForTeam(ctx.auth, teamId);
+        if (getAuthMethodForTeam(ctx.auth, team.id) !== authMethod) {
+          throw forbidden(messages.notSignedIn);
+        }
         if (
-          !(await checkSignInMeetsTeamRequirement({
-            teamId,
+          !(await checkAccountBelongsToTeam({
+            teamId: team.id,
             userId: ctx.auth.user.id,
-            signedInWith,
-            required: authMethod,
+            authMethod,
           }))
         ) {
-          const label = TEAM_AUTH_METHOD_LABELS[authMethod];
-          throw forbidden(
-            signedInWith === authMethod
-              ? FOREIGN_ACCOUNT_MESSAGES[authMethod]
-              : `You are not signed in with ${label}. Sign in with ${label}, then try again.`,
-          );
+          throw forbidden(messages.foreignAccount ?? messages.notSignedIn);
         }
       }
 
       await Team.query()
-        .findById(teamId)
+        .findById(team.id)
         .patch({ enforcedAuthMethod: authMethod ?? null });
-      ctx.loaders.Team.clear(teamId);
+      ctx.loaders.Team.clear(team.id);
 
       return teamAccount;
     },
@@ -2124,18 +2119,31 @@ const GRAPHQL_TEAM_AUTH_METHODS: Record<TeamAuthMethod, ITeamAuthMethod> = {
   saml: ITeamAuthMethod.Saml,
 };
 
-const MISSING_AUTH_METHOD_SETUP_MESSAGES: Record<TeamAuthMethod, string> = {
-  google: "This team has no domain. Add one before requiring Google.",
-  github:
-    "This team has no GitHub organization linked. Set up GitHub SSO before requiring GitHub.",
-  saml: "SAML SSO is off for this team. Enable it before requiring it.",
-};
-
-/** Signed in with the method, but with an account that is not the team's. */
-const FOREIGN_ACCOUNT_MESSAGES: Record<TeamAuthMethod, string> = {
-  google:
-    "Your Google account is not a Google Workspace account on one of the team's domains. Sign in with one, then try again.",
-  github:
-    "Your GitHub account is not in the team's GitHub organization. Sign in with a GitHub account that is, then try again.",
-  saml: "Sign in with SAML SSO, then try again.",
+/** Why `setTeamEnforcedAuthMethod` refuses a method. */
+const AUTH_METHOD_REFUSAL_MESSAGES: Record<
+  TeamAuthMethod,
+  { missingSetUp: string; notSignedIn: string; foreignAccount?: string }
+> = {
+  google: {
+    missingSetUp: "This team has no domain. Add one before requiring Google.",
+    notSignedIn:
+      "You are not signed in with Google. Sign in with Google, then try again.",
+    foreignAccount:
+      "Your Google account is not a Google Workspace account on one of the team's domains. Sign in with one, then try again.",
+  },
+  github: {
+    missingSetUp:
+      "This team has no GitHub organization linked. Set up GitHub SSO before requiring GitHub.",
+    notSignedIn:
+      "You are not signed in with GitHub. Sign in with GitHub, then try again.",
+    foreignAccount:
+      "Your GitHub account is not in the team's GitHub organization. Sign in with a GitHub account that is, then try again.",
+  },
+  saml: {
+    missingSetUp:
+      "SAML SSO is off for this team. Enable it before requiring it.",
+    notSignedIn:
+      "You are not signed in with SAML SSO. Sign in with SAML SSO, then try again.",
+    // None: a SAML login belongs to the team whose IdP answered.
+  },
 };

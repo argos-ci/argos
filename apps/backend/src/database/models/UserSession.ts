@@ -1,6 +1,5 @@
+import { AuthMethodSchema, type AuthMethod } from "@argos/schemas/auth-method";
 import type { RelationMappings } from "objection";
-
-import { AUTH_METHODS, type AuthMethod } from "@/auth/auth-method";
 
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
@@ -29,7 +28,7 @@ export class UserSession extends Model {
           country: { type: ["string", "null"] },
           authMethod: {
             type: ["string", "null"],
-            enum: [...AUTH_METHODS, null],
+            enum: [...AuthMethodSchema.options, null],
           },
           samlTeamId: { type: ["string", "null"] },
         },

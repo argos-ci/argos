@@ -1,7 +1,7 @@
 import type { ApolloServer, BaseContext } from "@apollo/server";
+import type { AuthMethod } from "@argos/schemas/auth-method";
 import express, { RequestHandler } from "express";
 
-import type { AuthMethod } from "@/auth/auth-method";
 import type { AuthSessionPayload } from "@/auth/payload";
 import type { Account, User } from "@/database/models";
 

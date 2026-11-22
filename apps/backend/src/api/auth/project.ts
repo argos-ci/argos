@@ -1,8 +1,4 @@
-import {
-  TEAM_AUTH_METHOD_LABELS,
-  TEAM_AUTH_METHOD_REQUIRED_CODES,
-  TEAM_AUTH_METHOD_REQUIREMENTS,
-} from "@argos/schemas/team-auth-method";
+import { TEAM_AUTH_METHODS } from "@argos/schemas/team-auth-method";
 import { invariant } from "@argos/util/invariant";
 import type { Request } from "express";
 
@@ -121,10 +117,12 @@ export function throwOutsideScope(
   );
   if (restricted) {
     const { account, requiredAuthMethod } = restricted;
+    const { label, requirement, requiredCode } =
+      TEAM_AUTH_METHODS[requiredAuthMethod];
     throw boom(
       403,
-      `The team "${account.slug}" requires sign-in with ${TEAM_AUTH_METHOD_REQUIREMENTS[requiredAuthMethod]}, and this token was not issued from such a session. Sign in to Argos with ${TEAM_AUTH_METHOD_LABELS[requiredAuthMethod]}, then create a new token or authorize the application again.`,
-      { code: TEAM_AUTH_METHOD_REQUIRED_CODES[requiredAuthMethod] },
+      `The team "${account.slug}" requires sign-in with ${requirement}, and this token was not issued from such a session. Sign in to Argos with ${label}, then create a new token or authorize the application again.`,
+      { code: requiredCode },
     );
   }
   throw otherwise;

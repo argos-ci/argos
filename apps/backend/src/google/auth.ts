@@ -97,6 +97,9 @@ export async function getGoogleUserProfile(input: {
   };
 }
 
+/** Verifies ID tokens, keeping Google's signing certificates cached. */
+const idTokenVerifier = new OAuth2Client();
+
 /**
  * The Google Workspace domain of the signed-in account, from the `hd` claim of
  * its ID token, lowercased. Null for a consumer account.
@@ -109,7 +112,7 @@ export async function getGoogleHostedDomain(input: {
   if (!idToken) {
     return null;
   }
-  const ticket = await input.client.verifyIdToken({
+  const ticket = await idTokenVerifier.verifyIdToken({
     idToken,
     audience: input.clientId,
   });

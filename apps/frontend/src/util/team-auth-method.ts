@@ -1,5 +1,5 @@
 import { CombinedGraphQLErrors } from "@apollo/client";
-import { TEAM_AUTH_METHOD_REQUIRED_CODES } from "@argos/schemas/team-auth-method";
+import { TEAM_AUTH_METHODS } from "@argos/schemas/team-auth-method";
 
 import { TeamAuthMethod } from "@/gql/graphql";
 
@@ -16,7 +16,7 @@ export function getRequiredTeamSignIn(
   for (const { extensions } of error.errors) {
     const authMethod = Object.values(TeamAuthMethod).find(
       (method) =>
-        extensions?.argosErrorCode === TEAM_AUTH_METHOD_REQUIRED_CODES[method],
+        extensions?.argosErrorCode === TEAM_AUTH_METHODS[method].requiredCode,
     );
     const teamSlug = extensions?.accountSlug;
     if (authMethod && typeof teamSlug === "string") {

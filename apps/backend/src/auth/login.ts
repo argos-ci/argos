@@ -2,14 +2,13 @@ import type { Request, Response } from "express";
 
 import { hasAutoInviteForUser } from "@/database/services/team-domain";
 
-import type { AuthSessionPayload } from "./payload";
 import {
   createSession,
   parseDeviceLabel,
-  revokeSession,
+  revokeSessionByToken,
   type SessionAuthMethod,
 } from "./session";
-import { setSessionCookies } from "./session-cookie";
+import { readSessionCookie, setSessionCookies } from "./session-cookie";
 
 /** What every login entry point hands back to the client. */
 export type AuthPayload = {
@@ -30,7 +29,8 @@ function getHeaderString(req: Request, name: string): string | null {
  * Start a new authenticated session for a user: create the server-side session
  * row, recording how the user got in, and set the session cookies on the
  * response. Used by every login entry point (OAuth, SAML, email auth, invite
- * sign-up).
+ * sign-up). The session the browser was signed in with is revoked: its cookie
+ * is gone, and nothing should keep it alive elsewhere.
  */
 export async function startSession(
   req: Request,
@@ -49,6 +49,10 @@ export async function startSession(
     country: getHeaderString(req, "cf-ipcountry"),
   });
   setSessionCookies(res, rawToken);
+  const replacedToken = readSessionCookie(req);
+  if (replacedToken) {
+    await revokeSessionByToken(replacedToken);
+  }
 }
 
 /**
@@ -67,27 +71,15 @@ export async function completeLogin(
     userId: string;
     /** Whether this login created the account. */
     creation: boolean;
-    /**
-     * The session the browser was signed in with, revoked once the new one is
-     * set: its cookie is gone, and nothing should keep it alive elsewhere.
-     */
-    replacedSession: Pick<AuthSessionPayload, "sessionId" | "user"> | null;
   } & SessionAuthMethod,
 ): Promise<AuthPayload> {
-  const { req, res, userId, creation, replacedSession } = input;
+  const { req, res, userId, creation } = input;
 
   const hasAutoInvite = creation
     ? await hasAutoInviteForUser({ userId })
     : false;
 
   await startSession(req, res, input);
-
-  if (replacedSession) {
-    await revokeSession({
-      sessionId: replacedSession.sessionId,
-      userId: replacedSession.user.id,
-    });
-  }
 
   return { creation, hasAutoInvite };
 }

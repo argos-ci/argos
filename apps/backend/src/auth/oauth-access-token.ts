@@ -73,7 +73,7 @@ export async function getAuthPayloadFromOAuthAccessToken(
   const accessToken = await OAuthAccessToken.query()
     .findOne({ tokenHash: hashToken(token) })
     .withGraphFetched(
-      "grant.[user.[account,teams],grantAccounts.account.teamSamlConfig,client]",
+      "grant.[user.[account,teams],grantAccounts.account,client]",
     );
 
   if (!accessToken) {

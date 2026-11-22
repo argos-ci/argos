@@ -89,7 +89,7 @@ function withOAuth(
           auth ?? null,
         );
         invariant(account.userId, "Expected account to have userId");
-        if (auth && !getCheckedCallbackState(res)?.reauthenticate) {
+        if (auth && !getCheckedCallbackState(res).reauthenticate) {
           // The provider was linked to the signed-in account. That is no
           // signup, and the session stays the one it was linked from, with the
           // method that opened it: replacing it would drop a SAML login.
@@ -105,7 +105,6 @@ function withOAuth(
             userId: account.userId,
             method,
             creation,
-            replacedSession: auth,
           }),
         );
       } catch (error) {
@@ -250,7 +249,6 @@ router.use(
         method: "saml",
         samlTeamId: teamAccount.teamId,
         creation,
-        replacedSession: auth,
       }),
     );
   }),

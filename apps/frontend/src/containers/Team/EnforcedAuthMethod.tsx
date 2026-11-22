@@ -1,8 +1,5 @@
 import { useApolloClient } from "@apollo/client/react";
-import {
-  TEAM_AUTH_METHOD_LABELS,
-  TEAM_AUTH_METHOD_REQUIREMENTS,
-} from "@argos/schemas/team-auth-method";
+import { TEAM_AUTH_METHODS } from "@argos/schemas/team-auth-method";
 import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 
 import { TeamAuthMethodSignInButton } from "@/containers/Team/AuthMethodSignInButton";
@@ -176,7 +173,7 @@ export function EnforcedAuthMethodCard(props: {
                 disabled={!setUp[method]}
                 label={
                   <div className="ml-2">
-                    {TEAM_AUTH_METHOD_LABELS[method]}
+                    {TEAM_AUTH_METHODS[method].label}
                     <p className="text-low text-sm font-normal">
                       {setUp[method]
                         ? METHOD_COPY[method].description
@@ -191,7 +188,7 @@ export function EnforcedAuthMethodCard(props: {
             <Callout className="mt-4">
               <div className="flex flex-col items-start gap-2">
                 <p>
-                  Sign in with {TEAM_AUTH_METHOD_REQUIREMENTS[signInMethod]}{" "}
+                  Sign in with {TEAM_AUTH_METHODS[signInMethod].requirement}{" "}
                   before requiring it, so you keep access to the team.
                 </p>
                 <TeamAuthMethodSignInButton

@@ -1,19 +1,15 @@
+import type { AuthMethod } from "@argos/schemas/auth-method";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
-import {
-  checkEnforcedAuthMethodApplies,
-  checkSignInMeetsTeamRequirement,
-  type Account,
-  type User,
-} from "@/database/models";
+import type { Account, User } from "@/database/models";
 
-import type { AuthMethod } from "./auth-method";
 import type { RestrictedScopeEntry, TokenTeamAuthMethod } from "./payload";
+import { getUnmetTeamAuthMethod } from "./team-auth-method";
 
 /**
  * What a user's token reaches, from the accounts it was issued for. Expects
- * each entry's `account.teamSamlConfig` and the user's `teams` to be fetched.
+ * each entry's `account` and the user's `teams` to be fetched.
  */
 export async function resolveTokenScope(
   user: User,
@@ -50,21 +46,12 @@ export async function resolveTokenScope(
         if (authMethod) {
           teamAuthMethods.push({ teamId, authMethod });
         }
-        const requiredAuthMethod = team.enforcedAuthMethod;
-        if (
-          requiredAuthMethod &&
-          !(await checkSignInMeetsTeamRequirement({
-            teamId,
-            userId: user.id,
-            signedInWith: authMethod,
-            required: requiredAuthMethod,
-          })) &&
-          (await checkEnforcedAuthMethodApplies({
-            teamId,
-            authMethod: requiredAuthMethod,
-            samlEnabled: Boolean(account.teamSamlConfig?.enabled),
-          }))
-        ) {
+        const requiredAuthMethod = await getUnmetTeamAuthMethod({
+          team,
+          userId: user.id,
+          signedInWith: authMethod,
+        });
+        if (requiredAuthMethod) {
           restrictedScope.push({ account, requiredAuthMethod });
         } else {
           scope.push(account);

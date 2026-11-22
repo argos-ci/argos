@@ -1,10 +1,9 @@
 import { randomBytes } from "node:crypto";
+import { AuthMethodSchema, type AuthMethod } from "@argos/schemas/auth-method";
 
 import { UserSession } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { getRedisClient } from "@/util/redis/client";
-
-import { checkIsAuthMethod, type AuthMethod } from "./auth-method";
 
 /**
  * Idle timeout. A session that goes unused for this long expires. Enforced
@@ -81,7 +80,8 @@ function parseCacheEntry(raw: string): ResolvedSession | null {
       typeof value === "object" &&
       typeof value.sid === "string" &&
       typeof value.userId === "string" &&
-      (checkIsAuthMethod(value.authMethod) || value.authMethod === null) &&
+      (AuthMethodSchema.safeParse(value.authMethod).success ||
+        value.authMethod === null) &&
       (typeof value.samlTeamId === "string" || value.samlTeamId === null)
     ) {
       return {
