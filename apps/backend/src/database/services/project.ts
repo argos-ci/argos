@@ -492,11 +492,9 @@ async function resolveAvailableProjectName(args: {
 /**
  * Move a project to another account, optionally renaming it on the way.
  *
- * The acting user must administer the project, the account it leaves and the
- * account receiving it. Team members administer the team's projects, but only
- * its owners may hand one to another account. Without the check on the
- * destination, an admin of a project could push it onto any team whose id they
- * could guess.
+ * Team members administer the team's projects, but only its owners may hand
+ * one to another account. The destination must be administered too: otherwise
+ * an admin of a project could push it onto any team whose id they could guess.
  */
 export async function transferProject(args: {
   project: Project;
@@ -511,13 +509,11 @@ export async function transferProject(args: {
     throw boom(400, "Project is already owned by this account.");
   }
 
-  // Capture the source account id and name before patching: `patchAndFetch`
-  // mutates the instance in place, overwriting both.
-  const previousAccountId = project.accountId;
+  await project.$fetchGraph("account", { skipFetched: true });
+  const previousAccount = project.account;
+  invariant(previousAccount, "account is not fetched");
+  // Read before patching: `patchAndFetch` mutates the instance in place.
   const previousName = project.name;
-
-  const previousAccount = await Account.query().findById(previousAccountId);
-  invariant(previousAccount, "project account not found");
 
   const [previousPermissions, targetPermissions] = await Promise.all([
     previousAccount.$getPermissions(auth),
@@ -549,7 +545,7 @@ export async function transferProject(args: {
     await Promise.all([
       moveProjectTokens({
         projectId: project.id,
-        fromAccountId: previousAccountId,
+        fromAccountId: previousAccount.id,
         toAccountId: targetAccount.id,
         trx,
       }),

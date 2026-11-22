@@ -464,13 +464,11 @@ describe("transferProject", () => {
         userId: teammate.id,
         userLevel,
       });
-      if (userLevel === "contributor") {
-        await factory.ProjectUser.create({
-          projectId: project.id,
-          userId: teammate.id,
-          userLevel: "admin",
-        });
-      }
+      await factory.ProjectUser.create({
+        projectId: project.id,
+        userId: teammate.id,
+        userLevel: "admin",
+      });
       const token = await createScopedPatToken({
         user: teammate,
         accounts: [account, teammateAccount],

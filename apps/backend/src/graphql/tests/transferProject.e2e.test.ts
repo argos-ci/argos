@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Project } from "@/database/models";
+import { Project, type TeamUser } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import * as discord from "@/discord";
 
@@ -27,10 +27,12 @@ const TransferProjectMutation = `
 `;
 
 /**
- * Create a user owning both a personal account and a team account, plus a
+ * Create a user with a personal account and a role on a team account, plus a
  * project sitting on the personal account, ready to be transferred.
  */
-async function createTransferableProject() {
+async function createTransferableProject(
+  userLevel: TeamUser["userLevel"] = "owner",
+) {
   const userAccount = await factory.UserAccount.create();
   await userAccount.$fetchGraph("user");
   invariant(userAccount.user, "user not fetched");
@@ -41,7 +43,7 @@ async function createTransferableProject() {
   await factory.TeamUser.create({
     teamId: teamAccount.teamId,
     userId: userAccount.userId,
-    userLevel: "owner",
+    userLevel,
   });
 
   const project = await factory.Project.create({
@@ -132,34 +134,22 @@ describe("GraphQL transferProject", () => {
   it.each(["member", "billing", "contributor"] as const)(
     "refuses a user whose team role is %s, not owner",
     async (userLevel) => {
-      const teamAccount = await factory.TeamAccount.create();
-      invariant(teamAccount.teamId, "team account has no team");
+      const { userAccount, teamAccount, user } =
+        await createTransferableProject(userLevel);
       const teamProject = await factory.Project.create({
         accountId: teamAccount.id,
         name: "team-project",
       });
-
-      const userAccount = await factory.UserAccount.create();
-      await userAccount.$fetchGraph("user");
-      invariant(userAccount.user, "user not fetched");
-      invariant(userAccount.userId, "user account has no user");
-      await factory.TeamUser.create({
-        teamId: teamAccount.teamId,
-        userId: userAccount.userId,
-        userLevel,
+      await factory.ProjectUser.create({
+        projectId: teamProject.id,
+        userId: user.id,
+        userLevel: "admin",
       });
-      if (userLevel === "contributor") {
-        await factory.ProjectUser.create({
-          projectId: teamProject.id,
-          userId: userAccount.userId,
-          userLevel: "admin",
-        });
-      }
 
       const app = await createApolloServerApp(
         apolloServer,
         createApolloMiddleware,
-        { user: userAccount.user, account: userAccount },
+        { user, account: userAccount },
       );
 
       const res = await request(app)

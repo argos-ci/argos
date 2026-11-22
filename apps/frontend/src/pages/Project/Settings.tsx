@@ -153,9 +153,7 @@ function PageContent() {
         <>
           {hasAdminPermission && <ProjectChangeName project={project} />}
           <ProjectBadge project={project} />
-          {hasAdminPermission && hasAccountAdminPermission && (
-            <ProjectTransfer project={project} />
-          )}
+          {hasAccountAdminPermission && <ProjectTransfer project={project} />}
           {hasAdminPermission && <ProjectDelete project={project} />}
         </>
       ),
