@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Ksx6anW323FJYCoK4FsteTm7dYVjnOUZyTbw7FNARxh5yMPLsEHQfbtxK46vlqu
+\restrict St3WyA9aDEI5tTAGTkN7EXS9PKVSemuUObnfeSMzF8k7yKZpqQYeCwmBYX3MjSX
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -1847,7 +1847,6 @@ CREATE TABLE public.oauth_grant_accounts (
     "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "oauthGrantId" bigint NOT NULL,
     "accountId" bigint NOT NULL,
-    "samlAuthorized" boolean DEFAULT false NOT NULL,
     "authMethod" text,
     CONSTRAINT "oauth_grant_accounts_authMethod_check" CHECK (("authMethod" = ANY (ARRAY['email'::text, 'google'::text, 'github'::text, 'gitlab'::text, 'saml'::text, 'passkey'::text])))
 );
@@ -2863,10 +2862,7 @@ CREATE TABLE public.team_saml_configs (
     "ssoUrl" character varying(255) NOT NULL,
     "signingCertificate" text NOT NULL,
     enabled boolean DEFAULT false NOT NULL,
-    enforced boolean DEFAULT false NOT NULL,
-    "enforcedAt" timestamp with time zone,
-    "expirationCheckAt" timestamp with time zone,
-    CONSTRAINT team_saml_configs_enforced_requires_enforcedat CHECK (((enforced AND ("enforcedAt" IS NOT NULL)) OR ((NOT enforced) AND ("enforcedAt" IS NULL))))
+    "expirationCheckAt" timestamp with time zone
 );
 
 
@@ -3149,7 +3145,6 @@ CREATE TABLE public.user_access_token_scopes (
     "updatedAt" timestamp with time zone NOT NULL,
     "userAccessTokenId" bigint NOT NULL,
     "accountId" bigint NOT NULL,
-    "samlAuthorized" boolean DEFAULT false NOT NULL,
     "authMethod" text,
     CONSTRAINT "user_access_token_scopes_authMethod_check" CHECK (("authMethod" = ANY (ARRAY['email'::text, 'google'::text, 'github'::text, 'gitlab'::text, 'saml'::text, 'passkey'::text])))
 );
@@ -7141,7 +7136,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Ksx6anW323FJYCoK4FsteTm7dYVjnOUZyTbw7FNARxh5yMPLsEHQfbtxK46vlqu
+\unrestrict St3WyA9aDEI5tTAGTkN7EXS9PKVSemuUObnfeSMzF8k7yKZpqQYeCwmBYX3MjSX
 
 -- Knex migrations
 
@@ -7429,3 +7424,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026111
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261119193529_team-billing-role.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261119200000_pull-request-stack-indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261121111516_team-enforced-auth-method.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122103709_drop-legacy-saml-enforcement.js', 1, NOW());
