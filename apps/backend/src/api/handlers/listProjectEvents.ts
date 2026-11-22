@@ -9,7 +9,11 @@ import {
 } from "@/event/feed";
 
 import { getProjectForAuth, VIEW_PROJECT_ACCESS } from "../auth/project";
-import { EventSchema, serializeEvent } from "../schema/primitives/event";
+import {
+  EventSchema,
+  omitEventUsers,
+  serializeEvent,
+} from "../schema/primitives/event";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import {
   forbidden,
@@ -59,7 +63,7 @@ const ProjectEventsQuerySchema = z.object({
 export const listProjectEventsOperation = {
   operationId: "listProjectEvents",
   summary: "List a project's events",
-  description: `Read the events of a project in the order they happened: builds completing and getting reviewed, deployments being created and becoming ready. Each event has the same shape as the body of a webhook request.\n\nThe list is a feed: pass the \`cursor\` of each response to the next request to get the events that happened since. When \`hasMore\` is true, request again right away. Events are kept ${EVENT_RETENTION_DAYS} days: \`truncated\` is true when some were deleted before you read them.`,
+  description: `Read the events of a project in the order they happened: builds completing and getting reviewed, deployments being created and becoming ready. Each event has the same shape as the body of a webhook request.\n\nThe list is a feed: pass the \`cursor\` of each response to the next request to get the events that happened since. When \`hasMore\` is true, request again right away. Events are kept ${EVENT_RETENTION_DAYS} days: \`truncated\` is true when some were deleted before you read them.\n\nWith a project token, the \`user\` and \`dismissedBy\` of a \`build.reviewed\` event are null.`,
   tags: ["Events"],
   security: anyTokenOrOAuthAuth(["projects:read"]),
   requestParams: {
@@ -105,10 +109,14 @@ export const listProjectEventsHandler: CreateAPIHandler = ({ get }) => {
       req.ctx.params,
       VIEW_PROJECT_ACCESS,
     );
-    const page = await listProjectEvents({
-      projectId: project.id,
-      ...req.ctx.query,
+    const [auth, page] = await Promise.all([
+      req.ctx.auth(),
+      listProjectEvents({ projectId: project.id, ...req.ctx.query }),
+    ]);
+    const events = page.events.map(serializeEvent);
+    res.send({
+      ...page,
+      events: auth.type === "project" ? events.map(omitEventUsers) : events,
     });
-    res.send({ ...page, events: page.events.map(serializeEvent) });
   });
 };

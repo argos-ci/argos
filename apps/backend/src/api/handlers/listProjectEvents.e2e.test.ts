@@ -1,8 +1,15 @@
 import type { ProjectEventName } from "@argos/schemas/project-event";
+import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { test as base, describe, expect } from "vitest";
 
-import type { Account, Project, ProjectEvent } from "@/database/models";
+import {
+  UserAccessTokenScope,
+  type Account,
+  type Project,
+  type ProjectEvent,
+} from "@/database/models";
+import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
@@ -153,6 +160,58 @@ describe("GET /projects/{owner}/{project}/events", () => {
     expect(res.body).toMatchObject({
       events: [{ id: kept.id }],
       truncated: true,
+    });
+  });
+
+  test("hides who reviewed from project tokens", async ({
+    account,
+    project,
+    read,
+  }) => {
+    const start = await read({});
+    const reviewer = { id: "7", slug: "ada", name: "Ada" };
+    await factory.ProjectEvent.create({
+      projectId: project.id,
+      name: "build.reviewed",
+      data: {
+        build: { id: "1" },
+        review: { id: "1", user: reviewer, dismissedBy: reviewer },
+      },
+    });
+
+    const withProjectToken = await read({ cursor: start.body.cursor });
+    expect(withProjectToken.body.events[0].data.review).toEqual({
+      id: "1",
+      user: null,
+      dismissedBy: null,
+    });
+
+    const owner = await factory.User.create();
+    await factory.UserAccount.create({ userId: owner.id });
+    invariant(account.teamId);
+    await factory.TeamUser.create({
+      teamId: account.teamId,
+      userId: owner.id,
+      userLevel: "owner",
+    });
+    const pat = `arp_${"e".repeat(36)}`;
+    const userAccessToken = await factory.UserAccessToken.create({
+      userId: owner.id,
+      token: hashToken(pat),
+    });
+    await UserAccessTokenScope.query().insert({
+      userAccessTokenId: userAccessToken.id,
+      accountId: account.id,
+    });
+    const withPat = await request(app)
+      .get("/projects/acme/web/events")
+      .query({ cursor: start.body.cursor })
+      .set("Authorization", `Bearer ${pat}`);
+    expect(withPat.status).toBe(200);
+    expect(withPat.body.events[0].data.review).toEqual({
+      id: "1",
+      user: reviewer,
+      dismissedBy: reviewer,
     });
   });
 
