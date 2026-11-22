@@ -410,6 +410,34 @@ jobs:
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
+  # GitBook re-reads the spec URL only every 6 hours. Asking right after the
+  # rollout brings the API reference in line with what was just deployed. This
+  # is the request `gitbook openapi publish <url>` makes.
+  refresh-api-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: deploy
+    permissions: {}
+
+    steps:
+      - name: Refresh the OpenAPI spec in GitBook
+        # The release has already shipped: GitBook being down must not fail it,
+        # its own poll catches up.
+        continue-on-error: true
+        env:
+          GITBOOK_TOKEN: ${{ secrets.GITBOOK_TOKEN }}
+          GITBOOK_ORGANIZATION_ID: ${{ vars.GITBOOK_ORGANIZATION_ID }}
+        run: |
+          set -euo pipefail
+          : "${GITBOOK_TOKEN:?Add a GITBOOK_TOKEN secret to the repository.}"
+          : "${GITBOOK_ORGANIZATION_ID:?Add a GITBOOK_ORGANIZATION_ID variable to the repository.}"
+          curl --fail-with-body --silent --show-error \
+            --request PUT \
+            --header "Authorization: Bearer $GITBOOK_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data '{"source":{"url":"https://api.argos-ci.com/v2/openapi.yaml"}}' \
+            "https://api.gitbook.com/v1/orgs/$GITBOOK_ORGANIZATION_ID/openapi/argos-api"
+
   notify-migration-failure:
     runs-on: ubuntu-latest
     timeout-minutes: 5
