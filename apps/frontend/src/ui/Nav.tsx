@@ -39,7 +39,8 @@ export function NavLink(props: NavLinkProps) {
 
 /**
  * The links of a `NavList`, picked from a select. The one shown is the one
- * matching the current page exactly, as `NavLink` does with `end`.
+ * whose URL is the longest prefix of the current page, so a section stays
+ * selected on its sub-pages.
  */
 export function NavSelect(props: {
   items: { name: string; href: string }[];
@@ -49,9 +50,13 @@ export function NavSelect(props: {
   const { items } = props;
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const current = items.find((item) =>
-    matchPath({ path: item.href, end: true }, pathname),
-  );
+  const current = items
+    .filter((item) => matchPath({ path: item.href, end: false }, pathname))
+    .reduce<(typeof items)[number] | null>(
+      (longest, item) =>
+        !longest || item.href.length > longest.href.length ? item : longest,
+      null,
+    );
   return (
     <Select
       aria-label={props["aria-label"]}

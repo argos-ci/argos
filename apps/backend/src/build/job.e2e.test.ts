@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Build, Project, ScreenshotBucket } from "@/database/models";
 import { BuildNotification, ScreenshotDiff } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { performBuild } from ".";
+import { job, performBuild } from ".";
 
 describe("build", () => {
   beforeEach(async () => {
@@ -59,6 +59,46 @@ describe("build", () => {
       expect(diffs[0]).toHaveProperty("jobStatus", "complete");
       expect(diffs[0]).toHaveProperty("score", null);
       expect(diffs[0]).toHaveProperty("s3Id", null);
+    });
+  });
+
+  describe("requeueStalled", () => {
+    const now = new Date("2026-11-22T12:00:00.000Z");
+    const minutesAgo = (minutes: number) =>
+      new Date(now.getTime() - minutes * 60 * 1000).toISOString();
+
+    function createPendingBuild(finalizedAt: string | null) {
+      return factory.Build.create({
+        jobStatus: "pending",
+        conclusion: null,
+        stats: null,
+        createdAt: minutesAgo(3 * 24 * 60),
+        finalizedAt,
+      });
+    }
+
+    it("queues again the finalized builds no job picked up", async () => {
+      const [stalled] = await Promise.all([
+        createPendingBuild(minutesAgo(15)),
+        // Still on its way through the queue.
+        createPendingBuild(minutesAgo(2)),
+        // Still uploading.
+        createPendingBuild(null),
+        // Left alone past a day.
+        createPendingBuild(minutesAgo(2 * 24 * 60)),
+        factory.Build.create({
+          jobStatus: "progress",
+          conclusion: null,
+          stats: null,
+          finalizedAt: minutesAgo(15),
+        }),
+      ]);
+      const push = vi.spyOn(job, "push").mockResolvedValue();
+
+      await job.requeueStalled(now);
+
+      expect(push).toHaveBeenCalledTimes(1);
+      expect(push).toHaveBeenCalledWith(stalled.id);
     });
   });
 });

@@ -16,7 +16,7 @@ export const TokenProjectPath = z.string().min(1).nullish().meta({
     "Project to act on, as `owner/project`. Required when the project token is linked to several projects, ignored when it is linked to only one.",
 });
 
-const AccountSchema = z
+export const AccountSchema = z
   .object({
     id: z.string(),
     slug: AccountSlug,

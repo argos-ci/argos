@@ -24,7 +24,7 @@ export const transferProjectOperation = {
   operationId: "transferProject",
   summary: "Transfer a project",
   description:
-    "Move a project to another account, optionally renaming it. The token must be scoped to both accounts, and the acting user must administer the project as well as the account receiving it.",
+    "Move a project to another account, optionally renaming it. The token must be scoped to both accounts, and you must be an owner of both.",
   tags: ["Projects"],
   security: patOrOAuthAuth(["projects:write"]),
   requestParams: {

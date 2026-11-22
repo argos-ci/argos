@@ -49,6 +49,7 @@ import {
   Plan,
   Project,
   ProjectDomain,
+  ProjectEvent,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
@@ -60,6 +61,7 @@ import {
   Test,
   User,
   UserSession,
+  WebhookDelivery,
 } from "@/database/models";
 import type { AccountPermission } from "@/database/models/Account";
 import type { ProjectPermission } from "@/database/models/Project";
@@ -89,6 +91,10 @@ import { getMediaPairKey, getOppositeMediaState } from "@/media/pair";
 import { MAX_PULL_REQUEST_MEDIAS, queryProjectMedia } from "@/media/query";
 import { getLatestMediaVersions } from "@/media/version";
 import { getTestAllMetrics } from "@/metrics/test";
+import {
+  getProjectsByWebhookId,
+  WEBHOOK_DELIVERY_LIST_COLUMNS,
+} from "@/webhook/manage";
 
 import { ISignupSource, ITestStatus } from "./__generated__/resolver-types";
 import { getVisibleProjectIds } from "./services/project";
@@ -586,6 +592,42 @@ function createDiscordWebhooksByAccountIdLoader() {
       {},
     );
     return accountIds.map((accountId) => webhooksMap[accountId] ?? []);
+  });
+}
+
+function createWebhookProjectsLoader() {
+  return new DataLoader<string, Project[]>(async (webhookIds) => {
+    const projectsByWebhookId = await getProjectsByWebhookId(webhookIds);
+    return webhookIds.map(
+      (webhookId) => projectsByWebhookId.get(webhookId) ?? [],
+    );
+  });
+}
+
+/**
+ * The latest delivery of each webhook: one index probe per webhook, where
+ * `DISTINCT ON` would read every delivery kept.
+ */
+function createWebhookLastDeliveryLoader() {
+  return new DataLoader<string, WebhookDelivery | null>(async (webhookIds) => {
+    const deliveries = await WebhookDelivery.query()
+      .select("last.*")
+      .from(
+        knex.raw(
+          `unnest(?::bigint[]) as webhook(id) cross join lateral (
+            select ${WEBHOOK_DELIVERY_LIST_COLUMNS.map((column) => `"${column}"`).join(", ")}
+            from webhook_deliveries
+            where "webhookId" = webhook.id
+            order by id desc
+            limit 1
+          ) as last`,
+          [`{${webhookIds.join(",")}}`],
+        ),
+      );
+    return webhookIds.map(
+      (webhookId) =>
+        deliveries.find((delivery) => delivery.webhookId === webhookId) ?? null,
+    );
   });
 }
 
@@ -2150,12 +2192,16 @@ export const createLoaders = () => ({
   ProjectTeamUserLevel: createProjectTeamUserLevelLoader(),
   AutomationRunActionRuns: createAutomationRunActionRunsLoader(),
   ProjectTokenProjects: createProjectTokenProjectsLoader(),
+  WebhookProjects: createWebhookProjectsLoader(),
+  WebhookLastDelivery: createWebhookLastDeliveryLoader(),
   VisibleProjectIds: createVisibleProjectIdsLoader(),
   AccountPermissions: createAccountPermissionsLoader(),
   ProjectPermissions: createProjectPermissionsLoader(),
   MsTeamsWebhooksByAccountId: createMsTeamsWebhooksByAccountIdLoader(),
   DiscordWebhooksByAccountId: createDiscordWebhooksByAccountIdLoader(),
   Build: createModelLoader(Build),
+  ProjectEvent: createModelLoader(ProjectEvent),
+  WebhookDelivery: createModelLoader(WebhookDelivery),
   BuildFromCompareScreenshotBucketId:
     createBuildFromCompareScreenshotBucketIdLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),

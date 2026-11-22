@@ -118,7 +118,7 @@ export const getAccountOperation = {
   summary: "Get an account",
   description:
     "Retrieve an account with its plan and current-period usage. Use it to watch screenshot consumption against the plan before it runs over.",
-  tags: ["Users"],
+  tags: ["Accounts"],
   security: patOrOAuthAuth(["profile"]),
   requestParams: {
     path: z.object({
@@ -156,7 +156,7 @@ export const updateAccountOperation = {
   summary: "Update a team's defaults",
   description:
     "Change the role given to users that join a team through its invite link or a verified email domain. Requires administrator access to the team.",
-  tags: ["Members"],
+  tags: ["Accounts"],
   security: patOrOAuthAuth(["account:admin"]),
   requestParams: {
     path: z.object({
