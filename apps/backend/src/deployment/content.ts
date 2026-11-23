@@ -1,11 +1,8 @@
 import { invariant } from "@argos/util/invariant";
-import { HeadObjectCommand } from "@aws-sdk/client-s3";
 import { BatchGetCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
 import pRetry from "p-retry";
 
-import config from "@/config";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
-import { checkIsS3NotFoundError, getS3Client } from "@/storage/s3";
 import { chunk } from "@/util/chunk";
 import { boom } from "@/util/error";
 
@@ -83,49 +80,8 @@ export async function getExistingHashes(
 }
 
 /**
- * Concurrent HEAD requests when checking a deployment's new files: a first
- * deploy of a large Storybook holds thousands of them.
- */
-const HEAD_CONCURRENCY = 50;
-
-async function checkContentStored(hash: string): Promise<boolean> {
-  try {
-    await getS3Client("us-east-1").send(
-      new HeadObjectCommand({
-        Bucket: config.get("deployments.bucketName"),
-        Key: getDeploymentContentKey(hash),
-      }),
-    );
-    return true;
-  } catch (error) {
-    if (checkIsS3NotFoundError(error)) {
-      return false;
-    }
-    throw error;
-  }
-}
-
-async function countMissingContent(hashes: string[]): Promise<number> {
-  const queue = [...hashes];
-  let missing = 0;
-  const worker = async () => {
-    for (let hash = queue.pop(); hash !== undefined; hash = queue.pop()) {
-      if (!(await checkContentStored(hash))) {
-        missing += 1;
-      }
-    }
-  };
-  await Promise.all(
-    Array.from({ length: Math.min(HEAD_CONCURRENCY, hashes.length) }, worker),
-  );
-  return missing;
-}
-
-/**
  * Register a deployment's content in the files table so future deployments
- * skip uploading it. The table is shared by every project: a registered hash
- * tells any later deployment, whoever owns it, that its content is stored. So
- * content not registered yet is checked to have been uploaded first.
+ * skip uploading it. Hashes already registered are left as they are.
  */
 export async function registerDeploymentContent(
   files: { content_hash: string; content_type: string }[],
@@ -137,18 +93,6 @@ export async function registerDeploymentContent(
   const unregistered = Array.from(contentTypes.keys()).filter(
     (hash) => !registered.has(hash),
   );
-
-  const missingCount = await countMissingContent(unregistered);
-  if (missingCount > 0) {
-    const subject =
-      missingCount === 1
-        ? "A file of this deployment was"
-        : `${missingCount} files of this deployment were`;
-    throw boom(
-      400,
-      `${subject} not uploaded. Upload every file in uploadFiles, then finalize the deployment.`,
-    );
-  }
 
   const dynamo = getDynamoDBClient();
   const tableName = getTableName("files");
