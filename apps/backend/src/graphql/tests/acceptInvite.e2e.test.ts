@@ -1,4 +1,3 @@
-import { addDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { describe, expect, test } from "vitest";
@@ -35,15 +34,10 @@ const withInvite = test.extend<{
   },
   invite: async ({ teamAccount }, use) => {
     invariant(teamAccount.teamId, "team account has no team");
-    const inviter = await factory.User.create();
     await use(
-      await TeamInvite.query().insertAndFetch({
+      await factory.TeamInvite.create({
         teamId: teamAccount.teamId,
         email: EMAIL,
-        secret: TeamInvite.generateSecret(),
-        userLevel: "member",
-        invitedById: inviter.id,
-        expiresAt: addDays(new Date(), 1).toISOString(),
       }),
     );
   },

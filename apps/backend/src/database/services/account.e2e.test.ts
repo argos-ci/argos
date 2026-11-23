@@ -1,4 +1,3 @@
-import { addDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import { describe, expect, test } from "vitest";
 
@@ -6,7 +5,6 @@ import { generateAuthEmailCode } from "@/auth/email";
 import {
   type Account,
   GithubAccount,
-  TeamInvite,
   TeamScimUser,
   TeamUser,
   User,
@@ -52,6 +50,26 @@ async function expectEmailVerifiedOn(account: Account) {
   });
 }
 
+/**
+ * Complete a login through the team's IdP, which vouches for `EMAIL`, in a
+ * browser signed in as `signedInUserId`.
+ */
+async function logInWithSaml(args: {
+  teamAccount: Account;
+  signedInUserId?: string;
+  linkConfirmed?: boolean;
+}) {
+  const login = await getOrCreateUserAccountFromSaml({
+    email: EMAIL,
+    ssoSubject: SSO_SUBJECT,
+    signedInUserId: null,
+    linkConfirmed: false,
+    ...args,
+  });
+  invariant(login.type === "login", "Expected the login to complete");
+  return login;
+}
+
 async function findTeamUser(args: { teamAccount: Account; userId: string }) {
   invariant(args.teamAccount.teamId, "team account has no team");
   return TeamUser.query().findOne({
@@ -67,15 +85,9 @@ describe("getOrCreateUserAccountFromSaml", () => {
       invariant(userAccount.userId, "user account has no user");
       await addEmail({ account: userAccount, verified: true });
 
-      await expect(
-        getOrCreateUserAccountFromSaml({
-          email: EMAIL,
-          teamAccount,
-          ssoSubject: SSO_SUBJECT,
-          signedInUserId: null,
-          linkConfirmed: false,
-        }),
-      ).rejects.toMatchObject({ code: "SAML_ACCOUNT_LINK_REQUIRED" });
+      await expect(logInWithSaml({ teamAccount })).rejects.toMatchObject({
+        code: "SAML_ACCOUNT_LINK_REQUIRED",
+      });
       expect(
         await findTeamUser({ teamAccount, userId: userAccount.userId }),
       ).toBeUndefined();
@@ -88,10 +100,8 @@ describe("getOrCreateUserAccountFromSaml", () => {
       invariant(userAccount.userId, "user account has no user");
       await addEmail({ account: userAccount, verified: true });
 
-      const { account, creation } = await getOrCreateUserAccountFromSaml({
-        email: EMAIL,
+      const { account, creation } = await logInWithSaml({
         teamAccount,
-        ssoSubject: SSO_SUBJECT,
         signedInUserId: userAccount.userId,
         linkConfirmed: true,
       });
@@ -124,13 +134,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
             userCreated,
           });
 
-          const result = getOrCreateUserAccountFromSaml({
-            email: EMAIL,
-            teamAccount,
-            ssoSubject: SSO_SUBJECT,
-            signedInUserId: null,
-            linkConfirmed: false,
-          });
+          const result = logInWithSaml({ teamAccount });
 
           if (links) {
             expect((await result).account.id).toBe(userAccount.id);
@@ -150,13 +154,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
       invariant(userAccount.userId, "user account has no user");
       await addEmail({ account: userAccount, verified: false });
 
-      const { account, creation } = await getOrCreateUserAccountFromSaml({
-        email: EMAIL,
-        teamAccount,
-        ssoSubject: SSO_SUBJECT,
-        signedInUserId: null,
-        linkConfirmed: false,
-      });
+      const { account, creation } = await logInWithSaml({ teamAccount });
 
       expect(account.id).not.toBe(userAccount.id);
       expect(creation).toBe(true);
@@ -176,25 +174,14 @@ describe("getOrCreateUserAccountFromSaml", () => {
 
   withAccounts(
     "creates an account for a person invited to the team",
-    async ({ teamAccount, userAccount }) => {
+    async ({ teamAccount }) => {
       invariant(teamAccount.teamId, "team account has no team");
-      invariant(userAccount.userId, "user account has no user");
-      await TeamInvite.query().insert({
+      await factory.TeamInvite.create({
         teamId: teamAccount.teamId,
         email: EMAIL,
-        secret: TeamInvite.generateSecret(),
-        userLevel: "member",
-        invitedById: userAccount.userId,
-        expiresAt: addDays(new Date(), 1).toISOString(),
       });
 
-      const { account } = await getOrCreateUserAccountFromSaml({
-        email: EMAIL,
-        teamAccount,
-        ssoSubject: SSO_SUBJECT,
-        signedInUserId: null,
-        linkConfirmed: false,
-      });
+      const { account } = await logInWithSaml({ teamAccount });
 
       invariant(account.userId, "account has no user");
       expect(

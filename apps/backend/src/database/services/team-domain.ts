@@ -219,13 +219,12 @@ export async function hasAutoInviteForTeam(args: {
 export async function checkIsTeamDomainEmail(args: {
   teamId: string;
   email: string;
-  trx?: TransactionOrKnex;
 }) {
   const domain = getEmailDomain(args.email);
   if (!domain) {
     return false;
   }
-  const teamDomain = await TeamDomain.query(args.trx)
+  const teamDomain = await TeamDomain.query()
     .select("id")
     .findOne({ teamId: args.teamId, domain });
   return Boolean(teamDomain);

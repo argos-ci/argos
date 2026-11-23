@@ -1392,9 +1392,6 @@ export const resolvers: IResolvers = {
         return { team: teamAccount };
       }
 
-      // The invited email is not given to the signed-in user: anyone can
-      // forward the link, so redeeming it proves nothing about who owns the
-      // mailbox, and a verified email signs in to the account holding it.
       await transaction(async (trx) => {
         await Promise.all([
           TeamUser.query(trx)

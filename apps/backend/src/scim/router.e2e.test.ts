@@ -1,4 +1,3 @@
-import { addDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import express from "express";
 import request from "supertest";
@@ -339,14 +338,10 @@ describe("SCIM API", () => {
     });
     const invitingTeam = await factory.TeamAccount.create();
     invariant(invitingTeam.teamId);
-    const inviter = await factory.User.create();
-    await TeamInvite.query().insert({
+    await factory.TeamInvite.create({
       teamId: invitingTeam.teamId,
       email: "jane@acme.com",
-      secret: TeamInvite.generateSecret(),
       userLevel: "owner",
-      invitedById: inviter.id,
-      expiresAt: addDays(new Date(), 1).toISOString(),
     });
 
     const created = await scim(token).post("/Users", oktaUser("jane@acme.com"));

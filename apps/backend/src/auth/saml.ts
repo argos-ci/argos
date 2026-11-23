@@ -243,24 +243,6 @@ export async function consumeSamlAuthCode(
   return SamlAuthCodePayloadSchema.parse(JSON.parse(json));
 }
 
-/**
- * Make a consumed code exchangeable again, for a login that waits on the
- * user's confirmation.
- */
-export async function restoreSamlAuthCode(
-  code: string,
-  payload: SamlAuthCodePayload,
-): Promise<void> {
-  const redis = await getRedisClient();
-  await redis.set(getAuthCodeKey(code), JSON.stringify(payload), {
-    expiration: {
-      type: "PX",
-      value: EXCHANGE_CODE_TTL_MS,
-    },
-    condition: "NX",
-  });
-}
-
 function getString(input: string | string[] | null | undefined) {
   if (typeof input === "string") {
     return input;

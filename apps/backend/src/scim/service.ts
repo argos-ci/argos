@@ -13,7 +13,7 @@ import {
   type Account,
   type Team,
 } from "@/database/models";
-import { getOrCreateUserByTeamAssertedEmail } from "@/database/services/account";
+import { getOrCreateUserByVerifiedEmail } from "@/database/services/account";
 import { hashToken } from "@/database/services/crypto";
 import {
   assertTeamAdmin,
@@ -226,11 +226,13 @@ export async function createScimUser(args: {
 
   return rejectDuplicate(async () => {
     const name = attributes.displayName ?? formatName(attributes);
-    const { user, creation } = await getOrCreateUserByTeamAssertedEmail({
-      email: sanitizeEmail(email),
-      teamId: team.id,
-      accountData: { name: AccountNameSchema.safeParse(name).data ?? null },
-    });
+    const { user, creation } = await getOrCreateUserByVerifiedEmail(
+      sanitizeEmail(email),
+      {
+        assertedByTeamId: team.id,
+        accountData: { name: AccountNameSchema.safeParse(name).data ?? null },
+      },
+    );
     const userId = user.id;
     return transaction(async (trx) => {
       const scimUser = await TeamScimUser.query(trx)

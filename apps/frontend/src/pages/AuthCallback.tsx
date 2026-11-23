@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import * as Sentry from "@sentry/react";
 import { Helmet } from "react-helmet";
 import { Navigate, useParams, useSearchParams } from "react-router";
-import { z } from "zod";
 
 import { useAuth } from "@/containers/Auth";
 import { Layout } from "@/containers/Layout";
@@ -48,43 +47,24 @@ function getLoginUrl(error: unknown) {
   return "/login";
 }
 
-const SamlLinkConfirmationSchema = z.object({
-  error: z.object({
-    code: z.literal("SAML_LINK_CONFIRMATION_REQUIRED"),
-    teamName: z.string(),
-    state: z.string(),
-  }),
-});
+type LinkConfirmation = { teamName: string; code: string; state: string };
 
 /**
- * The team a signed-in user is asked to link their account to, and the state
- * the server bound to this browser for the confirmation.
+ * Redeem the code the provider sent back. Linking the signed-in account to a
+ * team's single sign-on waits on the user's confirmation instead.
  */
-function getSamlLinkConfirmation(error: unknown) {
-  if (!(error instanceof APIError)) {
-    return null;
-  }
-  const parsed = SamlLinkConfirmationSchema.safeParse(error.data);
-  return parsed.success ? parsed.data.error : null;
-}
-
 async function exchangeCode(input: {
   provider: AuthProvider;
-  code: string;
-  state: string;
+  data: { code: string; state: string; confirmLink?: true };
   redirect: string;
-  confirmLink?: true;
-}) {
-  const data = await fetchApi<{ creation: boolean; hasAutoInvite: boolean }>(
-    `/auth/${input.provider}`,
-    {
-      data: {
-        code: input.code,
-        state: input.state,
-        confirmLink: input.confirmLink,
-      },
-    },
-  );
+}): Promise<LinkConfirmation | null> {
+  const data = await fetchApi<
+    | { creation: boolean; hasAutoInvite: boolean }
+    | { linkConfirmation: LinkConfirmation }
+  >(`/auth/${input.provider}`, { data: input.data });
+  if ("linkConfirmation" in data) {
+    return data.linkConfirmation;
+  }
   // The server set the session cookie on the response. Do a full
   // navigation so the app re-bootstraps as the logged-in user.
   window.location.replace(
@@ -94,6 +74,7 @@ async function exchangeCode(input: {
       redirect: input.redirect,
     }),
   );
+  return null;
 }
 
 function SamlLinkConfirmation(props: {
@@ -136,25 +117,18 @@ function AuthCallback(props: { provider: AuthProvider }) {
   const errorParam = searchParams.get("error");
   const redirectUri = state ? getRedirectFromState(state) : null;
   const [authError, setAuthError] = useState<Error | null>(null);
-  const [samlLinkConfirmation, setSamlLinkConfirmation] = useState<{
-    teamName: string;
-    state: string;
-  } | null>(null);
+  const [linkConfirmation, setLinkConfirmation] =
+    useState<LinkConfirmation | null>(null);
   useEffect(() => {
     if (!code || !state || !redirectUri) {
       return;
     }
 
-    exchangeCode({ provider, code, state, redirect: redirectUri }).catch(
-      (error) => {
-        const confirmation = getSamlLinkConfirmation(error);
-        if (confirmation) {
-          setSamlLinkConfirmation(confirmation);
-          return;
-        }
+    exchangeCode({ provider, data: { code, state }, redirect: redirectUri })
+      .then(setLinkConfirmation)
+      .catch((error) => {
         setAuthError(error);
-      },
-    );
+      });
   }, [code, state, provider, redirectUri]);
 
   // If a authError is thrown, it will be caught by the ErrorBoundary.
@@ -171,20 +145,22 @@ function AuthCallback(props: { provider: AuthProvider }) {
     return <UniversalNavigate to="/login" replace />;
   }
 
-  if (samlLinkConfirmation) {
+  if (linkConfirmation) {
     return (
       <SamlLinkConfirmation
-        teamName={samlLinkConfirmation.teamName}
+        teamName={linkConfirmation.teamName}
         cancelHref={redirectUri}
-        onConfirm={() =>
-          exchangeCode({
+        onConfirm={async () => {
+          await exchangeCode({
             provider,
-            code,
-            state: samlLinkConfirmation.state,
+            data: {
+              code: linkConfirmation.code,
+              state: linkConfirmation.state,
+              confirmLink: true,
+            },
             redirect: redirectUri,
-            confirmLink: true,
-          })
-        }
+          });
+        }}
       />
     );
   }
