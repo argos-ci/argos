@@ -1,13 +1,21 @@
 import { invariant } from "@argos/util/invariant";
 import { HeadObjectCommand } from "@aws-sdk/client-s3";
-import { BatchGetCommand } from "@aws-sdk/lib-dynamodb";
-import { chunk } from "lodash-es";
+import { BatchGetCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
 import pRetry from "p-retry";
 
 import config from "@/config";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
-import { getS3Client } from "@/storage/s3";
+import { checkIsS3NotFoundError, getS3Client } from "@/storage/s3";
+import { chunk } from "@/util/chunk";
 import { boom } from "@/util/error";
+
+/**
+ * The key of content in the deployments bucket, shared by every deployment
+ * whose files hash to it.
+ */
+export function getDeploymentContentKey(hash: string): string {
+  return `content/${hash}`;
+}
 
 /**
  * Batch check which hashes already exist in the files table.
@@ -20,15 +28,9 @@ export async function getExistingHashes(
   const tableName = getTableName("files");
   const existing = new Set<string>();
 
-  // DynamoDB BatchGetItem supports max 100 keys per request
-  const batchSize = 100;
-  const batches = [];
-  for (let i = 0; i < hashesArray.length; i += batchSize) {
-    batches.push(hashesArray.slice(i, i + batchSize));
-  }
-
   await Promise.all(
-    batches.map(async (batch) => {
+    // DynamoDB BatchGetItem supports max 100 keys per request
+    chunk(hashesArray, 100).map(async (batch) => {
       try {
         await pRetry(
           async () => {
@@ -91,41 +93,108 @@ async function checkContentStored(hash: string): Promise<boolean> {
     await getS3Client("us-east-1").send(
       new HeadObjectCommand({
         Bucket: config.get("deployments.bucketName"),
-        Key: `content/${hash}`,
+        Key: getDeploymentContentKey(hash),
       }),
     );
     return true;
   } catch (error) {
-    if (error instanceof Error && error.name === "NotFound") {
+    if (checkIsS3NotFoundError(error)) {
       return false;
     }
     throw error;
   }
 }
 
+async function countMissingContent(hashes: string[]): Promise<number> {
+  const queue = [...hashes];
+  let missing = 0;
+  const worker = async () => {
+    for (let hash = queue.pop(); hash !== undefined; hash = queue.pop()) {
+      if (!(await checkContentStored(hash))) {
+        missing += 1;
+      }
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(HEAD_CONCURRENCY, hashes.length) }, worker),
+  );
+  return missing;
+}
+
 /**
- * The files table is shared by every project: a registered hash tells any
- * later deployment, whoever owns it, that its content is stored and need not
- * be uploaded. Check that content not registered yet was actually uploaded
- * before a deployment registers it.
+ * Register a deployment's content in the files table so future deployments
+ * skip uploading it. The table is shared by every project: a registered hash
+ * tells any later deployment, whoever owns it, that its content is stored. So
+ * content not registered yet is checked to have been uploaded first.
  */
-export async function assertContentUploaded(hashes: string[]) {
-  const uniqueHashes = new Set(hashes);
-  const registered = await getExistingHashes(uniqueHashes);
-  const unregistered = Array.from(uniqueHashes).filter(
+export async function registerDeploymentContent(
+  files: { content_hash: string; content_type: string }[],
+) {
+  const contentTypes = new Map(
+    files.map((file) => [file.content_hash, file.content_type]),
+  );
+  const registered = await getExistingHashes(new Set(contentTypes.keys()));
+  const unregistered = Array.from(contentTypes.keys()).filter(
     (hash) => !registered.has(hash),
   );
-  let missingCount = 0;
-  for (const batch of chunk(unregistered, HEAD_CONCURRENCY)) {
-    const stored = await Promise.all(batch.map(checkContentStored));
-    missingCount += stored.filter((isStored) => !isStored).length;
-  }
+
+  const missingCount = await countMissingContent(unregistered);
   if (missingCount > 0) {
+    const subject =
+      missingCount === 1
+        ? "A file of this deployment was"
+        : `${missingCount} files of this deployment were`;
     throw boom(
       400,
-      missingCount === 1
-        ? "A file of this deployment was not uploaded. Upload every file in uploadFiles, then finalize the deployment."
-        : `${missingCount} files of this deployment were not uploaded. Upload every file in uploadFiles, then finalize the deployment.`,
+      `${subject} not uploaded. Upload every file in uploadFiles, then finalize the deployment.`,
     );
+  }
+
+  const dynamo = getDynamoDBClient();
+  const tableName = getTableName("files");
+  // DynamoDB BatchWriteItem supports max 25 items per request
+  for (const batch of chunk(unregistered, 25)) {
+    let requests = batch.map((hash) => ({
+      PutRequest: {
+        Item: {
+          content_hash: hash,
+          s3_key: getDeploymentContentKey(hash),
+          content_type: contentTypes.get(hash),
+          created_at: new Date().toISOString(),
+        },
+      },
+    }));
+
+    try {
+      await pRetry(
+        async () => {
+          const result = await dynamo.send(
+            new BatchWriteCommand({
+              RequestItems: {
+                [tableName]: requests,
+              },
+            }),
+          );
+
+          requests =
+            (result.UnprocessedItems?.[tableName] as
+              | typeof requests
+              | undefined) ?? [];
+          if (requests.length > 0) {
+            throw new Error(
+              `DynamoDB returned ${requests.length} unprocessed file hashes`,
+            );
+          }
+        },
+        {
+          retries: 5,
+        },
+      );
+    } catch {
+      throw boom(
+        500,
+        `Failed to register file hashes after retries (${requests.length} unprocessed items remain)`,
+      );
+    }
   }
 }

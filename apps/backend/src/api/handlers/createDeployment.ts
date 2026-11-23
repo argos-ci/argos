@@ -14,7 +14,10 @@ import config from "@/config";
 import type { Project } from "@/database/models";
 import { Deployment } from "@/database/models/Deployment";
 import { pushDeploymentNotification } from "@/deployment-notification";
-import { getExistingHashes } from "@/deployment/content";
+import {
+  getDeploymentContentKey,
+  getExistingHashes,
+} from "@/deployment/content";
 import { generateDeploymentSlug } from "@/deployment/slug";
 import { trySendProjectEvent } from "@/event/send";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
@@ -250,7 +253,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
       filesToUpload.map(async (file) => {
         const command = new PutObjectCommand({
           Bucket: bucketName,
-          Key: `content/${file.hash}`,
+          Key: getDeploymentContentKey(file.hash),
           ContentType: file.contentType,
         });
         const uploadUrl = await getSignedUrl(s3, command, {

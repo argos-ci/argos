@@ -1,13 +1,29 @@
+import { invariant } from "@argos/util/invariant";
 import {
   CNAMEAlreadyExists,
   InvalidArgument,
 } from "@aws-sdk/client-cloudfront";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ProjectDomain } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { claimCustomDomain, recordReconcileFailure } from "./custom-domain";
+
+// The TXT records the custom domains' DNS answers with, by name.
+const dns = vi.hoisted(() => ({ txtRecords: new Map<string, string[][]>() }));
+vi.mock("node:dns/promises", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("node:dns/promises")>()),
+  resolveTxt: async (name: string) => {
+    const records = dns.txtRecords.get(name);
+    if (!records) {
+      throw Object.assign(new Error(`queryTxt ENODATA ${name}`), {
+        code: "ENODATA",
+      });
+    }
+    return records;
+  },
+}));
 
 const terminalError = () =>
   new CNAMEAlreadyExists({
@@ -91,18 +107,30 @@ describe("recordReconcileFailure", () => {
 describe("claimCustomDomain", () => {
   beforeEach(async () => {
     await setupDatabase();
+    dns.txtRecords.clear();
   });
 
   const DOMAIN = "docs.example.com";
   const ROUTING_ENDPOINT = "cname.dev.argos-ci.live";
 
-  function claim(projectId: string, options?: { takeover: boolean }) {
+  function claim(projectId: string) {
     return claimCustomDomain({
       projectId,
       domain: DOMAIN,
       routingEndpoint: ROUTING_ENDPOINT,
-      takeover: options?.takeover ?? false,
     });
+  }
+
+  /**
+   * Publish the challenge record the refused claim asked the project for.
+   */
+  async function publishChallenge(projectId: string) {
+    const error = await claim(projectId).catch((error: unknown) => error);
+    const match = String(error).match(
+      /TXT record named (\S+) with the value (\w+)/,
+    );
+    invariant(match?.[1] && match[2], "Expected a challenge to publish");
+    dns.txtRecords.set(match[1], [[match[2]]]);
   }
 
   it("claims a hostname nobody holds", async () => {
@@ -120,26 +148,32 @@ describe("claimCustomDomain", () => {
     });
   });
 
+  it("lets the holder add its own pending hostname again", async () => {
+    const holder = await factory.Project.create();
+    const held = await claim(holder.id);
+
+    await expect(claim(holder.id)).resolves.toMatchObject({ id: held.id });
+  });
+
   // Every project points its domain at the same target, so the DNS change
   // that activates a pending row proves nothing about which project made it.
   it("keeps a hostname with its holder until another project proves it", async () => {
-    const [holder, other] = await Promise.all([
+    const [holder, other, third] = await Promise.all([
+      factory.Project.create(),
       factory.Project.create(),
       factory.Project.create(),
     ]);
     const held = await claim(holder.id);
 
-    await expect(claim(other.id)).resolves.toBeNull();
+    await expect(claim(other.id)).rejects.toThrow(
+      /add a TXT record named _argos-challenge\.docs\.example\.com/,
+    );
+    // A record published for another project proves nothing for this one.
+    await publishChallenge(third.id);
+    await expect(claim(other.id)).rejects.toThrow(/TXT record/);
 
     const row = await ProjectDomain.query().findOne({ domain: DOMAIN });
-    expect(row).toMatchObject({ id: held?.id, projectId: holder.id });
-  });
-
-  it("lets the holder add its own pending hostname again", async () => {
-    const holder = await factory.Project.create();
-    const held = await claim(holder.id);
-
-    await expect(claim(holder.id)).resolves.toMatchObject({ id: held?.id });
+    expect(row).toMatchObject({ id: held.id, projectId: holder.id });
   });
 
   // The squatting fix: a row with no tenant cannot lock out a project that
@@ -150,36 +184,27 @@ describe("claimCustomDomain", () => {
       factory.Project.create(),
     ]);
     const squatted = await claim(squatter.id);
-
-    const claimed = await claim(owner.id, { takeover: true });
-
-    expect(claimed).toMatchObject({ projectId: owner.id, status: "pending" });
-    // The same row moves across rather than a second one appearing, so the
-    // unique constraint still holds.
-    expect(claimed?.id).toBe(squatted?.id);
-    await expect(
-      ProjectDomain.query().where({ domain: DOMAIN }).resultSize(),
-    ).resolves.toBe(1);
-  });
-
-  it("clears the previous holder's diagnostics on a takeover", async () => {
-    const [squatter, owner] = await Promise.all([
-      factory.Project.create(),
-      factory.Project.create(),
-    ]);
-    const squatted = await claim(squatter.id);
-    await squatted?.$query().patch({
+    await squatted.$query().patch({
       statusReason: "something went wrong for them",
       lastCheckedAt: new Date().toISOString(),
     });
+    await publishChallenge(owner.id);
 
-    const claimed = await claim(owner.id, { takeover: true });
+    const claimed = await claim(owner.id);
 
     expect(claimed).toMatchObject({
+      projectId: owner.id,
+      status: "pending",
       statusReason: null,
       activatedAt: null,
       lastCheckedAt: null,
     });
+    // The same row moves across rather than a second one appearing, so the
+    // unique constraint still holds.
+    expect(claimed.id).toBe(squatted.id);
+    await expect(
+      ProjectDomain.query().where({ domain: DOMAIN }).resultSize(),
+    ).resolves.toBe(1);
   });
 
   // A tenant only exists once CloudFront verified the domain resolves to us,
@@ -190,9 +215,9 @@ describe("claimCustomDomain", () => {
       factory.Project.create(),
     ]);
     const held = await claim(holder.id);
-    await held?.$query().patch({ cloudfrontTenantId: "dt_verified" });
+    await held.$query().patch({ cloudfrontTenantId: "dt_verified" });
 
-    await expect(claim(other.id, { takeover: true })).resolves.toBeNull();
+    await expect(claim(other.id)).rejects.toThrow("Domain already in use");
 
     const row = await ProjectDomain.query().findOne({ domain: DOMAIN });
     expect(row).toMatchObject({
@@ -213,7 +238,7 @@ describe("claimCustomDomain", () => {
       internal: true,
     });
 
-    await expect(claim(other.id, { takeover: true })).resolves.toBeNull();
+    await expect(claim(other.id)).rejects.toThrow("Domain already in use");
 
     const row = await ProjectDomain.query().findOne({ domain: DOMAIN });
     expect(row).toMatchObject({ projectId: holder.id, internal: true });

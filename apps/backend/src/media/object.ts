@@ -3,7 +3,7 @@ import type { TransactionOrKnex } from "objection";
 
 import config from "@/config";
 import { MediaDiff, MediaVersion } from "@/database/models";
-import { getS3Client } from "@/storage/s3";
+import { checkIsS3NotFoundError, getS3Client } from "@/storage/s3";
 import { chunk } from "@/util/chunk";
 
 /**
@@ -27,7 +27,7 @@ export async function headMediaObject(
       contentType: result.ContentType ?? null,
     };
   } catch (error) {
-    if (isNotFoundError(error)) {
+    if (checkIsS3NotFoundError(error)) {
       return null;
     }
     throw error;
@@ -192,23 +192,4 @@ export async function getMediaDiffObjects(
     keys: diffs.map((diff) => diff.key).filter((key) => key !== null),
     diffIds: diffs.map((diff) => diff.id),
   };
-}
-
-function isNotFoundError(error: unknown): boolean {
-  if (!error || typeof error !== "object") {
-    return false;
-  }
-  if ("name" in error && error.name === "NotFound") {
-    return true;
-  }
-  // A bucket without `s3:ListBucket` answers 403 for a missing key rather than
-  // 404 — indistinguishable from absent, and treated as such.
-  return (
-    "$metadata" in error &&
-    typeof error.$metadata === "object" &&
-    error.$metadata !== null &&
-    "httpStatusCode" in error.$metadata &&
-    (error.$metadata.httpStatusCode === 404 ||
-      error.$metadata.httpStatusCode === 403)
-  );
 }

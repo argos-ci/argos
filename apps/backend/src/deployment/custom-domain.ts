@@ -127,18 +127,12 @@ export function validateCustomDomain(domain: string): string {
 }
 
 /**
- * Claim a hostname. A row with no `cloudfrontTenantId` is a hostname nobody has
- * proven anything about: the tenant is created once CloudFront has verified
- * the domain resolves to us. That check cannot tell projects apart, since every
- * one points its domain at the same target, so a row only moves to another
- * project with `takeover`, once that project has proven it controls the DNS
- * (see `checkCustomDomainChallenge`). A row with a tenant never moves.
- *
  * One conditional upsert, because Postgres skips `DO UPDATE` when the `WHERE`
- * does not hold — so two teams racing cannot both pass a check. Returns null
- * when the hostname is spoken for.
+ * does not hold — so two teams racing cannot both pass a check. Without
+ * `takeover`, only the project's own row may be updated. Returns null when the
+ * hostname is spoken for.
  */
-export async function claimCustomDomain(input: {
+async function upsertCustomDomainClaim(input: {
   projectId: string;
   domain: string;
   routingEndpoint: string;
@@ -196,14 +190,13 @@ function getCustomDomainChallenge(input: {
   return { name: `_argos-challenge.${input.domain}`, value };
 }
 
-async function checkCustomDomainChallenge(input: {
-  projectId: string;
-  domain: string;
+async function checkTxtRecord(input: {
+  name: string;
+  value: string;
 }): Promise<boolean> {
-  const { name, value } = getCustomDomainChallenge(input);
   try {
-    const records = await resolveTxt(name);
-    return records.some((chunks) => chunks.join("") === value);
+    const records = await resolveTxt(input.name);
+    return records.some((chunks) => chunks.join("") === input.value);
   } catch {
     // No record yet, or a DNS failure: either way, nothing is proven.
     return false;
@@ -211,37 +204,43 @@ async function checkCustomDomainChallenge(input: {
 }
 
 /**
- * Claim a hostname for the project, taking it from a project that never proved
- * it owned it only once this one has published its challenge record.
+ * Claim a hostname for the project. A row with no `cloudfrontTenantId` is a
+ * hostname nobody has proven anything about: the tenant is created once
+ * CloudFront has verified the domain resolves to us, and that check cannot
+ * tell projects apart, since every one points its domain at the same target.
+ * So a pending row moves to another project only once that project has
+ * published its challenge record. A row with a tenant never moves.
  */
-async function claimOrTakeOverCustomDomain(input: {
+export async function claimCustomDomain(input: {
   projectId: string;
   domain: string;
   routingEndpoint: string;
 }): Promise<ProjectDomain> {
-  const claimed = await claimCustomDomain({ ...input, takeover: false });
+  const claimed = await upsertCustomDomainClaim({ ...input, takeover: false });
   if (claimed) {
     return claimed;
   }
 
+  const inUse = boom(400, "Domain already in use", {
+    code: "PROJECT_DOMAIN_ALREADY_USED",
+  });
   const holder = await ProjectDomain.query().findOne({ domain: input.domain });
-  const isUnproven = holder && !holder.internal && !holder.cloudfrontTenantId;
-  if (isUnproven && !(await checkCustomDomainChallenge(input))) {
-    const { name, value } = getCustomDomainChallenge(input);
+  if (!holder || holder.internal || holder.cloudfrontTenantId) {
+    throw inUse;
+  }
+
+  const challenge = getCustomDomainChallenge(input);
+  if (!(await checkTxtRecord(challenge))) {
     throw boom(
       400,
-      `Another project already added this domain. To move it to this project, add a TXT record named ${name} with the value ${value}, then add the domain again.`,
+      `Another project already added this domain. To move it to this project, add a TXT record named ${challenge.name} with the value ${challenge.value}, then add the domain again.`,
       { code: "PROJECT_DOMAIN_ALREADY_USED" },
     );
   }
 
-  const taken = isUnproven
-    ? await claimCustomDomain({ ...input, takeover: true })
-    : null;
+  const taken = await upsertCustomDomainClaim({ ...input, takeover: true });
   if (!taken) {
-    throw boom(400, "Domain already in use", {
-      code: "PROJECT_DOMAIN_ALREADY_USED",
-    });
+    throw inUse;
   }
   return taken;
 }
@@ -263,7 +262,7 @@ export async function addCustomDomain(input: {
 
   const domain = validateCustomDomain(input.domain);
 
-  const projectDomain = await claimOrTakeOverCustomDomain({
+  const projectDomain = await claimCustomDomain({
     projectId: input.projectId,
     domain,
     routingEndpoint: getCustomDomainsTarget(),

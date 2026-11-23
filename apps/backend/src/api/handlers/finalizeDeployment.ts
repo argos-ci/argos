@@ -1,6 +1,5 @@
 import { invariant } from "@argos/util/invariant";
-import { BatchWriteCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
-import pRetry from "p-retry";
+import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -14,7 +13,7 @@ import {
 } from "@/database/services/project-domain";
 import { pushDeploymentNotification } from "@/deployment-notification";
 import { getDeploymentAliases } from "@/deployment/alias";
-import { assertContentUploaded } from "@/deployment/content";
+import { registerDeploymentContent } from "@/deployment/content";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { trySendProjectEvent } from "@/event/send";
 import { githubDeploymentJob } from "@/github-deployment/job";
@@ -79,74 +78,6 @@ async function getDeploymentFileHashes(
 }
 
 /**
- * Register file hashes in the files table so future deployments can skip them.
- */
-async function registerFileHashes(
-  files: { content_hash: string; content_type: string }[],
-) {
-  const dynamo = getDynamoDBClient();
-  const tableName = getTableName("files");
-
-  // Deduplicate by content_hash
-  const seen = new Set<string>();
-  const unique = files.filter((f) => {
-    if (seen.has(f.content_hash)) {
-      return false;
-    }
-    seen.add(f.content_hash);
-    return true;
-  });
-
-  // DynamoDB BatchWriteItem supports max 25 items per request
-  const batchSize = 25;
-  for (let i = 0; i < unique.length; i += batchSize) {
-    const batch = unique.slice(i, i + batchSize);
-    let requests = batch.map((file) => ({
-      PutRequest: {
-        Item: {
-          content_hash: file.content_hash,
-          s3_key: `content/${file.content_hash}`,
-          content_type: file.content_type,
-          created_at: new Date().toISOString(),
-        },
-      },
-    }));
-
-    try {
-      await pRetry(
-        async () => {
-          const result = await dynamo.send(
-            new BatchWriteCommand({
-              RequestItems: {
-                [tableName]: requests,
-              },
-            }),
-          );
-
-          requests =
-            (result.UnprocessedItems?.[tableName] as
-              | typeof requests
-              | undefined) ?? [];
-          if (requests.length > 0) {
-            throw new Error(
-              `DynamoDB returned ${requests.length} unprocessed file hashes`,
-            );
-          }
-        },
-        {
-          retries: 5,
-        },
-      );
-    } catch {
-      throw boom(
-        500,
-        `Failed to register file hashes after retries (${requests.length} unprocessed items remain)`,
-      );
-    }
-  }
-}
-
-/**
  * Point the aliases of the deployment at it. Returns the aliases, and the
  * deployments that held them before.
  */
@@ -160,27 +91,26 @@ async function updateDeploymentAliases(input: {
   previousDeploymentIds: string[];
 }> {
   const { deployment, project, account, projectDomains } = input;
+  const candidates = getDeploymentAliases({
+    accountSlug: account.slug,
+    projectName: project.name,
+    deployment,
+    projectDomains,
+  });
   // Branch aliases are built from names and cut to a length, so two projects
   // can derive the same one: the project that holds a hostname keeps it.
   // Domain aliases come from `project_domains`, which owns them already.
-  const aliases = (
-    await Promise.all(
-      getDeploymentAliases({
-        accountSlug: account.slug,
-        projectName: project.name,
-        deployment,
-        projectDomains,
-      }).map(async (alias) =>
+  const held = await Promise.all(
+    candidates.map(
+      (alias) =>
         alias.type === "branch" &&
-        (await checkLabelHeldByAnotherProject({
+        checkLabelHeldByAnotherProject({
           label: alias.alias,
           projectId: project.id,
-        }))
-          ? null
-          : alias,
-      ),
-    )
-  ).filter((alias) => alias !== null);
+        }),
+    ),
+  );
+  const aliases = candidates.filter((_alias, index) => !held[index]);
   if (aliases.length === 0) {
     return { aliases, previousDeploymentIds: [] };
   }
@@ -212,9 +142,10 @@ async function updateDeploymentAliases(input: {
     .where((builder) =>
       builder
         .where(DeploymentAlias.raw(`excluded.type`), "domain")
-        .orWhereIn(
-          "deployment_aliases.deploymentId",
-          Deployment.query().select("id").where("projectId", project.id),
+        .orWhereExists(
+          Deployment.query()
+            .whereColumn("deployments.id", "deployment_aliases.deploymentId")
+            .where("deployments.projectId", project.id),
         ),
     );
 
@@ -284,10 +215,7 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
     // Get all file hashes from this deployment
     const files = await getDeploymentFileHashes(deploymentId);
 
-    await assertContentUploaded(files.map((file) => file.content_hash));
-
-    // Register hashes into the files table for deduplication
-    await registerFileHashes(files);
+    await registerDeploymentContent(files);
 
     [deployment] = await Promise.all([
       // Update deployment status to ready

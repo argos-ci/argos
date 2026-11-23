@@ -88,22 +88,21 @@ function getInternalDeploymentDomainSlug(name: string, index = 0) {
 export async function checkLabelHeldByAnotherProject(input: {
   label: string;
   projectId: string;
-  trx?: TransactionOrKnex;
 }): Promise<boolean> {
-  const { label, projectId, trx } = input;
+  const { label, projectId } = input;
   const [alias, deployment, domain] = await Promise.all([
-    DeploymentAlias.query(trx)
+    DeploymentAlias.query()
       .select("deployment_aliases.id")
       .joinRelated("deployment")
       .where("deployment_aliases.alias", label)
       .whereNot("deployment.projectId", projectId)
       .first(),
-    Deployment.query(trx)
+    Deployment.query()
       .select("id")
       .where("slug", label)
       .whereNot("projectId", projectId)
       .first(),
-    ProjectDomain.query(trx)
+    ProjectDomain.query()
       .select("id")
       .where("domain", getInternalDeploymentDomain(label))
       .whereNot("projectId", projectId)
@@ -120,15 +119,19 @@ async function resolveInternalDeploymentDomain(input: {
   const slug = getInternalDeploymentDomainSlug(input.name, input.index);
   const domain = getInternalDeploymentDomain(slug);
 
-  const isExisting =
+  const isTaken =
     INTERNAL_DOMAIN_SLUGS.has(slug) ||
-    Boolean(await ProjectDomain.query().select("id").findOne({ domain })) ||
-    (await checkLabelHeldByAnotherProject({
-      label: slug,
-      projectId: input.projectId,
-    }));
+    (
+      await Promise.all([
+        ProjectDomain.query().select("id").findOne({ domain }),
+        checkLabelHeldByAnotherProject({
+          label: slug,
+          projectId: input.projectId,
+        }),
+      ])
+    ).some(Boolean);
 
-  if (!isExisting) {
+  if (!isTaken) {
     return domain;
   }
 
