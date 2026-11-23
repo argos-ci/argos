@@ -1,3 +1,6 @@
+import { createHmac } from "node:crypto";
+import { resolveTxt } from "node:dns/promises";
+
 import config from "@/config";
 import { Account, ProjectDomain } from "@/database/models";
 import {
@@ -124,12 +127,12 @@ export function validateCustomDomain(domain: string): string {
 }
 
 /**
- * Claim a hostname, taking it from a holder that never proved it owned it.
- *
- * A row with no `cloudfrontTenantId` is a hostname nobody has proven anything
- * about: the tenant is created only once CloudFront has verified the domain
- * resolves to us. Until then the claim is a string someone typed into a form, so
- * it moves to whoever asks next; a row with a tenant does not.
+ * Claim a hostname. A row with no `cloudfrontTenantId` is a hostname nobody has
+ * proven anything about: the tenant is created once CloudFront has verified
+ * the domain resolves to us. That check cannot tell projects apart, since every
+ * one points its domain at the same target, so a row only moves to another
+ * project with `takeover`, once that project has proven it controls the DNS
+ * (see `checkCustomDomainChallenge`). A row with a tenant never moves.
  *
  * One conditional upsert, because Postgres skips `DO UPDATE` when the `WHERE`
  * does not hold — so two teams racing cannot both pass a check. Returns null
@@ -139,8 +142,9 @@ export async function claimCustomDomain(input: {
   projectId: string;
   domain: string;
   routingEndpoint: string;
+  takeover: boolean;
 }): Promise<ProjectDomain | null> {
-  const { projectId, domain, routingEndpoint } = input;
+  const { projectId, domain, routingEndpoint, takeover } = input;
 
   const claimed = await ProjectDomain.query()
     .insert({
@@ -164,11 +168,82 @@ export async function claimCustomDomain(input: {
     })
     .where("project_domains.cloudfrontTenantId", null)
     .andWhere("project_domains.internal", false)
+    .modify((builder) => {
+      if (!takeover) {
+        builder.andWhere("project_domains.projectId", projectId);
+      }
+    })
     .returning("*");
 
   // A refused upsert still resolves to the model we asked Objection to insert;
   // it just never reached the database, so the id is the signal, not a null.
   return claimed.id ? claimed : null;
+}
+
+/**
+ * The TXT record a project publishes to take over a hostname another project
+ * added but never proved. Derived from both, so nothing is stored and the value
+ * proves nothing for any other project.
+ */
+function getCustomDomainChallenge(input: {
+  projectId: string;
+  domain: string;
+}): { name: string; value: string } {
+  const value = createHmac("sha256", config.get("session.secret"))
+    .update(`custom-domain-challenge:${input.projectId}:${input.domain}`)
+    .digest("hex")
+    .slice(0, 32);
+  return { name: `_argos-challenge.${input.domain}`, value };
+}
+
+async function checkCustomDomainChallenge(input: {
+  projectId: string;
+  domain: string;
+}): Promise<boolean> {
+  const { name, value } = getCustomDomainChallenge(input);
+  try {
+    const records = await resolveTxt(name);
+    return records.some((chunks) => chunks.join("") === value);
+  } catch {
+    // No record yet, or a DNS failure: either way, nothing is proven.
+    return false;
+  }
+}
+
+/**
+ * Claim a hostname for the project, taking it from a project that never proved
+ * it owned it only once this one has published its challenge record.
+ */
+async function claimOrTakeOverCustomDomain(input: {
+  projectId: string;
+  domain: string;
+  routingEndpoint: string;
+}): Promise<ProjectDomain> {
+  const claimed = await claimCustomDomain({ ...input, takeover: false });
+  if (claimed) {
+    return claimed;
+  }
+
+  const holder = await ProjectDomain.query().findOne({ domain: input.domain });
+  const isUnproven = holder && !holder.internal && !holder.cloudfrontTenantId;
+  if (isUnproven && !(await checkCustomDomainChallenge(input))) {
+    const { name, value } = getCustomDomainChallenge(input);
+    throw boom(
+      400,
+      `Another project already added this domain. To move it to this project, add a TXT record named ${name} with the value ${value}, then add the domain again.`,
+      { code: "PROJECT_DOMAIN_ALREADY_USED" },
+    );
+  }
+
+  const taken = isUnproven
+    ? await claimCustomDomain({ ...input, takeover: true })
+    : null;
+  if (!taken) {
+    throw boom(400, "Domain already in use", {
+      code: "PROJECT_DOMAIN_ALREADY_USED",
+    });
+  }
+  return taken;
 }
 
 /**
@@ -188,19 +263,11 @@ export async function addCustomDomain(input: {
 
   const domain = validateCustomDomain(input.domain);
 
-  const routingEndpoint = getCustomDomainsTarget();
-
-  const projectDomain = await claimCustomDomain({
+  const projectDomain = await claimOrTakeOverCustomDomain({
     projectId: input.projectId,
     domain,
-    routingEndpoint,
+    routingEndpoint: getCustomDomainsTarget(),
   });
-
-  if (!projectDomain) {
-    throw boom(400, "Domain already in use", {
-      code: "PROJECT_DOMAIN_ALREADY_USED",
-    });
-  }
 
   try {
     return await reconcileCustomDomain(projectDomain);

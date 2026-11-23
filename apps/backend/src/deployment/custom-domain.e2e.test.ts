@@ -96,11 +96,12 @@ describe("claimCustomDomain", () => {
   const DOMAIN = "docs.example.com";
   const ROUTING_ENDPOINT = "cname.dev.argos-ci.live";
 
-  function claim(projectId: string) {
+  function claim(projectId: string, options?: { takeover: boolean }) {
     return claimCustomDomain({
       projectId,
       domain: DOMAIN,
       routingEndpoint: ROUTING_ENDPOINT,
+      takeover: options?.takeover ?? false,
     });
   }
 
@@ -119,8 +120,30 @@ describe("claimCustomDomain", () => {
     });
   });
 
-  // The squatting fix: a row with no tenant is a hostname someone typed into a
-  // form and never proved anything about, so it cannot lock anyone out.
+  // Every project points its domain at the same target, so the DNS change
+  // that activates a pending row proves nothing about which project made it.
+  it("keeps a hostname with its holder until another project proves it", async () => {
+    const [holder, other] = await Promise.all([
+      factory.Project.create(),
+      factory.Project.create(),
+    ]);
+    const held = await claim(holder.id);
+
+    await expect(claim(other.id)).resolves.toBeNull();
+
+    const row = await ProjectDomain.query().findOne({ domain: DOMAIN });
+    expect(row).toMatchObject({ id: held?.id, projectId: holder.id });
+  });
+
+  it("lets the holder add its own pending hostname again", async () => {
+    const holder = await factory.Project.create();
+    const held = await claim(holder.id);
+
+    await expect(claim(holder.id)).resolves.toMatchObject({ id: held?.id });
+  });
+
+  // The squatting fix: a row with no tenant cannot lock out a project that
+  // proves it controls the domain.
   it("takes a hostname from a project that never proved it owned it", async () => {
     const [squatter, owner] = await Promise.all([
       factory.Project.create(),
@@ -128,7 +151,7 @@ describe("claimCustomDomain", () => {
     ]);
     const squatted = await claim(squatter.id);
 
-    const claimed = await claim(owner.id);
+    const claimed = await claim(owner.id, { takeover: true });
 
     expect(claimed).toMatchObject({ projectId: owner.id, status: "pending" });
     // The same row moves across rather than a second one appearing, so the
@@ -150,7 +173,7 @@ describe("claimCustomDomain", () => {
       lastCheckedAt: new Date().toISOString(),
     });
 
-    const claimed = await claim(owner.id);
+    const claimed = await claim(owner.id, { takeover: true });
 
     expect(claimed).toMatchObject({
       statusReason: null,
@@ -169,7 +192,7 @@ describe("claimCustomDomain", () => {
     const held = await claim(holder.id);
     await held?.$query().patch({ cloudfrontTenantId: "dt_verified" });
 
-    await expect(claim(other.id)).resolves.toBeNull();
+    await expect(claim(other.id, { takeover: true })).resolves.toBeNull();
 
     const row = await ProjectDomain.query().findOne({ domain: DOMAIN });
     expect(row).toMatchObject({
@@ -190,7 +213,7 @@ describe("claimCustomDomain", () => {
       internal: true,
     });
 
-    await expect(claim(other.id)).resolves.toBeNull();
+    await expect(claim(other.id, { takeover: true })).resolves.toBeNull();
 
     const row = await ProjectDomain.query().findOne({ domain: DOMAIN });
     expect(row).toMatchObject({ projectId: holder.id, internal: true });

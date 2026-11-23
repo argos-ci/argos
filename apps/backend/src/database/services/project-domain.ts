@@ -34,7 +34,7 @@ function validateDomain(domain: string) {
   return normalizedDomain;
 }
 
-function validateInternalDomain(domain: string) {
+async function validateInternalDomain(domain: string, projectId: string) {
   const normalizedDomain = validateDomain(domain);
   const suffix = `.${getInternalDeploymentBaseDomain()}`;
 
@@ -51,6 +51,12 @@ function validateInternalDomain(domain: string) {
 
   if (INTERNAL_DOMAIN_SLUGS.has(slug)) {
     throw boom(400, "Internal slug not available", {
+      code: "PROJECT_DOMAIN_INTERNAL_SLUG",
+    });
+  }
+
+  if (await checkLabelHeldByAnotherProject({ label: slug, projectId })) {
+    throw boom(400, "Domain already in use", {
       code: "PROJECT_DOMAIN_INTERNAL_SLUG",
     });
   }
@@ -73,22 +79,60 @@ function getInternalDeploymentDomainSlug(name: string, index = 0) {
     : nameSlug;
 }
 
-async function resolveInternalDeploymentDomain(
-  name: string,
-  index = 0,
-): Promise<string> {
-  const slug = getInternalDeploymentDomainSlug(name, index);
+/**
+ * Whether a label under the deployments base domain already answers for
+ * another project. Branch aliases and deployment slugs are stored bare and
+ * internal domains as full hostnames, while resolution treats both spellings
+ * as the same hostname, so no unique constraint sees a clash between them.
+ */
+export async function checkLabelHeldByAnotherProject(input: {
+  label: string;
+  projectId: string;
+  trx?: TransactionOrKnex;
+}): Promise<boolean> {
+  const { label, projectId, trx } = input;
+  const [alias, deployment, domain] = await Promise.all([
+    DeploymentAlias.query(trx)
+      .select("deployment_aliases.id")
+      .joinRelated("deployment")
+      .where("deployment_aliases.alias", label)
+      .whereNot("deployment.projectId", projectId)
+      .first(),
+    Deployment.query(trx)
+      .select("id")
+      .where("slug", label)
+      .whereNot("projectId", projectId)
+      .first(),
+    ProjectDomain.query(trx)
+      .select("id")
+      .where("domain", getInternalDeploymentDomain(label))
+      .whereNot("projectId", projectId)
+      .first(),
+  ]);
+  return Boolean(alias || deployment || domain);
+}
+
+async function resolveInternalDeploymentDomain(input: {
+  name: string;
+  projectId: string;
+  index: number;
+}): Promise<string> {
+  const slug = getInternalDeploymentDomainSlug(input.name, input.index);
   const domain = getInternalDeploymentDomain(slug);
 
   const isExisting =
     INTERNAL_DOMAIN_SLUGS.has(slug) ||
-    Boolean(await ProjectDomain.query().select("id").findOne({ domain }));
+    Boolean(await ProjectDomain.query().select("id").findOne({ domain })) ||
+    (await checkLabelHeldByAnotherProject({
+      label: slug,
+      projectId: input.projectId,
+    }));
 
   if (!isExisting) {
     return domain;
   }
 
-  return resolveInternalDeploymentDomain(name, index + 1);
+  return resolveInternalDeploymentDomain({ ...input, index: input.index + 1 });
 }
 
 /**
@@ -124,10 +168,11 @@ export async function ensureProductionInternalProjectDomain(input: {
     return existingDomain;
   }
 
-  const domain = await resolveInternalDeploymentDomain(
-    input.projectName,
-    input.index ?? 0,
-  );
+  const domain = await resolveInternalDeploymentDomain({
+    name: input.projectName,
+    projectId: input.projectId,
+    index: input.index ?? 0,
+  });
 
   try {
     return await ProjectDomain.query().insertAndFetch({
@@ -270,7 +315,10 @@ export async function upsertProductionInternalProjectDomain(input: {
   projectId: string;
   domain: string;
 }) {
-  const normalizedDomain = validateInternalDomain(input.domain);
+  const normalizedDomain = await validateInternalDomain(
+    input.domain,
+    input.projectId,
+  );
 
   return transaction(async (trx) => {
     const currentDomain = await getProductionInternalProjectDomain(

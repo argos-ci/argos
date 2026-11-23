@@ -8,9 +8,13 @@ import type { Account, Project } from "@/database/models";
 import { Deployment } from "@/database/models/Deployment";
 import { DeploymentAlias } from "@/database/models/DeploymentAlias";
 import { ProjectDomain } from "@/database/models/ProjectDomain";
-import { ensureProductionInternalProjectDomain } from "@/database/services/project-domain";
+import {
+  checkLabelHeldByAnotherProject,
+  ensureProductionInternalProjectDomain,
+} from "@/database/services/project-domain";
 import { pushDeploymentNotification } from "@/deployment-notification";
 import { getDeploymentAliases } from "@/deployment/alias";
+import { assertContentUploaded } from "@/deployment/content";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { trySendProjectEvent } from "@/event/send";
 import { githubDeploymentJob } from "@/github-deployment/job";
@@ -156,12 +160,30 @@ async function updateDeploymentAliases(input: {
   previousDeploymentIds: string[];
 }> {
   const { deployment, project, account, projectDomains } = input;
-  const aliases = getDeploymentAliases({
-    accountSlug: account.slug,
-    projectName: project.name,
-    deployment,
-    projectDomains,
-  });
+  // Branch aliases are built from names and cut to a length, so two projects
+  // can derive the same one: the project that holds a hostname keeps it.
+  // Domain aliases come from `project_domains`, which owns them already.
+  const aliases = (
+    await Promise.all(
+      getDeploymentAliases({
+        accountSlug: account.slug,
+        projectName: project.name,
+        deployment,
+        projectDomains,
+      }).map(async (alias) =>
+        alias.type === "branch" &&
+        (await checkLabelHeldByAnotherProject({
+          label: alias.alias,
+          projectId: project.id,
+        }))
+          ? null
+          : alias,
+      ),
+    )
+  ).filter((alias) => alias !== null);
+  if (aliases.length === 0) {
+    return { aliases, previousDeploymentIds: [] };
+  }
   const previousAliases = await DeploymentAlias.query()
     .distinct("deploymentId")
     .whereIn(
@@ -185,7 +207,16 @@ async function updateDeploymentAliases(input: {
       deploymentId: deployment.id,
       type: DeploymentAlias.raw(`excluded.type`),
       updatedAt: now,
-    });
+    })
+    // Another project may have taken a branch alias since the check above.
+    .where((builder) =>
+      builder
+        .where(DeploymentAlias.raw(`excluded.type`), "domain")
+        .orWhereIn(
+          "deployment_aliases.deploymentId",
+          Deployment.query().select("id").where("projectId", project.id),
+        ),
+    );
 
   return {
     aliases,
@@ -252,6 +283,8 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
 
     // Get all file hashes from this deployment
     const files = await getDeploymentFileHashes(deploymentId);
+
+    await assertContentUploaded(files.map((file) => file.content_hash));
 
     // Register hashes into the files table for deduplication
     await registerFileHashes(files);
