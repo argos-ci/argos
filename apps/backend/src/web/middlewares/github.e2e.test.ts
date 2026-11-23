@@ -2,12 +2,11 @@ import express from "express";
 import request from "supertest";
 import { afterAll, test as base, describe, expect, vi } from "vitest";
 
+import { signInstallState } from "@/auth/install-state";
 import type { Account, GithubInstallation } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { getAppOctokit } from "@/github/client";
-import { signGithubLightInstallState } from "@/github/light-install-state";
 import { quitAmqp } from "@/job-core";
-import { signOriginInstallState } from "@/origin/install-state";
 
 import { apiMiddleware } from "./github";
 
@@ -51,7 +50,9 @@ function visitSetupUrl(input: {
       setup_action: "install",
       state:
         input.state ??
-        signGithubLightInstallState({ accountId: input.account.id }),
+        signInstallState("github-light-install", {
+          accountId: input.account.id,
+        }),
     });
 }
 
@@ -118,7 +119,7 @@ describe("GET /github-light/install", () => {
     });
     const forgedStates = [
       JSON.stringify({ accountId: fixture.teamAccount.id }),
-      signOriginInstallState({ accountId: fixture.teamAccount.id }),
+      signInstallState("origin-install", { accountId: fixture.teamAccount.id }),
     ];
     for (const state of forgedStates) {
       const res = await visitSetupUrl({

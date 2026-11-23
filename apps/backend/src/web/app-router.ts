@@ -25,7 +25,6 @@ import { installAgentDiscoveryRoutes } from "./agent-discovery";
 import oauthAuthRouter from "./auth-oauth";
 import samlAuthRouter from "./auth-saml";
 import deploymentAccessRouter from "./deployment-access";
-import githubLightInstallRouter from "./github-light-install";
 import invoiceDocumentsRouter from "./invoice-documents";
 import { installMediaShareRoutes } from "./media-share";
 import { requireCsrf } from "./middlewares/csrf";
@@ -190,8 +189,6 @@ export const installAppRouter = async (app: express.Application) => {
   router.use(oauthAuthRouter);
 
   router.use(samlAuthRouter);
-
-  router.use(githubLightInstallRouter);
 
   router.use(deploymentAccessRouter);
 

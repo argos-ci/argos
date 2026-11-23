@@ -2,11 +2,11 @@ import { createNodeMiddleware, Webhooks } from "@octokit/webhooks";
 import { Router } from "express";
 import { z } from "zod";
 
+import { verifyInstallState } from "@/auth/install-state";
 import config from "@/config";
 import { transaction } from "@/database";
 import { Account, GithubInstallation } from "@/database/models";
 import { checkOctokitErrorStatus, getAppOctokit } from "@/github";
-import { verifyGithubLightInstallState } from "@/github/light-install-state";
 import logger from "@/logger";
 import {
   handleGitHubEvents,
@@ -139,7 +139,7 @@ router.get(
       return;
     }
 
-    const state = verifyGithubLightInstallState(query.data.state);
+    const state = verifyInstallState("github-light-install", query.data.state);
     if (!state) {
       res.status(400).send("Invalid state");
       return;

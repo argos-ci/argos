@@ -2,13 +2,13 @@ import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { test as base, describe, expect } from "vitest";
 
+import { verifyInstallState } from "@/auth/install-state";
 import { createSession } from "@/auth/session";
 import { SESSION_COOKIE_NAME } from "@/auth/session-cookie";
 import type { Account } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
-import { verifyGithubLightInstallState } from "@/github/light-install-state";
 
-import router from "./github-light-install";
+import router from "./auth-oauth";
 import { createTestApp } from "./test-util";
 
 const app = createTestApp(router);
@@ -60,7 +60,7 @@ describe("GET /auth/github-light/install", () => {
     expect(location.pathname).toMatch(/\/installations\/new$/);
     const state = location.searchParams.get("state");
     invariant(state, "Missing state");
-    expect(verifyGithubLightInstallState(state)).toEqual({
+    expect(verifyInstallState("github-light-install", state)).toEqual({
       accountId: teamAccount.id,
     });
   });
