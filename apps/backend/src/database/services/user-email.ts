@@ -64,21 +64,22 @@ async function consumeEmailVerificationToken(args: {
 }
 
 /**
- * Give a user an email they have proven to own, as verified. Whoever holds it
- * unverified loses it: that proves nothing, and the email is the table's
- * primary key. A verified holder keeps it.
+ * Give a user an email, verified only when they have proven to own it. Whoever
+ * holds it unverified loses it: that proves nothing, and the email is the
+ * table's primary key. A verified holder keeps it.
  *
  * Returns `false` when the email was already verified, by this user or another.
  */
-export async function claimVerifiedEmail(input: {
+export async function claimEmail(input: {
   email: string;
   userId: string;
+  verified: boolean;
   trx?: TransactionOrKnex;
 }): Promise<boolean> {
-  const { email, userId, trx } = input;
+  const { email, userId, verified, trx } = input;
   await UserEmail.query(trx).delete().where({ email, verified: false });
   const inserted = await UserEmail.query(trx)
-    .insert([{ email, userId, verified: true }])
+    .insert([{ email, userId, verified }])
     .onConflict("email")
     .ignore()
     .returning("email");

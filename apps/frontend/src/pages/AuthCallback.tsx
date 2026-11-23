@@ -8,7 +8,7 @@ import { Layout } from "@/containers/Layout";
 import { Linkify } from "@/containers/Linkify";
 import { UniversalNavigate } from "@/containers/Redirect";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
-import { LinkButton } from "@/ui/Button";
+import { Button, LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { APIError, fetchApi } from "@/util/api";
 import {
@@ -47,6 +47,68 @@ function getLoginUrl(error: unknown) {
   return "/login";
 }
 
+type LinkConfirmation = { teamName: string; code: string; state: string };
+
+/**
+ * Redeem the code the provider sent back. Linking the signed-in account to a
+ * team's single sign-on waits on the user's confirmation instead.
+ */
+async function exchangeCode(input: {
+  provider: AuthProvider;
+  data: { code: string; state: string; confirmLink?: true };
+  redirect: string;
+}): Promise<LinkConfirmation | null> {
+  const data = await fetchApi<
+    | { creation: boolean; hasAutoInvite: boolean }
+    | { linkConfirmation: LinkConfirmation }
+  >(`/auth/${input.provider}`, { data: input.data });
+  if ("linkConfirmation" in data) {
+    return data.linkConfirmation;
+  }
+  // The server set the session cookie on the response. Do a full
+  // navigation so the app re-bootstraps as the logged-in user.
+  window.location.replace(
+    getPostAuthURL({
+      creation: data.creation,
+      hasAutoInvite: data.hasAutoInvite,
+      redirect: input.redirect,
+    }),
+  );
+  return null;
+}
+
+function SamlLinkConfirmation(props: {
+  teamName: string;
+  cancelHref: string;
+  onConfirm: () => Promise<void>;
+}) {
+  const { teamName } = props;
+  return (
+    <Layout>
+      <Container className="mt-12 max-w-md">
+        <Helmet>
+          <title>Link single sign-on</title>
+        </Helmet>
+        <Alert>
+          <AlertTitle>
+            Link your Argos account to {teamName} single sign-on?
+          </AlertTitle>
+          <AlertText>
+            Once linked, {teamName} can sign you in to this account through its
+            identity provider. Continue only if you started this sign-in.
+          </AlertText>
+          <AlertActions className="flex justify-center gap-2">
+            <LinkButton href={props.cancelHref} variant="secondary">
+              Cancel
+            </LinkButton>
+            <Button onAsyncAction={props.onConfirm}>Link account</Button>
+          </AlertActions>
+        </Alert>
+      </Container>
+    </Layout>
+  );
+}
+
 function AuthCallback(props: { provider: AuthProvider }) {
   const { provider } = props;
   const [searchParams] = useSearchParams();
@@ -55,28 +117,15 @@ function AuthCallback(props: { provider: AuthProvider }) {
   const errorParam = searchParams.get("error");
   const redirectUri = state ? getRedirectFromState(state) : null;
   const [authError, setAuthError] = useState<Error | null>(null);
+  const [linkConfirmation, setLinkConfirmation] =
+    useState<LinkConfirmation | null>(null);
   useEffect(() => {
     if (!code || !state || !redirectUri) {
       return;
     }
 
-    fetchApi<{ creation: boolean; hasAutoInvite: boolean }>(
-      `/auth/${provider}`,
-      {
-        data: { code, state },
-      },
-    )
-      .then((data) => {
-        // The server set the session cookie on the response. Do a full
-        // navigation so the app re-bootstraps as the logged-in user.
-        window.location.replace(
-          getPostAuthURL({
-            creation: data.creation,
-            hasAutoInvite: data.hasAutoInvite,
-            redirect: redirectUri,
-          }),
-        );
-      })
+    exchangeCode({ provider, data: { code, state }, redirect: redirectUri })
+      .then(setLinkConfirmation)
       .catch((error) => {
         setAuthError(error);
       });
@@ -94,6 +143,26 @@ function AuthCallback(props: { provider: AuthProvider }) {
   // If there is an error param, redirect to the login page.
   if (errorParam) {
     return <UniversalNavigate to="/login" replace />;
+  }
+
+  if (linkConfirmation) {
+    return (
+      <SamlLinkConfirmation
+        teamName={linkConfirmation.teamName}
+        cancelHref={redirectUri}
+        onConfirm={async () => {
+          await exchangeCode({
+            provider,
+            data: {
+              code: linkConfirmation.code,
+              state: linkConfirmation.state,
+              confirmLink: true,
+            },
+            redirect: redirectUri,
+          });
+        }}
+      />
+    );
   }
 
   return null;

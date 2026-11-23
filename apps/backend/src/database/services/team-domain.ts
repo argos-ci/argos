@@ -214,6 +214,23 @@ export async function hasAutoInviteForTeam(args: {
 }
 
 /**
+ * Whether the email is on one of the team's verified domains.
+ */
+export async function checkIsTeamDomainEmail(args: {
+  teamId: string;
+  email: string;
+}) {
+  const domain = getEmailDomain(args.email);
+  if (!domain) {
+    return false;
+  }
+  const teamDomain = await TeamDomain.query()
+    .select("id")
+    .findOne({ teamId: args.teamId, domain });
+  return Boolean(teamDomain);
+}
+
+/**
  * List a team's verified email domains, alphabetically.
  */
 export async function listTeamDomains(teamId: string): Promise<TeamDomain[]> {

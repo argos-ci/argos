@@ -3,7 +3,7 @@ import {
   PROJECT_TOKEN_PERMISSION_LIST,
   type ProjectTokenPermission,
 } from "@argos/schemas/project-token";
-import { addMonths, startOfDay } from "@argos/util/date";
+import { addDays, addMonths, startOfDay } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import type * as Bolt from "@slack/bolt";
 import { FactoryGirl, ModelAdapter } from "factory-girl-ts";
@@ -283,6 +283,18 @@ export const TeamUser = defineFactory(models.TeamUser, () => ({
 export const TeamDomain = defineFactory(models.TeamDomain, () => ({
   teamId: Team.associate("id") as unknown as string,
   domain: FactoryGirl.sequence("teamDomain.domain", (n) => `domain-${n}.com`),
+}));
+
+export const TeamInvite = defineFactory(models.TeamInvite, () => ({
+  teamId: Team.associate("id") as unknown as string,
+  email: FactoryGirl.sequence(
+    "teamInvite.email",
+    (n) => `invite-${n}@email.com`,
+  ),
+  secret: models.TeamInvite.generateSecret(),
+  userLevel: "member" as const,
+  invitedById: User.associate("id") as unknown as string,
+  expiresAt: addDays(new Date(), 1).toISOString(),
 }));
 
 export const ScreenshotDiff = defineFactory(models.ScreenshotDiff, () => ({

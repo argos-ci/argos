@@ -9,13 +9,16 @@ import {
   Plan,
   Subscription,
   Team,
+  TeamInvite,
   TeamScimUser,
   TeamUser,
   User,
   UserEmail,
 } from "@/database/models";
+import { hasAutoInviteForTeam } from "@/database/services/team-domain";
 import { factory, sessionViewer, setupDatabase } from "@/database/testing";
 import { getRedisClient } from "@/util/redis/client";
+import { exchangeSamlCode } from "@/web/api/auth.test-util";
 
 import router from "./router";
 import { generateTeamScimToken } from "./service";
@@ -179,6 +182,11 @@ describe("SCIM API", () => {
     token,
     teamAccount,
   }) => {
+    invariant(teamAccount.teamId);
+    await factory.TeamDomain.create({
+      teamId: teamAccount.teamId,
+      domain: "acme.com",
+    });
     const api = scim(token);
     const filter = encodeURIComponent('userName eq "jane@acme.com"');
 
@@ -315,6 +323,55 @@ describe("SCIM API", () => {
     const deleted = await api.delete(`/Users/${id}`);
     expect(deleted.status).toBe(204);
     expect((await api.get(`/Users/${id}`)).status).toBe(404);
+  });
+
+  test("gives a new account its email unverified off the team's domains", async ({
+    token,
+    teamAccount,
+  }) => {
+    invariant(teamAccount.teamId);
+    const domainTeam = await factory.TeamAccount.create();
+    invariant(domainTeam.teamId);
+    await factory.TeamDomain.create({
+      teamId: domainTeam.teamId,
+      domain: "acme.com",
+    });
+    const invitingTeam = await factory.TeamAccount.create();
+    invariant(invitingTeam.teamId);
+    await factory.TeamInvite.create({
+      teamId: invitingTeam.teamId,
+      email: "jane@acme.com",
+      userLevel: "owner",
+    });
+
+    const created = await scim(token).post("/Users", oktaUser("jane@acme.com"));
+    expect(created.status).toBe(201);
+
+    const userEmail = await UserEmail.query()
+      .findById("jane@acme.com")
+      .throwIfNotFound();
+    const { userId } = userEmail;
+    expect(userEmail.verified).toBe(false);
+    expect(
+      await hasAutoInviteForTeam({ userId, teamId: domainTeam.teamId }),
+    ).toBe(false);
+    expect(
+      await TeamUser.query().findOne({ teamId: invitingTeam.teamId, userId }),
+    ).toBeUndefined();
+    expect(
+      await TeamInvite.query().where("email", "jane@acme.com"),
+    ).toHaveLength(1);
+
+    // The team's IdP still signs in to the account its SCIM created.
+    const login = await exchangeSamlCode({
+      teamAccount,
+      email: "jane@acme.com",
+      ssoSubject: "idp-jane",
+    });
+    expect(login.body).toEqual({ creation: false, hasAutoInvite: false });
+    expect(
+      await TeamUser.query().findOne({ teamId: teamAccount.teamId, userId }),
+    ).toMatchObject({ ssoSubject: "idp-jane" });
   });
 
   test("links an existing member without changing their level", async ({

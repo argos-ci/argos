@@ -229,7 +229,8 @@ export async function createScimUser(args: {
     const { user, creation } = await getOrCreateUserByVerifiedEmail(
       sanitizeEmail(email),
       {
-        name: AccountNameSchema.safeParse(name).data ?? null,
+        assertedByTeamId: team.id,
+        accountData: { name: AccountNameSchema.safeParse(name).data ?? null },
       },
     );
     const userId = user.id;

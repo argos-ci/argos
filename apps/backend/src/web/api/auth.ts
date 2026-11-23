@@ -7,12 +7,13 @@ import {
   EXPIRED_LOGIN_MESSAGE,
   getCallbackUrl,
   getCheckedCallbackState,
+  issueCallbackState,
   requireCallbackState,
   type OAuthProvider,
 } from "@/auth/callback-binding";
 import { completeLogin, type AuthPayload } from "@/auth/login";
 import type { AuthSessionPayload } from "@/auth/payload";
-import { consumeSamlAuthCode } from "@/auth/saml";
+import { consumeSamlAuthCode, createSamlAuthCode } from "@/auth/saml";
 import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
 import type { Account } from "@/database/models";
@@ -56,6 +57,8 @@ const OAuthBodySchema = z.object({
 });
 const SamlBodySchema = z.object({
   code: z.string(),
+  /** Sent once the signed-in user approved linking their account. */
+  confirmLink: z.boolean().default(false),
 });
 
 type OAuthBody = z.infer<typeof OAuthBodySchema>;
@@ -233,12 +236,27 @@ router.use(
       safeSessionAuthFromExpressReq(req),
       AccountModel.query().findById(payload.teamAccountId).throwIfNotFound(),
     ]);
-    const { account, creation } = await getOrCreateUserAccountFromSaml({
+    const login = await getOrCreateUserAccountFromSaml({
       email: payload.email,
       teamAccount,
       ssoSubject: payload.ssoSubject,
       signedInUserId: auth?.user.id ?? null,
+      linkConfirmed: parsed.confirmLink,
     });
+    if (login.type === "confirm-link") {
+      // This request spent its code and its state: the confirmation gets new
+      // ones, the state bound to this browser.
+      const { redirect } = getCheckedCallbackState(res);
+      res.send({
+        linkConfirmation: {
+          teamName: teamAccount.displayName,
+          code: await createSamlAuthCode(payload),
+          state: issueCallbackState(res, { provider: "saml", redirect }),
+        },
+      });
+      return;
+    }
+    const { account, creation } = login;
     invariant(account.userId, "Expected account to have userId");
     invariant(teamAccount.teamId, "SAML is only available for team accounts");
     res.send(

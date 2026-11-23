@@ -236,12 +236,10 @@ export async function consumeSamlAuthCode(
   code: string,
 ): Promise<SamlAuthCodePayload | null> {
   const redis = await getRedisClient();
-  const key = getAuthCodeKey(code);
-  const json = await redis.get(key);
+  const json = await redis.getDel(getAuthCodeKey(code));
   if (!json) {
     return null;
   }
-  await redis.del(key);
   return SamlAuthCodePayloadSchema.parse(JSON.parse(json));
 }
 
