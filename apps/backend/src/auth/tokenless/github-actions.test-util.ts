@@ -66,6 +66,33 @@ export function stubWorkflowRuns(runs: Record<number, Partial<WorkflowRun>>) {
   return lookups;
 }
 
+/**
+ * Answer the lookups of a pull request of `argos-ci/argos`: GitHub reports
+ * `head` as its head, and `parents` as the parents of its test merge commit.
+ */
+export function stubPullRequest(input: {
+  number: number;
+  head: string;
+  mergeCommit: string;
+  parents: string[];
+}) {
+  githubServer.use(
+    http.get(
+      `https://api.github.com/repos/argos-ci/argos/pulls/${input.number}`,
+      () =>
+        HttpResponse.json({ number: input.number, head: { sha: input.head } }),
+    ),
+    http.get(
+      `https://api.github.com/repos/argos-ci/argos/commits/${input.mergeCommit}`,
+      () =>
+        HttpResponse.json({
+          sha: input.mergeCommit,
+          parents: input.parents.map((sha) => ({ sha })),
+        }),
+    ),
+  );
+}
+
 export function createTokenlessBearer(authData: {
   owner: string;
   repository: string;

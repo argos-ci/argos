@@ -1,20 +1,15 @@
-import { http, HttpResponse } from "msw";
-import { setupServer } from "msw/node";
 import request from "supertest";
-import {
-  afterAll,
-  afterEach,
-  test as base,
-  beforeAll,
-  describe,
-  expect,
-} from "vitest";
+import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
 
 import { createShortLivedProjectToken } from "@/auth/short-lived-project-token";
-import { createGithubRepository } from "@/auth/tokenless/github-actions.test-util";
+import {
+  createGithubRepository,
+  setupGithubServer,
+  stubPullRequest,
+} from "@/auth/tokenless/github-actions.test-util";
 import { factory, setupDatabase } from "@/database/testing";
-import { failUnhandledExceptLoopback } from "@/web/test-util";
+import { setupRedis } from "@/util/redis/testing";
 
 import { createBuild } from "../handlers/createBuild";
 import { createTestHandlerApp } from "../test-util";
@@ -27,35 +22,23 @@ const MERGE = "3".repeat(40);
 const OTHER = "4".repeat(40);
 
 /**
- * Pull request 7 of argos-ci/argos, whose test merge commit `MERGE` merges
- * `HEAD` into `BASE`. GitHub now reports `currentHead` as its head.
+ * Pull request 7, whose test merge commit `MERGE` merges `HEAD` into `BASE`.
+ * GitHub now reports `currentHead` as its head.
  */
-const githubServer = setupServer();
-function stubPullRequest(currentHead: string) {
-  githubServer.use(
-    http.get("https://api.github.com/repos/argos-ci/argos/pulls/7", () =>
-      HttpResponse.json({ number: 7, head: { sha: currentHead } }),
-    ),
-    http.get(
-      `https://api.github.com/repos/argos-ci/argos/commits/${MERGE}`,
-      () =>
-        HttpResponse.json({
-          sha: MERGE,
-          parents: [{ sha: BASE }, { sha: HEAD }],
-        }),
-    ),
-  );
+function stubPullRequest7(currentHead: string) {
+  stubPullRequest({
+    number: 7,
+    head: currentHead,
+    mergeCommit: MERGE,
+    parents: [BASE, HEAD],
+  });
 }
+
+setupRedis();
+setupGithubServer();
 
 beforeAll(() => {
   z.globalRegistry.clear();
-  githubServer.listen({ onUnhandledFrame: failUnhandledExceptLoopback });
-});
-afterEach(() => {
-  githubServer.resetHandlers();
-});
-afterAll(() => {
-  githubServer.close();
 });
 
 const test = base.extend<{ projectId: string }>({
@@ -73,25 +56,25 @@ const test = base.extend<{ projectId: string }>({
 });
 
 /**
- * Create a skipped build with a token minted from a GitHub Actions OIDC claim.
+ * Create a skipped build for `MERGE` with a token minted from a GitHub Actions
+ * OIDC claim on it.
  */
 async function createSkippedBuild(input: {
   projectId: string;
   pullRequestNumber: number | null;
-  commit: string;
   prHeadCommit: string;
 }) {
   const { token } = await createShortLivedProjectToken({
     projectId: input.projectId,
     source: "github-actions-oidc",
-    sha: input.commit,
+    sha: MERGE,
     pullRequestNumber: input.pullRequestNumber,
   });
   return request(app)
     .post("/builds")
     .set("Authorization", `Bearer ${token}`)
     .send({
-      commit: input.commit,
+      commit: MERGE,
       branch: "feature",
       prNumber: 7,
       prHeadCommit: input.prHeadCommit,
@@ -104,11 +87,10 @@ describe("prHeadCommit of a commit-bound token", () => {
   test("accepts the head of the pull request the token was minted for", async ({
     projectId,
   }) => {
-    stubPullRequest(HEAD);
+    stubPullRequest7(HEAD);
     const res = await createSkippedBuild({
       projectId,
       pullRequestNumber: 7,
-      commit: MERGE,
       prHeadCommit: HEAD,
     });
     expect(res.status).toBe(201);
@@ -117,11 +99,10 @@ describe("prHeadCommit of a commit-bound token", () => {
   test("accepts the head the merge commit was built from after a push", async ({
     projectId,
   }) => {
-    stubPullRequest(OTHER);
+    stubPullRequest7(OTHER);
     const res = await createSkippedBuild({
       projectId,
       pullRequestNumber: 7,
-      commit: MERGE,
       prHeadCommit: HEAD,
     });
     expect(res.status).toBe(201);
@@ -131,11 +112,10 @@ describe("prHeadCommit of a commit-bound token", () => {
     ["an unrelated commit", OTHER],
     ["the base branch commit", BASE],
   ] as const)("refuses %s", async ([, prHeadCommit], { projectId }) => {
-    stubPullRequest(HEAD);
+    stubPullRequest7(HEAD);
     const res = await createSkippedBuild({
       projectId,
       pullRequestNumber: 7,
-      commit: MERGE,
       prHeadCommit,
     });
     expect(res.status).toBe(401);
@@ -147,7 +127,6 @@ describe("prHeadCommit of a commit-bound token", () => {
     const res = await createSkippedBuild({
       projectId,
       pullRequestNumber: null,
-      commit: MERGE,
       prHeadCommit: HEAD,
     });
     expect(res.status).toBe(401);

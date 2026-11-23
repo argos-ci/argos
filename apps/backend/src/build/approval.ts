@@ -23,7 +23,7 @@ type ApprovalKeyRow = {
 };
 
 function getCompareKey(diff: ApprovalKeyRow): string | null {
-  return diff.compareScreenshotId && diff.compareFileId
+  return diff.compareFileId
     ? `compare:${diff.testId}:${diff.compareFileId}`
     : null;
 }
@@ -65,18 +65,32 @@ function selectApprovalKeyRows() {
 export async function getPreviousDiffApprovalIds(
   args: GetPreviousDiffApprovalIdsArgs,
 ) {
-  const approvedKeys = await getPreviousDiffApprovals(args);
+  const approvals = await getPreviousDiffApprovals(args);
 
-  if (approvedKeys.size === 0) {
+  if (approvals.length === 0) {
     return [];
   }
+
+  const approvedKeys = new Set(
+    approvals.map(getApprovalKey).filter((key) => key !== null),
+  );
+  const fingerprints = approvals.flatMap((diff) => diff.fingerprint ?? []);
+  const fileIds = approvals.flatMap(
+    (diff) => diff.compareFileId ?? diff.baseFileId ?? [],
+  );
 
   const diffs = await selectApprovalKeyRows()
     .where("screenshot_diffs.buildId", args.build.id)
     // Ignored diffs are not part of the review, so they never count as a
     // previously-approved change — even when their fingerprint or file matches
     // a prior approval.
-    .where("screenshot_diffs.ignored", false);
+    .where("screenshot_diffs.ignored", false)
+    // Narrows the build's diffs to candidates; the keys below decide.
+    .where((qb) => {
+      qb.whereIn("screenshot_diffs.fingerprint", fingerprints)
+        .orWhereIn("compareScreenshot.fileId", fileIds)
+        .orWhereIn("baseScreenshot.fileId", fileIds);
+    });
 
   // A diff with a fingerprint is also covered by an approval of the same
   // screenshot file made without one.
@@ -193,8 +207,8 @@ export async function getBuildReviewableDiffIds(
 }
 
 /**
- * Get the approval keys (see {@link getApprovalKey}) of the previously
- * approved diffs. Optionally specify a specific user.
+ * Get the previously approved diffs, as their approval keys are read (see
+ * {@link getApprovalKey}). Optionally specify a specific user.
  */
 async function getPreviousDiffApprovals(
   args: GetPreviousFilesApprovalQueryArgs,
@@ -232,7 +246,5 @@ async function getPreviousDiffApprovals(
         .whereIn("screenshot_diff_reviews.buildReviewId", buildReviewQuery),
     );
 
-  return new Set(
-    diffs.map(getApprovalKey).filter((key): key is string => key !== null),
-  );
+  return diffs;
 }

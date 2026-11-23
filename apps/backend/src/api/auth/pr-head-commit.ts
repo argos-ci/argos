@@ -1,12 +1,16 @@
-import type {
-  AuthOAuthPayload,
-  AuthPATPayload,
-  AuthProjectPayload,
-  AuthSessionPayload,
-} from "@/auth/payload";
+import type { AuthProjectPayload } from "@/auth/payload";
 import { GithubRepository, type Project } from "@/database/models";
 import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
+import { fetchPullRequest } from "@/github-pull-request/remote";
 import { boom } from "@/util/error";
+import { redisCache } from "@/util/redis";
+
+type PullRequestHeadQuestion = {
+  project: Project;
+  pullRequestNumber: number;
+  mergeCommit: string;
+  headCommit: string;
+};
 
 /**
  * Whether `headCommit` is the head of the pull request whose test merge
@@ -14,12 +18,9 @@ import { boom } from "@/util/error";
  * is the second parent of the merge commit, which covers a push landing after
  * the run started. The merge commit is read only with content access.
  */
-async function checkIsPullRequestHead(input: {
-  project: Project;
-  pullRequestNumber: number;
-  mergeCommit: string;
-  headCommit: string;
-}): Promise<boolean> {
+async function checkIsPullRequestHead(
+  input: PullRequestHeadQuestion,
+): Promise<boolean> {
   const { project } = input;
   await project.$fetchGraph(
     "githubRepository.[githubAccount, repoInstallations.installation]",
@@ -41,33 +42,49 @@ async function checkIsPullRequestHead(input: {
     repo: repository.name,
   };
 
-  const readOrNull = async <T>(request: Promise<{ data: T }>) => {
-    try {
-      return (await request).data;
-    } catch (error) {
-      if (
-        checkOctokitErrorStatus(404, error) ||
-        checkOctokitErrorStatus(403, error)
-      ) {
-        return null;
-      }
-      throw error;
-    }
-  };
-
-  const pullRequest = await readOrNull(
-    octokit.rest.pulls.get({ ...params, pull_number: input.pullRequestNumber }),
-  );
+  const pullRequest = await fetchPullRequest(octokit, {
+    ...params,
+    pull_number: input.pullRequestNumber,
+  });
   if (pullRequest?.head.sha === input.headCommit) {
     return true;
   }
 
-  const mergeCommit = await readOrNull(
-    octokit.rest.repos.getCommit({ ...params, ref: input.mergeCommit }),
-  );
-  const [, head, ...others] = mergeCommit?.parents ?? [];
-  return others.length === 0 && head?.sha === input.headCommit;
+  try {
+    const { data } = await octokit.rest.repos.getCommit({
+      ...params,
+      ref: input.mergeCommit,
+    });
+    const [, head, ...others] = data.parents;
+    return others.length === 0 && head?.sha === input.headCommit;
+  } catch (error) {
+    if (
+      checkOctokitErrorStatus(404, error) ||
+      checkOctokitErrorStatus(403, error)
+    ) {
+      return false;
+    }
+    throw error;
+  }
 }
+
+/**
+ * Every shard of a parallel build asks the same question, and the answer for a
+ * merge commit does not change while the bearer lives.
+ */
+const pullRequestHeadStore = redisCache.createStore({
+  getCacheKey: (input: PullRequestHeadQuestion) => [
+    "pull-request-head",
+    input.project.id,
+    input.pullRequestNumber,
+    input.mergeCommit,
+    input.headCommit,
+  ],
+  fetch: checkIsPullRequestHead,
+  maxAge: 10 * 60 * 1000,
+  // The default (3s) is too short for two GitHub calls.
+  timeout: 20 * 1000,
+});
 
 /**
  * Argos posts a build's status on `prHeadCommit`, so a bearer bound to a
@@ -75,23 +92,16 @@ async function checkIsPullRequestHead(input: {
  * it was minted for.
  */
 export async function assertAuthPrHeadCommit(
-  auth:
-    | AuthSessionPayload
-    | AuthPATPayload
-    | AuthProjectPayload
-    | AuthOAuthPayload,
+  auth: AuthProjectPayload,
   input: { project: Project; prHeadCommit: string | null | undefined },
 ): Promise<void> {
-  if (auth.type !== "project" || !auth.sha) {
-    return;
-  }
   const { prHeadCommit } = input;
-  if (!prHeadCommit || prHeadCommit === auth.sha) {
+  if (!auth.sha || !prHeadCommit || prHeadCommit === auth.sha) {
     return;
   }
   const isPullRequestHead =
     auth.pullRequestNumber !== null &&
-    (await checkIsPullRequestHead({
+    (await pullRequestHeadStore.get({
       project: input.project,
       pullRequestNumber: auth.pullRequestNumber,
       mergeCommit: auth.sha,

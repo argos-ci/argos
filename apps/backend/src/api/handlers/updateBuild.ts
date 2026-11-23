@@ -21,7 +21,7 @@ import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
 import { assertAuthCanWriteBuild } from "../auth/build";
-import { assertAuthAttributes, findAuthProject } from "../auth/project";
+import { findAuthProject } from "../auth/project";
 import {
   BuildIdSchema,
   BuildSchema,
@@ -131,10 +131,6 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
       throw boom(403, "Build does not belong to project");
     }
     assertAuthCanWriteBuild(auth, build);
-
-    assertAuthAttributes(auth, {
-      sha: build.compareScreenshotBucket.commit,
-    });
 
     if (build.compareScreenshotBucket.complete) {
       // The request that finalized the build may be retried (e.g. its response

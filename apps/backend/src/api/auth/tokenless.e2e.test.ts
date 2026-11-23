@@ -12,7 +12,7 @@ import {
   stubWorkflowRuns,
   type LinkedProject,
 } from "@/auth/tokenless/github-actions.test-util";
-import { Build, Media } from "@/database/models";
+import { Media, type Build } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { setupRedis } from "@/util/redis/testing";
 
@@ -213,10 +213,8 @@ describe("tokenless bearers", () => {
         .expect(200);
 
       await expect(
-        Build.query()
-          .findById(build.id)
-          .withGraphFetched("compareScreenshotBucket"),
-      ).resolves.toMatchObject({ compareScreenshotBucket: { complete: true } });
+        build.$relatedQuery("compareScreenshotBucket"),
+      ).resolves.toMatchObject({ complete: true });
     });
   });
 });
