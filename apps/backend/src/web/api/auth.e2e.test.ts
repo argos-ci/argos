@@ -1,18 +1,21 @@
+import { addDays } from "@argos/util/date";
 import { invariant } from "@argos/util/invariant";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
+import { getCallbackCookieName } from "@/auth/callback-binding";
+import { createSamlAuthCode } from "@/auth/saml";
 import { createSession, resolveSession } from "@/auth/session";
 import { SESSION_COOKIE_NAME } from "@/auth/session-cookie";
-import { Account } from "@/database/models";
+import { Account, TeamInvite, TeamUser, UserEmail } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import oauthRouter from "../auth-oauth";
 import { createTestApp, failUnhandledExceptLoopback } from "../test-util";
 import router from "./auth";
-import { exchangeSamlCode } from "./auth.test-util";
+import { bindSamlCallbackState, exchangeSamlCode } from "./auth.test-util";
 
 const EMAIL = "jane@acme.com";
 const SSO_SUBJECT = "idp-jane";
@@ -54,6 +57,8 @@ beforeAll(() => {
 afterAll(() => {
   githubServer.close();
 });
+
+const app = createTestApp(router);
 
 const samlTest = test.extend<{ samlTeamAccount: Account }>({
   samlTeamAccount: async ({}, use) => {
@@ -193,16 +198,109 @@ describe("POST /auth/github", () => {
   );
 });
 
+const signedInTest = samlTest.extend<{
+  userId: string;
+  sessionToken: string;
+}>({
+  userId: async ({ samlTeamAccount: _ }, use) => {
+    const { userId } = await factory.UserAccount.create();
+    invariant(userId, "user account has no user");
+    await factory.UserEmail.create({ userId, email: EMAIL, verified: true });
+    await use(userId);
+  },
+  sessionToken: async ({ userId }, use) => {
+    const { rawToken } = await createSession({ userId, method: "email" });
+    await use(rawToken);
+  },
+});
+
+function createCode(teamAccount: Account) {
+  return createSamlAuthCode({
+    teamAccountId: teamAccount.id,
+    email: EMAIL,
+    ssoSubject: SSO_SUBJECT,
+  });
+}
+
+/**
+ * What the callback page sends, from the browser `state` is bound to, signed
+ * in when there is a `sessionToken`.
+ */
+function exchange(input: {
+  code: string;
+  state: { state: string; cookie: string };
+  sessionToken: string | null;
+  confirmLink?: true;
+}) {
+  const cookies = [input.state.cookie];
+  if (input.sessionToken) {
+    cookies.push(`${SESSION_COOKIE_NAME}=${input.sessionToken}`);
+  }
+  return request(app)
+    .post("/auth/saml")
+    .set("X-Argos-CSRF", "1")
+    .set("Cookie", cookies)
+    .send({
+      code: input.code,
+      state: input.state.state,
+      confirmLink: input.confirmLink,
+    });
+}
+
+/**
+ * The state a response bound to the browser for the next request, the one
+ * that wins among the cookies it set.
+ */
+function getReissuedState(res: request.Response) {
+  const state: unknown = res.body.error?.state;
+  invariant(typeof state === "string", "Expected a state in the response");
+  const name = getCallbackCookieName("saml");
+  const cookie = (res.get("Set-Cookie") ?? [])
+    .map((header) => header.split(";")[0] ?? "")
+    .findLast((pair) => pair.startsWith(`${name}=`));
+  invariant(cookie, "Expected the state to be bound to the browser");
+  expect(decodeURIComponent(cookie.slice(name.length + 1))).toBe(state);
+  return { state, cookie };
+}
+
+function findTeamUser(teamAccount: Account, userId: string) {
+  invariant(teamAccount.teamId, "team account has no team");
+  return TeamUser.query().findOne({ teamId: teamAccount.teamId, userId });
+}
+
+async function createTeamWithDomain(domain: string) {
+  const teamAccount = await factory.TeamAccount.create();
+  invariant(teamAccount.teamId, "team account has no team");
+  await factory.TeamDomain.create({ teamId: teamAccount.teamId, domain });
+  return teamAccount;
+}
+
+async function invite(input: {
+  teamAccount: Account;
+  userLevel: TeamInvite["userLevel"];
+}) {
+  invariant(input.teamAccount.teamId, "team account has no team");
+  const inviter = await factory.User.create();
+  await TeamInvite.query().insert({
+    teamId: input.teamAccount.teamId,
+    email: EMAIL,
+    secret: TeamInvite.generateSecret(),
+    userLevel: input.userLevel,
+    invitedById: inviter.id,
+    expiresAt: addDays(new Date(), 1).toISOString(),
+  });
+}
+
 describe("POST /auth/saml", () => {
   samlTest(
-    "sends an account it creates through the signup flow",
+    "sends an account it creates on one of the team's domains through the signup flow",
     async ({ samlTeamAccount }) => {
-      const domainTeam = await factory.TeamAccount.create();
-      invariant(domainTeam.teamId, "team account has no team");
+      invariant(samlTeamAccount.teamId, "team account has no team");
       await factory.TeamDomain.create({
-        teamId: domainTeam.teamId,
+        teamId: samlTeamAccount.teamId,
         domain: "acme.com",
       });
+      await createTeamWithDomain("acme.com");
 
       const res = await exchangeSamlCode({
         teamAccount: samlTeamAccount,
@@ -212,6 +310,128 @@ describe("POST /auth/saml", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ creation: true, hasAutoInvite: true });
+      expect(await UserEmail.query().findById(EMAIL)).toMatchObject({
+        verified: true,
+      });
+    },
+  );
+
+  samlTest(
+    "gives an account it creates the email unverified off the team's domains",
+    async ({ samlTeamAccount }) => {
+      await createTeamWithDomain("acme.com");
+      const invitingTeam = await factory.TeamAccount.create();
+      await invite({ teamAccount: invitingTeam, userLevel: "owner" });
+      await invite({ teamAccount: samlTeamAccount, userLevel: "contributor" });
+
+      const res = await exchangeSamlCode({
+        teamAccount: samlTeamAccount,
+        email: EMAIL,
+        ssoSubject: SSO_SUBJECT,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ creation: true, hasAutoInvite: false });
+      const userEmail = await UserEmail.query()
+        .findById(EMAIL)
+        .throwIfNotFound();
+      expect(userEmail.verified).toBe(false);
+      // The team's own invite still applies; other teams' wait for the
+      // person to prove the email is theirs.
+      expect(
+        await findTeamUser(samlTeamAccount, userEmail.userId),
+      ).toMatchObject({ userLevel: "contributor", ssoSubject: SSO_SUBJECT });
+      expect(
+        await findTeamUser(invitingTeam, userEmail.userId),
+      ).toBeUndefined();
+      expect(await TeamInvite.query().where("email", EMAIL)).toMatchObject([
+        { teamId: invitingTeam.teamId, userLevel: "owner" },
+      ]);
+    },
+  );
+
+  signedInTest(
+    "links the signed-in user's account only once they confirm it",
+    async ({ samlTeamAccount, userId, sessionToken }) => {
+      const code = await createCode(samlTeamAccount);
+
+      const unconfirmed = await exchange({
+        code,
+        state: bindSamlCallbackState(),
+        sessionToken,
+      });
+      expect(unconfirmed.status).toBe(403);
+      expect(unconfirmed.body.error).toMatchObject({
+        code: "SAML_LINK_CONFIRMATION_REQUIRED",
+        teamName: samlTeamAccount.displayName,
+      });
+      expect(await getOpenedSession(unconfirmed)).toBeNull();
+      expect(await findTeamUser(samlTeamAccount, userId)).toBeUndefined();
+
+      const confirmed = await exchange({
+        code,
+        state: getReissuedState(unconfirmed),
+        sessionToken,
+        confirmLink: true,
+      });
+      expect(confirmed.status).toBe(200);
+      expect(await findTeamUser(samlTeamAccount, userId)).toMatchObject({
+        ssoSubject: SSO_SUBJECT,
+      });
+
+      const replayed = await exchange({
+        code,
+        state: bindSamlCallbackState(),
+        sessionToken,
+        confirmLink: true,
+      });
+      expect(replayed.status).toBe(401);
+    },
+  );
+
+  signedInTest(
+    "refuses a confirmation that comes without the account's session",
+    async ({ samlTeamAccount, userId, sessionToken }) => {
+      const code = await createCode(samlTeamAccount);
+      const unconfirmed = await exchange({
+        code,
+        state: bindSamlCallbackState(),
+        sessionToken,
+      });
+      expect(unconfirmed.status).toBe(403);
+
+      const res = await exchange({
+        code,
+        state: getReissuedState(unconfirmed),
+        sessionToken: null,
+        confirmLink: true,
+      });
+      expect(res.status).toBe(403);
+      expect(res.text).toContain("An Argos account already uses");
+      expect(await findTeamUser(samlTeamAccount, userId)).toBeUndefined();
+    },
+  );
+
+  signedInTest(
+    "signs in a user already linked to the SSO subject without asking",
+    async ({ samlTeamAccount, userId, sessionToken }) => {
+      invariant(samlTeamAccount.teamId, "team account has no team");
+      await factory.TeamUser.create({
+        teamId: samlTeamAccount.teamId,
+        userId,
+        userLevel: "member",
+        ssoSubject: SSO_SUBJECT,
+      });
+
+      for (const token of [sessionToken, null]) {
+        const res = await exchange({
+          code: await createCode(samlTeamAccount),
+          state: bindSamlCallbackState(),
+          sessionToken: token,
+        });
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ creation: false, hasAutoInvite: false });
+      }
     },
   );
 

@@ -3,6 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { describe, expect, test } from "vitest";
 
+import { generateAuthEmailCode } from "@/auth/email";
 import { knex } from "@/database/knex";
 import {
   type Account,
@@ -13,6 +14,7 @@ import {
   UserEmail,
   UserSession,
 } from "@/database/models";
+import { authenticateWithEmail } from "@/database/services/account";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
@@ -130,20 +132,21 @@ describe("acceptInvite signed out", () => {
 
 describe("acceptInvite signed in", () => {
   withInvite(
-    "gives the email verified to the user, even held unverified by another",
-    async ({ invite, holderId, viewer }) => {
-      await factory.UserEmail.create({
-        userId: holderId,
-        email: EMAIL,
-        verified: false,
-      });
-
+    "adds the user to the team without giving them the invited email",
+    async ({ invite, viewer }) => {
       await acceptInvite(invite, viewer);
 
-      expect(await UserEmail.query().findById(EMAIL)).toMatchObject({
-        userId: viewer.user.id,
-        verified: true,
+      const teamUsers = await TeamUser.query().where({ teamId: invite.teamId });
+      expect(teamUsers.map((teamUser) => teamUser.userId)).toEqual([
+        viewer.user.id,
+      ]);
+      expect(await TeamInvite.query()).toHaveLength(0);
+      expect(await UserEmail.query().findById(EMAIL)).toBeUndefined();
+      const { account } = await authenticateWithEmail({
+        email: EMAIL,
+        code: await generateAuthEmailCode(EMAIL),
       });
+      expect(account.userId).not.toBe(viewer.user.id);
     },
   );
 });

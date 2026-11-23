@@ -236,13 +236,29 @@ export async function consumeSamlAuthCode(
   code: string,
 ): Promise<SamlAuthCodePayload | null> {
   const redis = await getRedisClient();
-  const key = getAuthCodeKey(code);
-  const json = await redis.get(key);
+  const json = await redis.getDel(getAuthCodeKey(code));
   if (!json) {
     return null;
   }
-  await redis.del(key);
   return SamlAuthCodePayloadSchema.parse(JSON.parse(json));
+}
+
+/**
+ * Make a consumed code exchangeable again, for a login that waits on the
+ * user's confirmation.
+ */
+export async function restoreSamlAuthCode(
+  code: string,
+  payload: SamlAuthCodePayload,
+): Promise<void> {
+  const redis = await getRedisClient();
+  await redis.set(getAuthCodeKey(code), JSON.stringify(payload), {
+    expiration: {
+      type: "PX",
+      value: EXCHANGE_CODE_TTL_MS,
+    },
+    condition: "NX",
+  });
 }
 
 function getString(input: string | string[] | null | undefined) {

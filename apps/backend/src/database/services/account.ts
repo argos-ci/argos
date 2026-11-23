@@ -24,7 +24,8 @@ import { User } from "../models/User";
 import { transaction } from "../transaction";
 import { Model } from "../util/model";
 import { getPartialModelUpdate } from "../util/update";
-import { claimVerifiedEmail } from "./user-email";
+import { checkIsTeamDomainEmail } from "./team-domain";
+import { claimEmail } from "./user-email";
 
 const RESERVED_SLUGS = [
   "auth",
@@ -78,6 +79,53 @@ export async function getOrCreateUserByVerifiedEmail(
 }
 
 /**
+ * The user this team's SCIM created with the email, which it may hold
+ * unverified.
+ */
+async function findUserCreatedByTeamScim(args: {
+  email: string;
+  teamId: string;
+}) {
+  return User.query()
+    .withGraphFetched("account")
+    .whereExists(User.relatedQuery("emails").where("email", args.email))
+    .whereExists(
+      TeamScimUser.query()
+        .where("team_scim_users.teamId", args.teamId)
+        .where("team_scim_users.userCreated", true)
+        .whereColumn("team_scim_users.userId", "users.id"),
+    )
+    .first();
+}
+
+/**
+ * Get the user a team's IdP or SCIM client asserts the email for, or create
+ * one with `accountData`. The caller decides whether the team may reach a user
+ * holding the email verified.
+ */
+export async function getOrCreateUserByTeamAssertedEmail(input: {
+  email: string;
+  teamId: string;
+  accountData?: PartialModelRow<Account>;
+}) {
+  const { email, teamId, accountData } = input;
+  const user =
+    (await findUserByVerifiedEmail(email)) ??
+    (await findUserCreatedByTeamScim({ email, teamId }));
+  if (user) {
+    invariant(user.account, "Account not fetched");
+    return { user, account: user.account, creation: false };
+  }
+  const created = await createAccount({
+    email,
+    slug: getSlugFromEmail(email),
+    assertedByTeamId: teamId,
+    ...(accountData && { accountData }),
+  });
+  return { ...created, creation: true };
+}
+
+/**
  * Join SSO teams if needed.
  */
 export async function joinSSOTeams(input: {
@@ -123,6 +171,8 @@ export async function getOrCreateUserAccountFromSaml(input: {
   ssoSubject: string;
   /** The user of the session the SAML login completes in, if any. */
   signedInUserId: string | null;
+  /** Whether that user confirmed linking their account to the team's SSO. */
+  linkConfirmed: boolean;
 }): Promise<{ account: Account; creation: boolean }> {
   const email = sanitizeEmail(input.email);
   const now = new Date().toISOString();
@@ -154,23 +204,36 @@ export async function getOrCreateUserAccountFromSaml(input: {
   // The IdP is configured by the team, so it vouches for whatever email its
   // admin wants: trusting it with an account that already exists would let any
   // team sign in as anyone. Such an account is only linked once its owner has
-  // proven it is theirs — by being signed in to it — or when this team's SCIM
-  // created it in the first place.
+  // proven it is theirs — by confirming the link while signed in to it — or
+  // when this team's SCIM created it in the first place.
   const existingUser = await findUserByVerifiedEmail(email);
   if (
     existingUser &&
-    existingUser.id !== input.signedInUserId &&
     !(await checkScimCreatedUser({ teamId, userId: existingUser.id }))
   ) {
-    throw boom(
-      403,
-      `An Argos account already uses ${email}. Log in to it the way you usually do, then sign in with SAML again to link it.`,
-      { code: "SAML_ACCOUNT_LINK_REQUIRED" },
-    );
+    if (existingUser.id !== input.signedInUserId) {
+      throw boom(
+        403,
+        `An Argos account already uses ${email}. Log in to it the way you usually do, then sign in with SAML again to link it.`,
+        { code: "SAML_ACCOUNT_LINK_REQUIRED" },
+      );
+    }
+    // Being signed in is not consent on its own: any page can send a
+    // signed-in user through a team's IdP, and the callback page exchanges
+    // the code without asking.
+    if (!input.linkConfirmed) {
+      throw boom(
+        403,
+        `Confirm that you want to link your Argos account to ${input.teamAccount.displayName} single sign-on.`,
+        { code: "SAML_LINK_CONFIRMATION_REQUIRED" },
+      );
+    }
   }
 
-  const { user, account, creation } =
-    await getOrCreateUserByVerifiedEmail(email);
+  const { user, account, creation } = await getOrCreateUserByTeamAssertedEmail({
+    email,
+    teamId,
+  });
   // Even a user created just now may be a member: creating it accepts the
   // invites pending for its email.
   await TeamUser.query()
@@ -511,7 +574,12 @@ async function getOrCreateUserAccountFromThirdParty<
           if (
             !existingUser.email &&
             email &&
-            (await claimVerifiedEmail({ trx, email, userId: existingUser.id }))
+            (await claimEmail({
+              trx,
+              email,
+              userId: existingUser.id,
+              verified: true,
+            }))
           ) {
             await acceptAllInvitesForEmail({
               trx,
@@ -560,15 +628,26 @@ async function getOrCreateUserAccountFromThirdParty<
 
 /**
  * Create a new user account.
+ *
+ * `assertedByTeamId` is the team whose IdP or SCIM client vouches for the
+ * email, when the person has not proven they own it. A team vouches only for
+ * its own verified domains: on any other, the account gets the email
+ * unverified, so other teams' domain auto-join, invites and later logins do
+ * not trust it, and only that team's invites are accepted.
  */
 async function createAccount(args: {
   email: string;
   slug: string;
   accountData?: PartialModelRow<Account>;
   userData?: PartialModelRow<User>;
+  assertedByTeamId?: string;
 }) {
   const email = sanitizeEmail(args.email);
   const slug = await resolveAccountSlug(slugify(args.slug));
+  const { assertedByTeamId } = args;
+  const verified = assertedByTeamId
+    ? await checkIsTeamDomainEmail({ teamId: assertedByTeamId, email })
+    : true;
   const { account, user } = await transaction(async (trx) => {
     const userData: PartialModelRow<User> = { email, ...args.userData };
     const user = await User.query(trx).insertAndFetch(userData);
@@ -580,14 +659,18 @@ async function createAccount(args: {
     };
     const [account, claimed] = await Promise.all([
       Account.query(trx).insertAndFetch(accountData),
-      claimVerifiedEmail({ trx, email, userId: user.id }),
+      claimEmail({ trx, email, userId: user.id, verified }),
     ]);
     invariant(claimed, `Email ${email} is already verified on another user`);
     return { account, user };
   });
 
   await Promise.all([
-    acceptAllInvitesForEmail({ email, userId: user.id }),
+    acceptAllInvitesForEmail({
+      email,
+      userId: user.id,
+      ...(!verified && assertedByTeamId && { teamId: assertedByTeamId }),
+    }),
     sendNotification({
       type: "welcome",
       data: {},
@@ -599,16 +682,21 @@ async function createAccount(args: {
 }
 
 /**
- * Accept all team invites for the given email.
+ * Accept all team invites for the given email, or only those of `teamId`.
  */
 async function acceptAllInvitesForEmail(input: {
   email: string;
   userId: string;
+  teamId?: string;
   trx?: TransactionOrKnex;
 }) {
-  const teamInvites = await TeamInvite.query(input.trx)
-    .whereRaw(`"expiresAt" > now()`)
-    .where("email", input.email);
+  const pendingInvites = (trx?: TransactionOrKnex) => {
+    const query = TeamInvite.query(trx)
+      .whereRaw(`"expiresAt" > now()`)
+      .where("email", input.email);
+    return input.teamId ? query.where("teamId", input.teamId) : query;
+  };
+  const teamInvites = await pendingInvites(input.trx);
 
   if (teamInvites.length === 0) {
     return;
@@ -625,10 +713,7 @@ async function acceptAllInvitesForEmail(input: {
         }),
       ),
       // Delete all the invites as they have been accepted.
-      TeamInvite.query(trx)
-        .whereRaw(`"expiresAt" > now()`)
-        .where("email", input.email)
-        .delete(),
+      pendingInvites(trx).delete(),
     ]);
   });
 }

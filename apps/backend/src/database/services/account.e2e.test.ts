@@ -73,6 +73,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
           teamAccount,
           ssoSubject: SSO_SUBJECT,
           signedInUserId: null,
+          linkConfirmed: false,
         }),
       ).rejects.toMatchObject({ code: "SAML_ACCOUNT_LINK_REQUIRED" });
       expect(
@@ -82,7 +83,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
   );
 
   withAccounts(
-    "links the user holding the email verified once signed in to it",
+    "links the user holding the email verified once they confirm it signed in",
     async ({ teamAccount, userAccount }) => {
       invariant(userAccount.userId, "user account has no user");
       await addEmail({ account: userAccount, verified: true });
@@ -92,6 +93,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
         teamAccount,
         ssoSubject: SSO_SUBJECT,
         signedInUserId: userAccount.userId,
+        linkConfirmed: true,
       });
 
       expect(account.id).toBe(userAccount.id);
@@ -127,6 +129,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
             teamAccount,
             ssoSubject: SSO_SUBJECT,
             signedInUserId: null,
+            linkConfirmed: false,
           });
 
           if (links) {
@@ -152,6 +155,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
         teamAccount,
         ssoSubject: SSO_SUBJECT,
         signedInUserId: null,
+        linkConfirmed: false,
       });
 
       expect(account.id).not.toBe(userAccount.id);
@@ -163,7 +167,10 @@ describe("getOrCreateUserAccountFromSaml", () => {
       expect(
         await findTeamUser({ teamAccount, userId: account.userId }),
       ).toMatchObject({ ssoSubject: SSO_SUBJECT });
-      await expectEmailVerifiedOn(account);
+      expect(await UserEmail.query().findById(EMAIL)).toMatchObject({
+        userId: account.userId,
+        verified: false,
+      });
     },
   );
 
@@ -186,6 +193,7 @@ describe("getOrCreateUserAccountFromSaml", () => {
         teamAccount,
         ssoSubject: SSO_SUBJECT,
         signedInUserId: null,
+        linkConfirmed: false,
       });
 
       invariant(account.userId, "account has no user");

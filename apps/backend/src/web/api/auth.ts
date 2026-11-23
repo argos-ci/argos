@@ -7,12 +7,13 @@ import {
   EXPIRED_LOGIN_MESSAGE,
   getCallbackUrl,
   getCheckedCallbackState,
+  issueCallbackState,
   requireCallbackState,
   type OAuthProvider,
 } from "@/auth/callback-binding";
 import { completeLogin, type AuthPayload } from "@/auth/login";
 import type { AuthSessionPayload } from "@/auth/payload";
-import { consumeSamlAuthCode } from "@/auth/saml";
+import { consumeSamlAuthCode, restoreSamlAuthCode } from "@/auth/saml";
 import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
 import type { Account } from "@/database/models";
@@ -41,6 +42,7 @@ import {
   getGoogleHostedDomain,
   getGoogleUserProfile,
 } from "@/google";
+import { HTTPError } from "@/util/error";
 
 import { allowApp } from "../middlewares/cors";
 import { requireCsrf } from "../middlewares/csrf";
@@ -56,6 +58,8 @@ const OAuthBodySchema = z.object({
 });
 const SamlBodySchema = z.object({
   code: z.string(),
+  /** Sent once the signed-in user approved linking their account. */
+  confirmLink: z.boolean().default(false),
 });
 
 type OAuthBody = z.infer<typeof OAuthBodySchema>;
@@ -233,12 +237,37 @@ router.use(
       safeSessionAuthFromExpressReq(req),
       AccountModel.query().findById(payload.teamAccountId).throwIfNotFound(),
     ]);
-    const { account, creation } = await getOrCreateUserAccountFromSaml({
-      email: payload.email,
-      teamAccount,
-      ssoSubject: payload.ssoSubject,
-      signedInUserId: auth?.user.id ?? null,
-    });
+    let login: Awaited<ReturnType<typeof getOrCreateUserAccountFromSaml>>;
+    try {
+      login = await getOrCreateUserAccountFromSaml({
+        email: payload.email,
+        teamAccount,
+        ssoSubject: payload.ssoSubject,
+        signedInUserId: auth?.user.id ?? null,
+        linkConfirmed: parsed.confirmLink,
+      });
+    } catch (error) {
+      if (
+        error instanceof HTTPError &&
+        error.code === "SAML_LINK_CONFIRMATION_REQUIRED"
+      ) {
+        // The confirmation redeems the same code, so it gets it back, with a
+        // new state for this browser: requireCallbackState spent this one.
+        await restoreSamlAuthCode(parsed.code, payload);
+        const { redirect } = getCheckedCallbackState(res);
+        res.status(error.statusCode).send({
+          error: {
+            message: error.message,
+            code: error.code,
+            teamName: teamAccount.displayName,
+            state: issueCallbackState(res, { provider: "saml", redirect }),
+          },
+        });
+        return;
+      }
+      throw error;
+    }
+    const { account, creation } = login;
     invariant(account.userId, "Expected account to have userId");
     invariant(teamAccount.teamId, "SAML is only available for team accounts");
     res.send(
