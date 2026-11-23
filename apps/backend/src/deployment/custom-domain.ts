@@ -1,3 +1,6 @@
+import { createHmac } from "node:crypto";
+import { resolveTxt } from "node:dns/promises";
+
 import config from "@/config";
 import { Account, ProjectDomain } from "@/database/models";
 import {
@@ -124,23 +127,18 @@ export function validateCustomDomain(domain: string): string {
 }
 
 /**
- * Claim a hostname, taking it from a holder that never proved it owned it.
- *
- * A row with no `cloudfrontTenantId` is a hostname nobody has proven anything
- * about: the tenant is created only once CloudFront has verified the domain
- * resolves to us. Until then the claim is a string someone typed into a form, so
- * it moves to whoever asks next; a row with a tenant does not.
- *
  * One conditional upsert, because Postgres skips `DO UPDATE` when the `WHERE`
- * does not hold — so two teams racing cannot both pass a check. Returns null
- * when the hostname is spoken for.
+ * does not hold — so two teams racing cannot both pass a check. Without
+ * `takeover`, only the project's own row may be updated. Returns null when the
+ * hostname is spoken for.
  */
-export async function claimCustomDomain(input: {
+async function upsertCustomDomainClaim(input: {
   projectId: string;
   domain: string;
   routingEndpoint: string;
+  takeover: boolean;
 }): Promise<ProjectDomain | null> {
-  const { projectId, domain, routingEndpoint } = input;
+  const { projectId, domain, routingEndpoint, takeover } = input;
 
   const claimed = await ProjectDomain.query()
     .insert({
@@ -164,11 +162,87 @@ export async function claimCustomDomain(input: {
     })
     .where("project_domains.cloudfrontTenantId", null)
     .andWhere("project_domains.internal", false)
+    .modify((builder) => {
+      if (!takeover) {
+        builder.andWhere("project_domains.projectId", projectId);
+      }
+    })
     .returning("*");
 
   // A refused upsert still resolves to the model we asked Objection to insert;
   // it just never reached the database, so the id is the signal, not a null.
   return claimed.id ? claimed : null;
+}
+
+/**
+ * The TXT record a project publishes to take over a hostname another project
+ * added but never proved. Derived from both, so nothing is stored and the value
+ * proves nothing for any other project.
+ */
+function getCustomDomainChallenge(input: {
+  projectId: string;
+  domain: string;
+}): { name: string; value: string } {
+  const value = createHmac("sha256", config.get("session.secret"))
+    .update(`custom-domain-challenge:${input.projectId}:${input.domain}`)
+    .digest("hex")
+    .slice(0, 32);
+  return { name: `_argos-challenge.${input.domain}`, value };
+}
+
+async function checkTxtRecord(input: {
+  name: string;
+  value: string;
+}): Promise<boolean> {
+  try {
+    const records = await resolveTxt(input.name);
+    return records.some((chunks) => chunks.join("") === input.value);
+  } catch {
+    // No record yet, or a DNS failure: either way, nothing is proven.
+    return false;
+  }
+}
+
+/**
+ * Claim a hostname for the project. A row with no `cloudfrontTenantId` is a
+ * hostname nobody has proven anything about: the tenant is created once
+ * CloudFront has verified the domain resolves to us, and that check cannot
+ * tell projects apart, since every one points its domain at the same target.
+ * So a pending row moves to another project only once that project has
+ * published its challenge record. A row with a tenant never moves.
+ */
+export async function claimCustomDomain(input: {
+  projectId: string;
+  domain: string;
+  routingEndpoint: string;
+}): Promise<ProjectDomain> {
+  const claimed = await upsertCustomDomainClaim({ ...input, takeover: false });
+  if (claimed) {
+    return claimed;
+  }
+
+  const inUse = boom(400, "Domain already in use", {
+    code: "PROJECT_DOMAIN_ALREADY_USED",
+  });
+  const holder = await ProjectDomain.query().findOne({ domain: input.domain });
+  if (!holder || holder.internal || holder.cloudfrontTenantId) {
+    throw inUse;
+  }
+
+  const challenge = getCustomDomainChallenge(input);
+  if (!(await checkTxtRecord(challenge))) {
+    throw boom(
+      400,
+      `Another project already added this domain. To move it to this project, add a TXT record named ${challenge.name} with the value ${challenge.value}, then add the domain again.`,
+      { code: "PROJECT_DOMAIN_ALREADY_USED" },
+    );
+  }
+
+  const taken = await upsertCustomDomainClaim({ ...input, takeover: true });
+  if (!taken) {
+    throw inUse;
+  }
+  return taken;
 }
 
 /**
@@ -188,19 +262,11 @@ export async function addCustomDomain(input: {
 
   const domain = validateCustomDomain(input.domain);
 
-  const routingEndpoint = getCustomDomainsTarget();
-
   const projectDomain = await claimCustomDomain({
     projectId: input.projectId,
     domain,
-    routingEndpoint,
+    routingEndpoint: getCustomDomainsTarget(),
   });
-
-  if (!projectDomain) {
-    throw boom(400, "Domain already in use", {
-      code: "PROJECT_DOMAIN_ALREADY_USED",
-    });
-  }
 
   try {
     return await reconcileCustomDomain(projectDomain);

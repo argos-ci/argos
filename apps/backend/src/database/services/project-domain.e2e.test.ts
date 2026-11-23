@@ -9,6 +9,25 @@ import {
   upsertProductionInternalProjectDomain,
 } from "./project-domain";
 
+/**
+ * Another project serving on the labels `web-feature-acme` (a branch alias)
+ * and `web-k3j2h1g9f-acme` (a deployment slug).
+ */
+async function createHostnameHolder() {
+  const project = await factory.Project.create();
+  const deployment = await factory.Deployment.create({
+    projectId: project.id,
+    environment: "preview",
+    status: "ready",
+    slug: "web-k3j2h1g9f-acme",
+  });
+  await factory.DeploymentAlias.create({
+    deploymentId: deployment.id,
+    alias: "web-feature-acme",
+    type: "branch",
+  });
+}
+
 describe("project-domain service", () => {
   beforeEach(async () => {
     await setupDatabase();
@@ -120,6 +139,20 @@ describe("project-domain service", () => {
       },
     );
 
+    it("suffixes a name another project's branch alias holds", async () => {
+      await createHostnameHolder();
+      const project = await factory.Project.create({
+        name: "web-feature-acme",
+      });
+
+      const domain = await ensureProductionInternalProjectDomain({
+        projectId: project.id,
+        projectName: project.name,
+      });
+
+      expect(domain.domain).toBe("web-feature-acme-1.dev.argos-ci.live");
+    });
+
     it("retries with a new suffix after a concurrent unique-constraint failure", async () => {
       const project = await factory.Project.create({ name: "docs" });
       const otherProject = await factory.Project.create({ name: "other-docs" });
@@ -191,6 +224,24 @@ describe("project-domain service", () => {
         internal: true,
       });
     });
+
+    it.each(["web-feature-acme", "web-k3j2h1g9f-acme"])(
+      "refuses %s, a hostname another project serves on",
+      async (label) => {
+        await createHostnameHolder();
+        const project = await factory.Project.create();
+
+        await expect(
+          upsertProductionInternalProjectDomain({
+            projectId: project.id,
+            domain: `${label}.dev.argos-ci.live`,
+          }),
+        ).rejects.toMatchObject({ code: "PROJECT_DOMAIN_INTERNAL_SLUG" });
+        await expect(
+          ProjectDomain.query().where("projectId", project.id),
+        ).resolves.toEqual([]);
+      },
+    );
 
     it("updates the domain alias for the latest ready production deployment", async () => {
       const project = await factory.Project.create();
