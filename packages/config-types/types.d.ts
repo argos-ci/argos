@@ -16,9 +16,6 @@ export interface ClientConfig {
     clientId: string;
     marketplaceUrl: string;
   };
-  githubLight: {
-    appUrl: string;
-  };
   stripe: {
     pricingTableId: string;
     publishableKey: string;

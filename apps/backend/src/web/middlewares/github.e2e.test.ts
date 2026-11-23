@@ -5,7 +5,9 @@ import { afterAll, test as base, describe, expect, vi } from "vitest";
 import type { Account, GithubInstallation } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { getAppOctokit } from "@/github/client";
+import { signGithubLightInstallState } from "@/github/light-install-state";
 import { quitAmqp } from "@/job-core";
+import { signOriginInstallState } from "@/origin/install-state";
 
 import { apiMiddleware } from "./github";
 
@@ -35,14 +37,21 @@ function mockGitHubInstallation(input: { createdAt: Date }) {
 
 /**
  * Visit the setup URL, as GitHub sends the user there after an installation.
+ * The state defaults to the one Argos signs for an admin of the account.
  */
-function visitSetupUrl(input: { installationId: number; account: Account }) {
+function visitSetupUrl(input: {
+  installationId: number;
+  account: Account;
+  state?: string;
+}) {
   return request(app)
     .get("/github-light/install")
     .query({
       installation_id: input.installationId,
       setup_action: "install",
-      state: JSON.stringify({ accountId: input.account.id }),
+      state:
+        input.state ??
+        signGithubLightInstallState({ accountId: input.account.id }),
     });
 }
 
@@ -95,6 +104,33 @@ describe("GET /github-light/install", () => {
     });
     expect(res.status).toBe(400);
     expect(await getLinkedInstallationId(fixture.teamAccount)).toBeNull();
+  });
+
+  test("does not trust a state Argos did not sign for it", async ({
+    fixture,
+  }) => {
+    mockGitHubInstallation({ createdAt: new Date() });
+    await fixture.teamAccount
+      .$query()
+      .patch({ githubLightInstallationId: fixture.installation.id });
+    const freshInstallation = await factory.GithubInstallation.create({
+      app: "light",
+    });
+    const forgedStates = [
+      JSON.stringify({ accountId: fixture.teamAccount.id }),
+      signOriginInstallState({ accountId: fixture.teamAccount.id }),
+    ];
+    for (const state of forgedStates) {
+      const res = await visitSetupUrl({
+        installationId: freshInstallation.githubId,
+        account: fixture.teamAccount,
+        state,
+      });
+      expect(res.status).toBe(400);
+    }
+    expect(await getLinkedInstallationId(fixture.teamAccount)).toBe(
+      fixture.installation.id,
+    );
   });
 
   test("does not link an installation GitHub created a while ago", async ({
