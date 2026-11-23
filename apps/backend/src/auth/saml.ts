@@ -4,12 +4,7 @@ import * as samlify from "samlify";
 import z from "zod";
 
 import config from "@/config";
-import {
-  Team,
-  TeamSamlSlug,
-  type Account,
-  type TeamSamlConfig,
-} from "@/database/models";
+import { Team, type Account, type TeamSamlConfig } from "@/database/models";
 import { generateRandomString } from "@/database/services/crypto";
 import logger from "@/logger";
 import { boom, HTTPError } from "@/util/error";
@@ -419,33 +414,9 @@ export async function checkHasAccessToSAML(account: Account) {
   return team?.samlPurchased ?? false;
 }
 
-export const TEAM_SAML_SLUG_TAKEN_REASON =
-  "This team URL was used for another team's SAML SSO, so it cannot be used for SAML again. A team admin can rename the team to set up SAML.";
-
 /**
- * Bind the team's slug to the team as its SAML identity (see
- * {@link TeamSamlSlug}), unless another team holds it already. Returns whether
- * this team holds it.
- */
-export async function claimTeamSamlSlug(account: Account): Promise<boolean> {
-  const { teamId, slug } = account;
-  invariant(teamId, "SAML is only available for team accounts");
-  const findHolder = () => TeamSamlSlug.query().findOne({ slug });
-  let holder = await findHolder();
-  if (!holder) {
-    await TeamSamlSlug.query()
-      .insert({ slug, teamId })
-      .onConflict("slug")
-      .ignore();
-    holder = await findHolder();
-  }
-  invariant(holder, "SAML slug holder not found after claiming it");
-  return holder.teamId === teamId;
-}
-
-/**
- * Members can log in to a team with SAML only while it has access to SAML SSO,
- * has turned it on and holds its slug. Expects `teamSamlConfig` to be fetched.
+ * Members can log in to a team with SAML only while it has access to SAML SSO
+ * and has turned it on. Expects `teamSamlConfig` to be fetched.
  */
 export async function checkTeamSamlEnabled(
   account: Account,
@@ -465,9 +436,6 @@ export async function checkTeamSamlEnabled(
   }
   if (!account.teamSamlConfig?.enabled) {
     return { enabled: false, reason: "SAML SSO is not enabled for this team." };
-  }
-  if (!(await claimTeamSamlSlug(account))) {
-    return { enabled: false, reason: TEAM_SAML_SLUG_TAKEN_REASON };
   }
   return { enabled: true, samlConfig: account.teamSamlConfig };
 }

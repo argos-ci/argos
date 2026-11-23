@@ -4,7 +4,7 @@ import request from "supertest";
 import { test as base, describe, expect, vi } from "vitest";
 
 import { getSamlSpMetadata } from "@/auth/saml";
-import { Subscription, TeamSamlConfig, type Account } from "@/database/models";
+import { TeamSamlConfig, type Account } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import {
@@ -21,35 +21,28 @@ const IDP_SSO_URL = "https://idp.example.com/sso";
 const REJECTED_RESPONSE_ERROR =
   "Argos could not verify the SAML response from your identity provider. Ask a team admin to check the SAML settings.";
 
-/**
- * A team on a plan with SAML, signing in through the test IdP.
- */
-async function createSamlTeam(input?: { slug?: string }) {
-  const teamAccount = await factory.TeamAccount.create(input);
-  const plan = await factory.Plan.create({
-    samlIncluded: true,
-    usageBased: false,
-  });
-  await factory.Subscription.create({
-    accountId: teamAccount.id,
-    planId: plan.id,
-    status: "active",
-    endDate: null,
-  });
-  await TeamSamlConfig.query().insert({
-    accountId: teamAccount.id,
-    idpEntityId: IDP_ENTITY_ID,
-    ssoUrl: IDP_SSO_URL,
-    signingCertificate: samlTestIdpCertificate,
-    enabled: true,
-  });
-  return teamAccount;
-}
-
 const test = base.extend<{ teamAccount: Account }>({
   teamAccount: async ({}, use) => {
     await setupDatabase();
-    await use(await createSamlTeam());
+    const teamAccount = await factory.TeamAccount.create();
+    const plan = await factory.Plan.create({
+      samlIncluded: true,
+      usageBased: false,
+    });
+    await factory.Subscription.create({
+      accountId: teamAccount.id,
+      planId: plan.id,
+      status: "active",
+      endDate: null,
+    });
+    await TeamSamlConfig.query().insert({
+      accountId: teamAccount.id,
+      idpEntityId: IDP_ENTITY_ID,
+      ssoUrl: IDP_SSO_URL,
+      signingCertificate: samlTestIdpCertificate,
+      enabled: true,
+    });
+    await use(teamAccount);
   },
 });
 
@@ -240,44 +233,4 @@ describe("SAML assertion consumer service", () => {
       }),
     );
   });
-
-  test.for([
-    {
-      what: "renamed",
-      leave: (account: Account) =>
-        account.$query().patch({ slug: "renamed-team" }),
-    },
-    {
-      what: "deleted",
-      leave: async (account: Account) => {
-        await Subscription.query().where("accountId", account.id).delete();
-        await account.$query().delete();
-      },
-    },
-  ])(
-    "refuses the IdP's assertions for another team taking the slug of a SAML team that was $what",
-    async ({ leave }, { teamAccount }) => {
-      const { slug } = teamAccount;
-      const teamIdp = createIdp(slug);
-      expectSignedIn(
-        await postResponse({
-          teamSlug: slug,
-          samlResponse: await teamIdp.createLoginResponse(),
-        }),
-      );
-
-      await leave(teamAccount);
-      await createSamlTeam({ slug });
-
-      const res = await postResponse({
-        teamSlug: slug,
-        samlResponse: await teamIdp.createLoginResponse(),
-      });
-      const redirect = getRedirect(res);
-      expect(redirect.pathname).toBe("/login");
-      expect(redirect.searchParams.get("error")).toMatch(
-        /used for another team's SAML SSO/,
-      );
-    },
-  );
 });

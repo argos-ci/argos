@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict uT11oo9bsxCNOkDvRlKgpTCmPtK49rP68LzY6PPNTDbcxxujDc98S3MJPNVrjjt
+\restrict 8gt8ctfmjvyDCOYaG15dsEUtguKE8QnbRLrq62EayZMAc0K7tZeKHCd9iQocrjE
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -2927,42 +2927,6 @@ ALTER SEQUENCE public.team_saml_configs_id_seq OWNED BY public.team_saml_configs
 
 
 --
--- Name: team_saml_slugs; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.team_saml_slugs (
-    id bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    slug character varying(255) NOT NULL,
-    "teamId" bigint NOT NULL
-);
-
-
-ALTER TABLE public.team_saml_slugs OWNER TO postgres;
-
---
--- Name: team_saml_slugs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.team_saml_slugs_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public.team_saml_slugs_id_seq OWNER TO postgres;
-
---
--- Name: team_saml_slugs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.team_saml_slugs_id_seq OWNED BY public.team_saml_slugs.id;
-
-
---
 -- Name: team_scim_tokens; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -4030,13 +3994,6 @@ ALTER TABLE ONLY public.team_saml_configs ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- Name: team_saml_slugs id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.team_saml_slugs ALTER COLUMN id SET DEFAULT nextval('public.team_saml_slugs_id_seq'::regclass);
-
-
---
 -- Name: team_scim_tokens id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -5060,22 +5017,6 @@ ALTER TABLE ONLY public.team_saml_configs
 
 ALTER TABLE ONLY public.team_saml_configs
     ADD CONSTRAINT team_saml_configs_pkey PRIMARY KEY (id);
-
-
---
--- Name: team_saml_slugs team_saml_slugs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.team_saml_slugs
-    ADD CONSTRAINT team_saml_slugs_pkey PRIMARY KEY (id);
-
-
---
--- Name: team_saml_slugs team_saml_slugs_slug_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.team_saml_slugs
-    ADD CONSTRAINT team_saml_slugs_slug_unique UNIQUE (slug);
 
 
 --
@@ -7573,7 +7514,7 @@ ALTER TABLE ONLY public.webhooks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict uT11oo9bsxCNOkDvRlKgpTCmPtK49rP68LzY6PPNTDbcxxujDc98S3MJPNVrjjt
+\unrestrict 8gt8ctfmjvyDCOYaG15dsEUtguKE8QnbRLrq62EayZMAc0K7tZeKHCd9iQocrjE
 
 -- Knex migrations
 
@@ -7864,4 +7805,3 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026112
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122103709_drop-legacy-saml-enforcement.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122120000_webhooks.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122184409_stalled-job-requeue-indexes.js', 1, NOW());
-INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261123125045_team-saml-slugs.js', 1, NOW());
