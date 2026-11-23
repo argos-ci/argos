@@ -4,7 +4,6 @@ export * from "./client";
 export * from "./comment";
 export * from "./error";
 export * from "./events";
-export * from "./install-state";
 export * from "./receipt";
 export * from "./synchronize";
 export * from "./synchronize-job";

@@ -8,6 +8,7 @@ import { getAccountAvatar } from "@/account/avatar";
 import { disconnectGitHubAuth } from "@/auth/github";
 import { disconnectGitLabAuth } from "@/auth/gitlab";
 import { disconnectGoogleAuth } from "@/auth/google";
+import { signInstallState } from "@/auth/install-state";
 import { completeLogin } from "@/auth/login";
 import config from "@/config";
 import { Account, StripeInvoice } from "@/database/models";
@@ -36,7 +37,6 @@ import {
   checkOriginEnabled,
   getOriginInstallUrl,
   originInstallationSyncJob,
-  signOriginInstallState,
 } from "@/origin";
 import { boltApp } from "@/slack/app";
 import { uninstallSlackInstallation } from "@/slack/helpers";
@@ -585,7 +585,7 @@ export const commonAccountResolvers: IResolvers["Team"] = {
       return null;
     }
     return getOriginInstallUrl({
-      state: signOriginInstallState({ accountId: account.id }),
+      state: signInstallState("origin-install", { accountId: account.id }),
     });
   },
   githubAccount: async (account, _args, ctx) => {

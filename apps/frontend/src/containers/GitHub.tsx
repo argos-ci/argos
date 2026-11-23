@@ -1,7 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
 import { MarkGithubIcon } from "@primer/octicons-react";
 
-import { config } from "@/config";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 import { getOAuthURL } from "@/util/oauth";
 
@@ -29,16 +28,9 @@ export function getGitHubAppInstallURL(
       return getMainGitHubAppInstallURL();
     }
     case "light": {
-      const appURL = new URL(config.githubLight.appUrl);
-      // /installations/new lets you manage an app already installed too.
-      const url = new URL(
-        `${appURL.pathname}/installations/new`,
-        appURL.origin,
-      );
-      url.searchParams.set(
-        "state",
-        JSON.stringify({ accountId: input.accountId }),
-      );
+      // The server signs the state the setup URL links the installation with.
+      const url = new URL("/auth/github-light/install", window.location.origin);
+      url.searchParams.set("accountId", input.accountId);
       return url.toString();
     }
     default:

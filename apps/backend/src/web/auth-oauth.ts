@@ -1,5 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
 import { Router, type RequestHandler } from "express";
+import { z } from "zod";
 
 import {
   getCallbackUrl,
@@ -7,10 +8,15 @@ import {
   OAUTH_PROVIDERS,
   type OAuthProvider,
 } from "@/auth/callback-binding";
+import { signInstallState } from "@/auth/install-state";
+import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
+import { Account } from "@/database/models";
+import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getGoogleAuthUrl } from "@/google";
+import { boom } from "@/util/error";
 
-import { getLoginRedirect } from "./util";
+import { asyncHandler, getLoginRedirect } from "./util";
 
 function withParams(base: string, params: Record<string, string>): string {
   const url = new URL(base);
@@ -50,12 +56,11 @@ function getAuthorizationUrl(provider: OAuthProvider, state: string): string {
 }
 
 /**
- * Installing the main GitHub App ends on the GitHub OAuth callback, so the
- * install carries a state like a login does.
+ * `/installations/new` lets you manage an app already installed too.
  */
-function getGitHubAppInstallUrl(state: string): string {
-  const appUrl = new URL(config.get("github.appUrl"));
-  return withParams(`${appUrl.origin}${appUrl.pathname}/installations/new`, {
+function getGitHubAppInstallUrl(appUrl: string, state: string): string {
+  const url = new URL(appUrl);
+  return withParams(`${url.origin}${url.pathname}/installations/new`, {
     state,
   });
 }
@@ -84,9 +89,54 @@ for (const provider of OAUTH_PROVIDERS) {
   );
 }
 
+// Installing the main GitHub App ends on the GitHub OAuth callback, so the
+// install carries a state like a login does.
 router.get(
   "/auth/github/install",
-  startOAuth("github", getGitHubAppInstallUrl),
+  startOAuth("github", (state) =>
+    getGitHubAppInstallUrl(config.get("github.appUrl"), state),
+  ),
+);
+
+const LightInstallQuerySchema = z.object({
+  accountId: z.string().refine(isValidPgBigInt),
+});
+
+/**
+ * Installing the light app ends on its setup URL, which links the
+ * installation to the account its state names: the state is signed here, on
+ * click, and only for an admin of the account.
+ */
+router.get(
+  "/auth/github-light/install",
+  asyncHandler(async (req, res) => {
+    const query = LightInstallQuerySchema.safeParse(req.query);
+    if (!query.success) {
+      throw boom(400, "Invalid query parameters");
+    }
+
+    const auth = await safeSessionAuthFromExpressReq(req);
+    if (!auth) {
+      const requestUrl = new URL(req.originalUrl, config.get("server.url"));
+      const loginUrl = new URL("/login", config.get("server.url"));
+      loginUrl.searchParams.set("r", requestUrl.toString());
+      res.redirect(loginUrl.toString());
+      return;
+    }
+
+    const account = await Account.query().findById(query.data.accountId);
+    if (!account || !(await account.$getPermissions(auth)).includes("admin")) {
+      throw boom(404, "Account not found");
+    }
+
+    const state = signInstallState("github-light-install", {
+      accountId: account.id,
+    });
+    res.set("Cache-Control", "no-store");
+    res.redirect(
+      getGitHubAppInstallUrl(config.get("githubLight.appUrl"), state),
+    );
+  }),
 );
 
 export default router;

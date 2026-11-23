@@ -59,9 +59,6 @@ export const installAppRouter = async (app: express.Application) => {
       clientId: config.get("github.clientId"),
       marketplaceUrl: config.get("github.marketplaceUrl"),
     },
-    githubLight: {
-      appUrl: config.get("githubLight.appUrl"),
-    },
     stripe: {
       pricingTableId: config.get("stripe.pricingTableId"),
       publishableKey: config.get("stripe.publishableKey"),

@@ -22,7 +22,6 @@ window.clientData ??= {
       clientId: "",
       marketplaceUrl: "",
     },
-    githubLight: { appUrl: "" },
     stripe: { pricingTableId: "", publishableKey: "" },
     server: { url: "" },
     api: { baseUrl: "" },

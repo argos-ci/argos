@@ -1,6 +1,7 @@
 import express, { Router } from "express";
 import { z } from "zod";
 
+import { verifyInstallState } from "@/auth/install-state";
 import config from "@/config";
 import { Account } from "@/database/models";
 import logger from "@/logger";
@@ -11,7 +12,6 @@ import {
   originInstallationSyncJob,
   upsertOriginInstallation,
   verifyInstallationReceipt,
-  verifyOriginInstallState,
   verifyOriginWebhook,
 } from "@/origin";
 import { getRedisClient } from "@/util/redis/client";
@@ -126,7 +126,7 @@ router.get(
     }
 
     const state = receipt.state
-      ? verifyOriginInstallState(receipt.state)
+      ? verifyInstallState("origin-install", receipt.state)
       : null;
     if (!state) {
       res.status(400).send("Invalid state");

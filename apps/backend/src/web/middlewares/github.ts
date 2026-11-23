@@ -2,6 +2,7 @@ import { createNodeMiddleware, Webhooks } from "@octokit/webhooks";
 import { Router } from "express";
 import { z } from "zod";
 
+import { verifyInstallState } from "@/auth/install-state";
 import config from "@/config";
 import { transaction } from "@/database";
 import { Account, GithubInstallation } from "@/database/models";
@@ -73,25 +74,12 @@ const QuerySchema = z.object({
   setup_action: z.literal("install"),
   state: z.string(),
 });
-const StateSchema = z.object({ accountId: z.string() });
-
-function parseState(input: unknown) {
-  if (typeof input !== "string") {
-    return null;
-  }
-
-  try {
-    return StateSchema.parse(JSON.parse(input));
-  } catch {
-    return null;
-  }
-}
 
 /**
  * GitHub sends the user to the setup URL right after creating the
- * installation, but nothing in that URL is signed: anyone can visit it with
- * the id of an installation that is not theirs. The one the user just made is
- * brand new, and nobody owns it yet.
+ * installation. The state is ours and signed, but the installation id is not:
+ * an admin can visit it with the id of an installation that is not theirs.
+ * The one the user just made is brand new, and nobody owns it yet.
  */
 const MAX_NEW_INSTALLATION_AGE = 60 * 60 * 1000;
 
@@ -151,7 +139,7 @@ router.get(
       return;
     }
 
-    const state = parseState(query.data.state);
+    const state = verifyInstallState("github-light-install", query.data.state);
     if (!state) {
       res.status(400).send("Invalid state");
       return;
