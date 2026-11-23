@@ -4,6 +4,7 @@ import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
+import type { AuthProjectPayload } from "@/auth/payload";
 import { job as buildJob } from "@/build";
 import { createBuild as createBuildService } from "@/build/createBuild";
 import { finalizeBuild } from "@/build/finalizeBuild";
@@ -16,6 +17,8 @@ import { getSignedObjectUrl } from "@/storage/signed-url";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
+import { assertAuthCanWriteBuild } from "../auth/build";
+import { assertAuthPrHeadCommit } from "../auth/pr-head-commit";
 import { assertAuthAttributes, resolveAuthProject } from "../auth/project";
 import { BuildSchema, serializeBuild } from "../schema/primitives/build";
 import { GitBranchSchema, GitPRNumberSchema } from "../schema/primitives/git";
@@ -252,9 +255,14 @@ export const createBuild: CreateAPIHandler = ({ post }) => {
     assertAuthAttributes(auth, { sha: req.ctx.body.commit });
 
     const ctx = {
+      auth,
       body: req.ctx.body,
       project: await resolveAuthProject(auth, req.ctx.body.project),
     } satisfies BuildContext;
+    await assertAuthPrHeadCommit(auth, {
+      project: ctx.project,
+      prHeadCommit: ctx.body.prHeadCommit,
+    });
 
     const { build, screenshots, pwTraces } = await (async () => {
       if (ctx.body.parallel) {
@@ -273,6 +281,7 @@ export const createBuild: CreateAPIHandler = ({ post }) => {
 };
 
 type BuildContext = {
+  auth: AuthProjectPayload;
   body: RequestBody;
   project: Project;
 };
@@ -301,11 +310,14 @@ async function getLegacyUploads(keys: string[]): Promise<LegacyUpload[]> {
 /**
  * Get secure presigned POST policies for unknown file keys.
  *
- * Each policy is signed with two conditions enforced by S3 on upload:
+ * Each policy is signed with conditions enforced by S3 on upload:
  *   - `content-length-range`: the body size must be within
  *     `[1, MAX_UPLOAD_FILE_BYTES]`.
  *   - `eq $Content-Type <contentType>`: the client must upload with exactly the
  *     content type declared at `createBuild` time.
+ *   - `x-amz-checksum-sha256`: the body must hash to the key. Keys are shared
+ *     by every project, so without it the first project to upload a key would
+ *     decide the bytes behind everyone else's screenshot with that key.
  */
 async function getSecureUploads(
   items: {
@@ -325,7 +337,12 @@ async function getSecureUploads(
         Bucket: screenshotsBucket,
         Key: item.key,
         Expires: 1800, // 30 minutes
-        Fields: { "Content-Type": item.contentType },
+        Fields: {
+          "Content-Type": item.contentType,
+          "x-amz-checksum-sha256": Buffer.from(item.key, "hex").toString(
+            "base64",
+          ),
+        },
         Conditions: [
           ["content-length-range", 1, MAX_UPLOAD_FILE_BYTES],
           ["eq", "$Content-Type", item.contentType],
@@ -438,6 +455,10 @@ async function handleCreateParallel(ctx: BuildContext): Promise<CreateResult> {
           name: buildName,
         });
 
+      if (existingBuild) {
+        assertAuthCanWriteBuild(ctx.auth, existingBuild);
+      }
+
       if (ctx.body.skipped) {
         if (existingBuild) {
           return existingBuild;
@@ -469,6 +490,7 @@ async function createBuildFromRequest(ctx: BuildContext) {
   const { body, project } = ctx;
   return createBuildService({
     project,
+    authSource: ctx.auth.source,
     buildName: body.name ?? null,
     commit: body.commit,
     branch: body.branch,

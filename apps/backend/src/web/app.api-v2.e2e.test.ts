@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,17 +34,22 @@ function isSecureUpload(upload: UploadEntry): upload is SecureUploadEntry {
   return "postUrl" in upload;
 }
 
+function getSha256(file: Buffer) {
+  return createHash("sha256").update(file).digest("hex");
+}
+
 /**
- * Upload a file using the presigned POST policy returned by createBuild.
+ * Post a file with the presigned POST policy returned by createBuild.
  *
- * S3 enforces the size limit baked into the policy's `content-length-range`
- * condition; oversized uploads are rejected by S3 itself, not by Argos.
+ * S3 enforces the policy's conditions itself, not Argos: the size limit
+ * (`content-length-range`) and the SHA-256 of the bytes, which must match the
+ * key. LocalStack enforces neither, so only a run against S3 tests them.
  */
-async function uploadFileWithPostUrl(
+function postFile(
   upload: SecureUploadEntry,
   file: Buffer,
   contentType: string,
-): Promise<void> {
+): Promise<Response> {
   const formData = new FormData();
   for (const [name, value] of Object.entries(upload.fields)) {
     formData.append(name, value);
@@ -53,11 +59,20 @@ async function uploadFileWithPostUrl(
     "file",
     new Blob([new Uint8Array(file)], { type: contentType }),
   );
-  const response = await fetch(upload.postUrl, {
-    method: "POST",
-    body: formData,
+  return fetch(upload.postUrl, { method: "POST", body: formData });
+}
+
+async function uploadFileWithPostUrl(
+  upload: SecureUploadEntry,
+  file: Buffer,
+  contentType: string,
+): Promise<void> {
+  const response = await postFile(upload, file, contentType);
+  // S3 gives the reason for a rejection in the body.
+  expect({ status: response.status, body: await response.text() }).toEqual({
+    status: 204,
+    body: "",
   });
-  expect(response.status).toBe(204);
 }
 
 async function uploadFileWithPutUrl(
@@ -238,6 +253,8 @@ describe("api v2", () => {
       });
 
       it("creates build and secure upload fields", async () => {
+        const image = Buffer.from("secure upload");
+        const json = Buffer.from('{"ok":true}');
         const res = await request(app)
           .post("/v2/builds")
           .set("Host", "api.argos-ci.dev")
@@ -245,14 +262,8 @@ describe("api v2", () => {
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
             screenshots: [
-              {
-                key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-                contentType: "image/jpeg",
-              },
-              {
-                key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
-                contentType: "application/json",
-              },
+              { key: getSha256(image), contentType: "image/jpeg" },
+              { key: getSha256(json), contentType: "application/json" },
             ],
             branch: "main",
             name: "current",
@@ -263,14 +274,14 @@ describe("api v2", () => {
 
         expect(res.body.screenshots).toEqual([
           {
-            key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            key: getSha256(image),
             postUrl: expect.any(String),
             fields: expect.objectContaining({
               "Content-Type": "image/jpeg",
             }),
           },
           {
-            key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+            key: getSha256(json),
             postUrl: expect.any(String),
             fields: expect.objectContaining({
               "Content-Type": "application/json",
@@ -287,16 +298,14 @@ describe("api v2", () => {
         ) {
           throw new Error("Expected two secure upload targets");
         }
-        await uploadFileWithPostUrl(
+        const tampered = await postFile(
           imageUpload,
-          Buffer.from("secure upload"),
+          Buffer.from("other bytes"),
           "image/jpeg",
         );
-        await uploadFileWithPostUrl(
-          jsonUpload,
-          Buffer.from('{"ok":true}'),
-          "application/json",
-        );
+        expect(tampered.status).toBe(400);
+        await uploadFileWithPostUrl(imageUpload, image, "image/jpeg");
+        await uploadFileWithPostUrl(jsonUpload, json, "application/json");
       });
 
       it("rejects requests with both legacy and secure screenshot inputs", async () => {

@@ -12,11 +12,13 @@ import {
   stubWorkflowRuns,
   type LinkedProject,
 } from "@/auth/tokenless/github-actions.test-util";
-import { Media } from "@/database/models";
+import { Media, type Build } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { setupRedis } from "@/util/redis/testing";
 
+import { createBuild } from "../handlers/createBuild";
 import { exchangeGitHubActionsTokenlessToken } from "../handlers/exchangeGitHubActionsTokenlessToken";
+import { finalizeBuilds } from "../handlers/finalizeBuilds";
 import { getProject } from "../handlers/getProject";
 import { listBuilds } from "../handlers/listBuilds";
 import {
@@ -25,9 +27,13 @@ import {
   listMediaHandler,
   updateMediaHandler,
 } from "../handlers/media";
+import { updateBuild } from "../handlers/updateBuild";
 import { createTestHandlerApp } from "../test-util";
 
 const app = createTestHandlerApp(
+  createBuild,
+  updateBuild,
+  finalizeBuilds,
   exchangeGitHubActionsTokenlessToken,
   getProject,
   listBuilds,
@@ -138,5 +144,77 @@ describe("tokenless bearers", () => {
       });
 
     await expect(Media.query().findById(media.id)).resolves.toBeTruthy();
+  });
+
+  describe("on a pending parallel build", () => {
+    async function createPendingBuild(
+      linkedProject: LinkedProject,
+      authSource: Build["authSource"],
+    ) {
+      const bucket = await factory.ScreenshotBucket.create({
+        projectId: linkedProject.project.id,
+        complete: false,
+      });
+      return factory.Build.create({
+        name: "default",
+        projectId: linkedProject.project.id,
+        compareScreenshotBucketId: bucket.id,
+        externalId: "nonce",
+        totalBatch: -1,
+        authSource,
+      });
+    }
+
+    test("cannot upload to, join or finalize a build another token created", async ({
+      linkedProject,
+    }) => {
+      const build = await createPendingBuild(linkedProject, "project-token");
+      const auth = `Bearer ${linkedProject.bearer}`;
+
+      await request(app)
+        .put(`/builds/${build.id}`)
+        .set("Authorization", auth)
+        .send({ screenshots: [], parallel: true, parallelTotal: -1 })
+        .expect(403);
+      await request(app)
+        .post("/builds")
+        .set("Authorization", auth)
+        .send({
+          commit: commitSha,
+          branch,
+          screenshots: [],
+          parallel: true,
+          parallelNonce: "nonce",
+        })
+        .expect(403);
+      await request(app)
+        .post("/builds/finalize")
+        .set("Authorization", auth)
+        .send({ parallelNonce: "nonce" })
+        .expect(403);
+
+      await expect(
+        build.$relatedQuery("compareScreenshotBucket"),
+      ).resolves.toMatchObject({ complete: false });
+    });
+
+    test("can finalize a build a tokenless bearer created", async ({
+      linkedProject,
+    }) => {
+      const build = await createPendingBuild(
+        linkedProject,
+        "github-actions-tokenless",
+      );
+
+      await request(app)
+        .post("/builds/finalize")
+        .set("Authorization", `Bearer ${linkedProject.bearer}`)
+        .send({ parallelNonce: "nonce" })
+        .expect(200);
+
+      await expect(
+        build.$relatedQuery("compareScreenshotBucket"),
+      ).resolves.toMatchObject({ complete: true });
+    });
   });
 });

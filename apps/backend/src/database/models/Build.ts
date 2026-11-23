@@ -22,6 +22,7 @@ import type {
 } from "objection";
 import z from "zod";
 
+import { AUTH_PROJECT_SOURCES, type AuthProjectSource } from "@/auth/payload";
 import config from "@/config";
 import { SHA1_REGEX } from "@/util/validation";
 
@@ -78,6 +79,12 @@ export class Build extends Model {
           prHeadCommit: { type: ["string", "null"] },
           githubPullRequestId: { type: ["string", "null"] },
           originPullRequestId: { type: ["string", "null"] },
+          authSource: {
+            anyOf: [
+              { type: "null" },
+              { type: "string", enum: [...AUTH_PROJECT_SOURCES] },
+            ],
+          },
           baseCommit: {
             anyOf: [
               { type: "null" },
@@ -143,6 +150,8 @@ export class Build extends Model {
   prHeadCommit!: string | null;
   githubPullRequestId!: string | null;
   originPullRequestId!: string | null;
+  /** The credential that created the build, `null` before it was recorded. */
+  authSource!: AuthProjectSource | null;
   baseCommit!: string | null;
   parentCommits!: string[] | null;
   baseBranch!: string | null;

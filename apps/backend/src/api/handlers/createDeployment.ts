@@ -22,6 +22,7 @@ import { getS3Client } from "@/storage/s3";
 import { boom } from "@/util/error";
 
 import { assertAuthCanDeploy } from "../auth/deployment";
+import { assertAuthPrHeadCommit } from "../auth/pr-head-commit";
 import { assertAuthAttributes, resolveAuthProject } from "../auth/project";
 import { GitBranchSchema, GitPRNumberSchema } from "../schema/primitives/git";
 import { TokenProjectPath } from "../schema/primitives/project";
@@ -244,6 +245,10 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
     assertAuthAttributes(auth, { sha: body.commit });
 
     const project = await resolveAuthProject(auth, body.project);
+    await assertAuthPrHeadCommit(auth, {
+      project,
+      prHeadCommit: body.prHeadCommit,
+    });
 
     const branch = body.branch;
     const environment =

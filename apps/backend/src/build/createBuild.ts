@@ -1,6 +1,7 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
+import type { AuthProjectSource } from "@/auth/payload";
 import { pushBuildNotification } from "@/build-notification";
 import { checkIsPartialBuild } from "@/build/partial";
 import { transaction } from "@/database";
@@ -25,6 +26,7 @@ import { redisLock } from "@/util/redis";
 
 export async function createBuild(params: {
   project: Project;
+  authSource: AuthProjectSource;
   commit: string;
   branch: string;
   buildName: string | null;
@@ -235,6 +237,7 @@ export async function createBuild(params: {
           partial: isPartial,
           type: params.skipped ? "skipped" : null,
           subset: params.subset,
+          authSource: params.authSource,
         });
 
         if (mergeQueuePullRequests.length > 0) {
