@@ -78,13 +78,37 @@ async function findUserCreatedByTeamScim(args: {
 }
 
 /**
+ * Whether the team's SCIM created the user and still provisions them as an
+ * active member. Leaving the team by any path drops that for good (see
+ * `deleteTeamMembership`), so the team's IdP then needs the same proof as any
+ * other team's to reach the account.
+ */
+async function checkIsScimProvisionedMember(args: {
+  teamId: string;
+  userId: string;
+}) {
+  const [scimUser, teamUser] = await Promise.all([
+    TeamScimUser.query().select("id").findOne({
+      teamId: args.teamId,
+      userId: args.userId,
+      userCreated: true,
+      active: true,
+    }),
+    TeamUser.query().select("id").findOne({
+      teamId: args.teamId,
+      userId: args.userId,
+    }),
+  ]);
+  return Boolean(scimUser && teamUser);
+}
+
+/**
  * Get the user an email links to, or create one for it with `accountData`.
  *
  * The caller must have proven the email belongs to whoever it acts for, unless
  * `assertedByTeamId` is the team whose IdP or SCIM client vouches for it. Then
  * the user may also be the one this team's SCIM created with the email, held
- * verified or not (`scimCreated`), and the caller decides whether the team may
- * reach any other. A team vouches only for its own verified domains: on any
+ * verified or not, and the caller decides whether the team may reach it. A team vouches only for its own verified domains: on any
  * other, a user it creates holds the email unverified, so other teams' domain
  * auto-join, invites and later logins do not trust it, and only this team's
  * invites are accepted.
@@ -105,12 +129,7 @@ export async function getOrCreateUserByVerifiedEmail(
   const user = verifiedHolder ?? scimCreatedHolder;
   if (user) {
     invariant(user.account, "Account not fetched");
-    return {
-      user,
-      account: user.account,
-      creation: false,
-      scimCreated: Boolean(scimCreatedHolder),
-    };
+    return { user, account: user.account, creation: false };
   }
   const created = await createAccount({
     email,
@@ -121,7 +140,7 @@ export async function getOrCreateUserByVerifiedEmail(
   if (teamId && !emailVerified) {
     await acceptAllInvitesForEmail({ email, userId: created.user.id, teamId });
   }
-  return { ...created, creation: true, scimCreated: false };
+  return { ...created, creation: true };
 }
 
 /**
@@ -196,14 +215,20 @@ export async function getOrCreateUserAccountFromSaml(input: {
     return { type: "login", account: teamUser.user.account, creation: false };
   }
 
-  const { user, account, creation, scimCreated } =
-    await getOrCreateUserByVerifiedEmail(email, { assertedByTeamId: teamId });
+  const { user, account, creation } = await getOrCreateUserByVerifiedEmail(
+    email,
+    { assertedByTeamId: teamId },
+  );
   // The IdP is configured by the team, so it vouches for whatever email its
   // admin wants: trusting it with an account that already exists would let any
   // team sign in as anyone. Such an account is only linked once its owner has
   // proven it is theirs — by confirming the link while signed in to it — or
-  // when this team's SCIM created it in the first place.
-  if (!creation && !scimCreated) {
+  // when this team's SCIM created it and still provisions them as a member.
+  const isProvisioned = await checkIsScimProvisionedMember({
+    teamId,
+    userId: user.id,
+  });
+  if (!creation && !isProvisioned) {
     if (user.id !== input.signedInUserId) {
       throw boom(
         403,

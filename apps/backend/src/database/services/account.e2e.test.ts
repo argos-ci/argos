@@ -5,18 +5,21 @@ import { generateAuthEmailCode } from "@/auth/email";
 import {
   type Account,
   GithubAccount,
+  Team,
   TeamScimUser,
   TeamUser,
   User,
   UserEmail,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
+import { updateScimUser } from "@/scim/service";
 
 import {
   authenticateWithEmail,
   getOrCreateUserAccountFromGhAccount,
   getOrCreateUserAccountFromSaml,
 } from "./account";
+import { deleteTeamMembership } from "./team-member";
 
 const EMAIL = "jane@acme.com";
 const SSO_SUBJECT = "idp-jane";
@@ -133,6 +136,11 @@ describe("getOrCreateUserAccountFromSaml", () => {
             active: true,
             userCreated,
           });
+          await factory.TeamUser.create({
+            teamId: teamAccount.teamId,
+            userId: userAccount.userId,
+            userLevel: "member",
+          });
 
           const result = logInWithSaml({ teamAccount });
 
@@ -147,6 +155,97 @@ describe("getOrCreateUserAccountFromSaml", () => {
       );
     },
   );
+
+  describe("when the team's SCIM created the user, who then left the team", () => {
+    /**
+     * A member the team's SCIM created with the email, which they have since
+     * verified on their own (a contractor's own mailbox, say). The team has an
+     * owner too, so the member can leave.
+     */
+    async function createScimMember(args: {
+      teamAccount: Account;
+      userAccount: Account;
+    }) {
+      const { teamId } = args.teamAccount;
+      const { userId } = args.userAccount;
+      invariant(teamId, "team account has no team");
+      invariant(userId, "user account has no user");
+      await addEmail({ account: args.userAccount, verified: true });
+      const owner = await factory.UserAccount.create();
+      invariant(owner.userId, "owner account has no user");
+      await factory.TeamUser.create({
+        teamId,
+        userId: owner.userId,
+        userLevel: "owner",
+      });
+      const teamUser = await factory.TeamUser.create({
+        teamId,
+        userId,
+        userLevel: "member",
+      });
+      const scimUser = await TeamScimUser.query().insertAndFetch({
+        teamId,
+        userId,
+        userName: EMAIL,
+        active: true,
+        userCreated: true,
+      });
+      const team = await Team.query().findById(teamId);
+      invariant(team, "team not found");
+      return { team, teamUser, scimUser };
+    }
+
+    async function expectRefused(teamAccount: Account) {
+      await expect(logInWithSaml({ teamAccount })).rejects.toMatchObject({
+        code: "SAML_ACCOUNT_LINK_REQUIRED",
+      });
+    }
+
+    withAccounts(
+      "refuses to sign in once they left, even after they come back",
+      async ({ teamAccount, userAccount }) => {
+        const { team, teamUser } = await createScimMember({
+          teamAccount,
+          userAccount,
+        });
+
+        await deleteTeamMembership({
+          teamId: team.id,
+          teamUserId: teamUser.id,
+        });
+        await expectRefused(teamAccount);
+
+        await factory.TeamUser.create({
+          teamId: team.id,
+          userId: teamUser.userId,
+          userLevel: "member",
+        });
+        await expectRefused(teamAccount);
+      },
+    );
+
+    withAccounts(
+      "refuses to sign in once SCIM deactivated them, and after it reactivated them",
+      async ({ teamAccount, userAccount }) => {
+        const { team, scimUser } = await createScimMember({
+          teamAccount,
+          userAccount,
+        });
+        const setActive = (active: boolean) =>
+          updateScimUser({
+            team,
+            id: scimUser.id,
+            update: (current) => ({ ...current, active }),
+          });
+
+        await setActive(false);
+        await expectRefused(teamAccount);
+
+        await setActive(true);
+        await expectRefused(teamAccount);
+      },
+    );
+  });
 
   withAccounts(
     "creates an account rather than link the user holding the email unverified",

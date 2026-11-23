@@ -21,6 +21,7 @@ import { boom } from "@/util/error";
 import { Account } from "../models/Account";
 import { GithubAccountMember } from "../models/GithubAccountMember";
 import { Team } from "../models/Team";
+import { TeamScimUser } from "../models/TeamScimUser";
 import { TeamUser } from "../models/TeamUser";
 import { transaction } from "../transaction";
 import { isValidPgBigInt } from "../util/biginteger";
@@ -257,10 +258,20 @@ export async function deleteTeamMembership(args: {
       throw boom(403, "Can't remove the last user of a team.");
     }
 
-    const deleted = await TeamUser.query(trx).findById(teamUserId).delete();
-    if (deleted === 0) {
+    const [deleted] = await TeamUser.query(trx)
+      .where("id", teamUserId)
+      .delete()
+      .returning("userId");
+    if (!deleted) {
       throw boom(404, "This user is not a member of the team.");
     }
+
+    // The account stays the person's own: the team's IdP loses the right its
+    // SCIM had to sign in to an account it created for them, even if they
+    // come back.
+    await TeamScimUser.query(trx)
+      .where({ teamId, userId: deleted.userId })
+      .patch({ userCreated: false });
 
     // The last one left is the only one, so it must be the owner.
     if (members.length === 2) {
