@@ -306,17 +306,20 @@ describe("webhooks", () => {
         conclusion: "failed",
       });
 
-      const res = await post("owner", {
-        query: `
-          mutation Resend($input: ResendWebhookDeliveryInput!) {
-            first: resendWebhookDelivery(input: $input) { id }
-            second: resendWebhookDelivery(input: $input) { id }
-          }
-        `,
-        variables: { input: { id: failed.id } },
-      });
-      expectNoGraphQLError(res);
-      expect(res.body.data.second.id).toBe(res.body.data.first.id);
+      const resend = async () => {
+        const res = await post("owner", {
+          query: `
+            mutation Resend($input: ResendWebhookDeliveryInput!) {
+              resendWebhookDelivery(input: $input) { id }
+            }
+          `,
+          variables: { input: { id: failed.id } },
+        });
+        expectNoGraphQLError(res);
+        return res.body.data.resendWebhookDelivery.id;
+      };
+      const first = await resend();
+      expect(await resend()).toBe(first);
       expect(
         await WebhookDelivery.query()
           .where({ webhookId: webhook.id })

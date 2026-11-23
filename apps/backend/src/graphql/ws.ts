@@ -1,4 +1,5 @@
 import type { Server } from "node:http";
+import { parse, specifiedRules, validate } from "graphql";
 import { useServer } from "graphql-ws/use/ws";
 import { WebSocketServer } from "ws";
 
@@ -6,9 +7,20 @@ import config from "@/config";
 import parentLogger from "@/logger";
 
 import { getWebSocketContext } from "./context";
+import {
+  operationParseOptions,
+  OperationLimitsRule,
+  SubscriptionsOnlyRule,
+} from "./operation-limits";
 import { schema } from "./schema";
 
 const logger = parentLogger.child({ module: "graphql-ws" });
+
+const validationRules = [
+  ...specifiedRules,
+  OperationLimitsRule,
+  SubscriptionsOnlyRule,
+];
 
 /**
  * Only accept WebSocket upgrades coming from our own app. The session cookie is
@@ -53,6 +65,9 @@ export function createGraphQLWebSocketServer(httpServer: Server): void {
   useServer(
     {
       schema,
+      parse: (source) => parse(source, operationParseOptions),
+      validate: (operationSchema, document) =>
+        validate(operationSchema, document, validationRules),
       context: (ctx) => getWebSocketContext(ctx.extra.request),
       onConnect: (ctx) => {
         const { origin } = ctx.extra.request.headers;
