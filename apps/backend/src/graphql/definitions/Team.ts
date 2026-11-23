@@ -15,6 +15,7 @@ import {
   checkHasAccessToSAML,
   claimTeamSamlSlug,
   getTeamSamlPublicValues,
+  TEAM_SAML_SLUG_TAKEN_REASON,
   parseIdpMetadataXml,
   parseSamlSigningCertificate,
 } from "@/auth/saml";
@@ -1923,9 +1924,7 @@ export const resolvers: IResolvers = {
       }
 
       if (!(await claimTeamSamlSlug(teamAccount))) {
-        throw forbidden(
-          "This team URL was used for another team's SAML SSO, so it cannot be used for SAML again. Rename the team to set up SAML.",
-        );
+        throw forbidden(TEAM_SAML_SLUG_TAKEN_REASON);
       }
 
       const existing = await TeamSamlConfig.query().findOne({

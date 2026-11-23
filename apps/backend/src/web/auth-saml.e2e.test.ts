@@ -241,8 +241,6 @@ describe("SAML assertion consumer service", () => {
     );
   });
 
-  // The IdP keeps trusting the URLs built from a slug after the team that
-  // registered it renames itself or is deleted.
   test.for([
     {
       what: "renamed",

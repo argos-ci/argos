@@ -268,14 +268,8 @@ export async function updateScimUser(args: {
       const scimUser = await getScimUser({ teamId: team.id, id: args.id, trx });
       const { userId, active: wasActive, role: previousRole } = scimUser;
       const attributes = args.update(getUserAttributes(scimUser));
-      const isReactivated = attributes.active && !wasActive;
       const [updated] = await TeamScimUser.query(trx)
-        .patch({
-          ...attributes,
-          // A person the team deactivated may have kept using the account on
-          // their own, so the team's IdP does not get it back with them.
-          ...(isReactivated ? { userCreated: false } : {}),
-        })
+        .patch(attributes)
         .where("id", scimUser.id)
         .returning("*");
       invariant(updated, "Patched user not returned");

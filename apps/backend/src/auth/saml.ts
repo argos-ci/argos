@@ -419,27 +419,34 @@ export async function checkHasAccessToSAML(account: Account) {
   return team?.samlPurchased ?? false;
 }
 
+export const TEAM_SAML_SLUG_TAKEN_REASON =
+  "This team URL was used for another team's SAML SSO, so it cannot be used for SAML again. A team admin can rename the team to set up SAML.";
+
 /**
- * Members can log in to a team with SAML only while it has access to SAML SSO
- * and has turned it on. Expects `teamSamlConfig` to be fetched.
- */
-/**
- * Bind the team's slug to the team as its SAML identity, and tell whether the
- * team holds it. The SP entity ID, ACS and login URLs are built from the slug,
- * and the team's IdP keeps trusting them after the team is renamed or
- * deleted: a slug that served one team's SAML never serves another team's.
+ * Bind the team's slug to the team as its SAML identity (see
+ * {@link TeamSamlSlug}), unless another team holds it already. Returns whether
+ * this team holds it.
  */
 export async function claimTeamSamlSlug(account: Account): Promise<boolean> {
-  const { teamId } = account;
+  const { teamId, slug } = account;
   invariant(teamId, "SAML is only available for team accounts");
-  await TeamSamlSlug.query()
-    .insert({ slug: account.slug, teamId })
-    .onConflict("slug")
-    .ignore();
-  const holder = await TeamSamlSlug.query().findOne({ slug: account.slug });
-  return holder?.teamId === teamId;
+  const findHolder = () => TeamSamlSlug.query().findOne({ slug });
+  let holder = await findHolder();
+  if (!holder) {
+    await TeamSamlSlug.query()
+      .insert({ slug, teamId })
+      .onConflict("slug")
+      .ignore();
+    holder = await findHolder();
+  }
+  invariant(holder, "SAML slug holder not found after claiming it");
+  return holder.teamId === teamId;
 }
 
+/**
+ * Members can log in to a team with SAML only while it has access to SAML SSO,
+ * has turned it on and holds its slug. Expects `teamSamlConfig` to be fetched.
+ */
 export async function checkTeamSamlEnabled(
   account: Account,
 ): Promise<
@@ -458,6 +465,9 @@ export async function checkTeamSamlEnabled(
   }
   if (!account.teamSamlConfig?.enabled) {
     return { enabled: false, reason: "SAML SSO is not enabled for this team." };
+  }
+  if (!(await claimTeamSamlSlug(account))) {
+    return { enabled: false, reason: TEAM_SAML_SLUG_TAKEN_REASON };
   }
   return { enabled: true, samlConfig: account.teamSamlConfig };
 }

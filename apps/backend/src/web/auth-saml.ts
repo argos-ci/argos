@@ -5,7 +5,6 @@ import { issueCallbackState } from "@/auth/callback-binding";
 import {
   checkHasAccessToSAML,
   checkTeamSamlEnabled,
-  claimTeamSamlSlug,
   createSamlAuthCode,
   createSamlLoginRedirect,
   extractEmailFromSaml,
@@ -66,12 +65,6 @@ async function getEnabledTeamSamlConfig(account: Account) {
   const result = await checkTeamSamlEnabled(account);
   if (!result.enabled) {
     throw boom(403, result.reason);
-  }
-  if (!(await claimTeamSamlSlug(account))) {
-    throw boom(
-      403,
-      "This team URL was used for another team's SAML SSO, so it cannot be used for SAML again. A team admin can rename the team to set up SAML.",
-    );
   }
   return result.samlConfig;
 }
