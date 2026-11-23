@@ -78,6 +78,30 @@ async function findUserCreatedByTeamScim(args: {
 }
 
 /**
+ * Whether the team's SCIM created the user and still provisions them, active
+ * and a member. Once they leave, are removed or deactivated, the team's IdP
+ * needs the same proof as any other team's to reach the account.
+ */
+async function checkIsScimProvisionedMember(args: {
+  teamId: string;
+  userId: string;
+}) {
+  const [scimUser, teamUser] = await Promise.all([
+    TeamScimUser.query().select("id").findOne({
+      teamId: args.teamId,
+      userId: args.userId,
+      userCreated: true,
+      active: true,
+    }),
+    TeamUser.query().select("id").findOne({
+      teamId: args.teamId,
+      userId: args.userId,
+    }),
+  ]);
+  return Boolean(scimUser && teamUser);
+}
+
+/**
  * Get the user an email links to, or create one for it with `accountData`.
  *
  * The caller must have proven the email belongs to whoever it acts for, unless
@@ -202,8 +226,11 @@ export async function getOrCreateUserAccountFromSaml(input: {
   // admin wants: trusting it with an account that already exists would let any
   // team sign in as anyone. Such an account is only linked once its owner has
   // proven it is theirs — by confirming the link while signed in to it — or
-  // when this team's SCIM created it in the first place.
-  if (!creation && !scimCreated) {
+  // when this team's SCIM created it and still provisions them as a member.
+  const isProvisioned =
+    scimCreated &&
+    (await checkIsScimProvisionedMember({ teamId, userId: user.id }));
+  if (!creation && !isProvisioned) {
     if (user.id !== input.signedInUserId) {
       throw boom(
         403,

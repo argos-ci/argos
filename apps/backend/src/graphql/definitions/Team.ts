@@ -13,6 +13,7 @@ import { startSession } from "@/auth/login";
 import { getAuthMethodForTeam, type AuthViewer } from "@/auth/payload";
 import {
   checkHasAccessToSAML,
+  claimTeamSamlSlug,
   getTeamSamlPublicValues,
   parseIdpMetadataXml,
   parseSamlSigningCertificate,
@@ -1918,6 +1919,12 @@ export const resolvers: IResolvers = {
       if (!(await checkHasAccessToSAML(teamAccount))) {
         throw forbidden(
           "SAML SSO is not included in your plan. Enable the SAML SSO add-on to use it.",
+        );
+      }
+
+      if (!(await claimTeamSamlSlug(teamAccount))) {
+        throw forbidden(
+          "This team URL was used for another team's SAML SSO, so it cannot be used for SAML again. Rename the team to set up SAML.",
         );
       }
 

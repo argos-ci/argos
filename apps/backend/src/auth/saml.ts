@@ -4,7 +4,12 @@ import * as samlify from "samlify";
 import z from "zod";
 
 import config from "@/config";
-import { Team, type Account, type TeamSamlConfig } from "@/database/models";
+import {
+  Team,
+  TeamSamlSlug,
+  type Account,
+  type TeamSamlConfig,
+} from "@/database/models";
 import { generateRandomString } from "@/database/services/crypto";
 import logger from "@/logger";
 import { boom, HTTPError } from "@/util/error";
@@ -418,6 +423,23 @@ export async function checkHasAccessToSAML(account: Account) {
  * Members can log in to a team with SAML only while it has access to SAML SSO
  * and has turned it on. Expects `teamSamlConfig` to be fetched.
  */
+/**
+ * Bind the team's slug to the team as its SAML identity, and tell whether the
+ * team holds it. The SP entity ID, ACS and login URLs are built from the slug,
+ * and the team's IdP keeps trusting them after the team is renamed or
+ * deleted: a slug that served one team's SAML never serves another team's.
+ */
+export async function claimTeamSamlSlug(account: Account): Promise<boolean> {
+  const { teamId } = account;
+  invariant(teamId, "SAML is only available for team accounts");
+  await TeamSamlSlug.query()
+    .insert({ slug: account.slug, teamId })
+    .onConflict("slug")
+    .ignore();
+  const holder = await TeamSamlSlug.query().findOne({ slug: account.slug });
+  return holder?.teamId === teamId;
+}
+
 export async function checkTeamSamlEnabled(
   account: Account,
 ): Promise<
