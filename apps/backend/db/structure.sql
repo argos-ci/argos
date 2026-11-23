@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 8gt8ctfmjvyDCOYaG15dsEUtguKE8QnbRLrq62EayZMAc0K7tZeKHCd9iQocrjE
+\restrict JeLrejpzAjMoVrV2wKGjslVerCWdbljOEXMWsCtxUyALELQXHVLA6Rrvaox1UmQ
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4 (Homebrew)
@@ -570,6 +570,8 @@ CREATE TABLE public.builds (
     "mergeQueue" boolean DEFAULT false NOT NULL,
     subset boolean DEFAULT false NOT NULL,
     "originPullRequestId" bigint,
+    "authSource" text,
+    CONSTRAINT "builds_authSource_check" CHECK (("authSource" = ANY (ARRAY['project-token'::text, 'github-actions-oidc'::text, 'github-actions-tokenless'::text]))),
     CONSTRAINT "builds_baseBranchResolvedFrom_check" CHECK (("baseBranchResolvedFrom" = ANY (ARRAY['user'::text, 'pull-request'::text, 'project'::text]))),
     CONSTRAINT builds_conclusion_check CHECK ((conclusion = ANY (ARRAY['no-changes'::text, 'changes-detected'::text]))),
     CONSTRAINT builds_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text]))),
@@ -7514,7 +7516,7 @@ ALTER TABLE ONLY public.webhooks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 8gt8ctfmjvyDCOYaG15dsEUtguKE8QnbRLrq62EayZMAc0K7tZeKHCd9iQocrjE
+\unrestrict JeLrejpzAjMoVrV2wKGjslVerCWdbljOEXMWsCtxUyALELQXHVLA6Rrvaox1UmQ
 
 -- Knex migrations
 
@@ -7805,3 +7807,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026112
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122103709_drop-legacy-saml-enforcement.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122120000_webhooks.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122184409_stalled-job-requeue-indexes.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261123124108_build-auth-source.js', 1, NOW());

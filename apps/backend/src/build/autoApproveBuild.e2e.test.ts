@@ -64,13 +64,18 @@ const test = it.extend<{
  * Create a diff on a build that is both reviewable ("added" status) and
  * matchable by fingerprint.
  */
-async function createFingerprintedDiff(buildId: string, fingerprint: string) {
+async function createFingerprintedDiff(
+  buildId: string,
+  fingerprint: string,
+  testId: string | null = null,
+) {
   const screenshot = await factory.Screenshot.create();
   return factory.ScreenshotDiff.create({
     buildId,
     compareScreenshotId: screenshot.id,
     baseScreenshotId: null,
     fingerprint,
+    testId,
   });
 }
 
@@ -266,5 +271,82 @@ describe("autoApproveBuild", () => {
 
     const reviews = await BuildReview.query().where("buildId", build.id);
     expect(reviews).toHaveLength(0);
+  });
+
+  describe("only reapplies an approval to the same change", () => {
+    async function countReviews(buildId: string) {
+      return BuildReview.query().where("buildId", buildId).resultSize();
+    }
+
+    test("of the same test, not another test with the same fingerprint", async ({
+      project,
+      previousBuild,
+      build,
+      compareBucket,
+    }) => {
+      const user = await factory.User.create();
+      const [approvedTest, otherTest] = await factory.Test.createMany(2, {
+        projectId: project.id,
+      });
+      invariant(approvedTest && otherTest);
+      const previousDiff = await createFingerprintedDiff(
+        previousBuild.id,
+        "fp-shape",
+        approvedTest.id,
+      );
+      await approvePreviousDiffs(previousBuild.id, [previousDiff], user.id);
+      await createFingerprintedDiff(build.id, "fp-shape", otherTest.id);
+
+      await autoApproveBuild({ build, compareScreenshotBucket: compareBucket });
+      await expect(countReviews(build.id)).resolves.toBe(0);
+
+      await ScreenshotDiff.query()
+        .where("buildId", build.id)
+        .patch({ testId: approvedTest.id });
+      await autoApproveBuild({ build, compareScreenshotBucket: compareBucket });
+      await expect(countReviews(build.id)).resolves.toBe(1);
+    });
+
+    test("not a change of a screenshot whose removal was approved", async ({
+      project,
+      previousBuild,
+      build,
+      compareBucket,
+    }) => {
+      const user = await factory.User.create();
+      const testModel = await factory.Test.create({ projectId: project.id });
+      const [baseFile, changedFile] = await factory.File.createMany(2, {
+        type: "screenshot",
+      });
+      invariant(baseFile && changedFile);
+      const baseScreenshot = await factory.Screenshot.create({
+        fileId: baseFile.id,
+        testId: testModel.id,
+      });
+      const removal = await factory.ScreenshotDiff.create({
+        buildId: previousBuild.id,
+        baseScreenshotId: baseScreenshot.id,
+        compareScreenshotId: null,
+        fingerprint: null,
+        testId: testModel.id,
+      });
+      await approvePreviousDiffs(previousBuild.id, [removal], user.id);
+      const changedScreenshot = await factory.Screenshot.create({
+        fileId: changedFile.id,
+        testId: testModel.id,
+      });
+      await factory.ScreenshotDiff.create({
+        buildId: build.id,
+        baseScreenshotId: baseScreenshot.id,
+        compareScreenshotId: changedScreenshot.id,
+        fingerprint: "fp-new",
+        score: 0.5,
+        testId: testModel.id,
+      });
+
+      await autoApproveBuild({ build, compareScreenshotBucket: compareBucket });
+
+      await expect(countReviews(build.id)).resolves.toBe(0);
+    });
   });
 });

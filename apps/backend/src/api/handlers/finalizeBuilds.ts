@@ -7,6 +7,7 @@ import { finalizeBuild as finalizeBuildService } from "@/build/finalizeBuild";
 import { Build } from "@/database/models";
 import { transaction } from "@/database/transaction";
 
+import { assertAuthCanWriteBuild } from "../auth/build";
 import { assertAuthAttributes, resolveAuthProject } from "../auth/project";
 import { BuildSchema, serializeBuilds } from "../schema/primitives/build";
 import { TokenProjectPath } from "../schema/primitives/project";
@@ -74,6 +75,7 @@ export const finalizeBuilds: CreateAPIHandler = ({ post }) => {
       .where("builds.totalBatch", -1);
 
     for (const build of builds) {
+      assertAuthCanWriteBuild(auth, build);
       assertAuthAttributes(auth, {
         sha: build.compareScreenshotBucket?.commit,
       });

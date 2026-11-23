@@ -118,6 +118,7 @@ function createProjectPayload(
     projects: [Project.fromJson({ id: projectId }, { skipValidation: true })],
     permissions: PROJECT_TOKEN_PERMISSION_LIST,
     sha,
+    pullRequestNumber: null,
   };
 }
 

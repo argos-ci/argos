@@ -13,6 +13,51 @@ import { queryBuildLineage } from "./lineage";
 
 type GetPreviousDiffApprovalIdsArgs = GetPreviousFilesApprovalQueryArgs;
 
+type ApprovalKeyRow = {
+  id: string;
+  testId: string | null;
+  fingerprint: string | null;
+  compareScreenshotId: string | null;
+  compareFileId: string | null;
+  baseFileId: string | null;
+};
+
+function getCompareKey(diff: ApprovalKeyRow): string | null {
+  return diff.compareScreenshotId && diff.compareFileId
+    ? `compare:${diff.testId}:${diff.compareFileId}`
+    : null;
+}
+
+/**
+ * The change a diff stands for, as a previous approval can cover it: its
+ * fingerprint, else the file it shows, else the file it removes. Always on the
+ * same test, as ignored changes are: an iris fingerprint keeps the shape of a
+ * change but not where it is, so it matches changes on unrelated pages.
+ */
+function getApprovalKey(diff: ApprovalKeyRow): string | null {
+  if (diff.fingerprint) {
+    return `fingerprint:${diff.testId}:${diff.fingerprint}`;
+  }
+  if (diff.compareScreenshotId) {
+    return getCompareKey(diff);
+  }
+  return diff.baseFileId ? `removal:${diff.testId}:${diff.baseFileId}` : null;
+}
+
+function selectApprovalKeyRows() {
+  return ScreenshotDiff.query()
+    .select(
+      "screenshot_diffs.id",
+      "screenshot_diffs.testId",
+      "screenshot_diffs.fingerprint",
+      "screenshot_diffs.compareScreenshotId",
+      "compareScreenshot.fileId as compareFileId",
+      "baseScreenshot.fileId as baseFileId",
+    )
+    .leftJoinRelated("[compareScreenshot,baseScreenshot]")
+    .castTo<ApprovalKeyRow[]>();
+}
+
 /**
  * Get the previously approved diff ids of a specific build.
  * Optionally specify a specific user.
@@ -20,46 +65,28 @@ type GetPreviousDiffApprovalIdsArgs = GetPreviousFilesApprovalQueryArgs;
 export async function getPreviousDiffApprovalIds(
   args: GetPreviousDiffApprovalIdsArgs,
 ) {
-  const previousApprovals = await getPreviousDiffApprovals(args);
+  const approvedKeys = await getPreviousDiffApprovals(args);
 
-  if (
-    previousApprovals.fingerprints.size === 0 &&
-    previousApprovals.compareFileIds.size === 0 &&
-    previousApprovals.baseFileIds.size === 0
-  ) {
+  if (approvedKeys.size === 0) {
     return [];
   }
 
-  const diffs = await ScreenshotDiff.query()
-    .select("screenshot_diffs.id")
-    .leftJoinRelated("[compareScreenshot,baseScreenshot]")
+  const diffs = await selectApprovalKeyRows()
     .where("screenshot_diffs.buildId", args.build.id)
     // Ignored diffs are not part of the review, so they never count as a
     // previously-approved change — even when their fingerprint or file matches
     // a prior approval.
-    .where("screenshot_diffs.ignored", false)
-    .where((qb) => {
-      if (previousApprovals.fingerprints.size > 0) {
-        qb.orWhereIn(
-          "screenshot_diffs.fingerprint",
-          Array.from(previousApprovals.fingerprints),
-        );
-      }
-      if (previousApprovals.compareFileIds.size > 0) {
-        qb.orWhereIn(
-          "compareScreenshot.fileId",
-          Array.from(previousApprovals.compareFileIds),
-        );
-      }
-      if (previousApprovals.baseFileIds.size > 0) {
-        qb.orWhereIn(
-          "baseScreenshot.fileId",
-          Array.from(previousApprovals.baseFileIds),
-        );
-      }
-    });
+    .where("screenshot_diffs.ignored", false);
 
-  return diffs.map((diff) => diff.id);
+  // A diff with a fingerprint is also covered by an approval of the same
+  // screenshot file made without one.
+  return diffs
+    .filter((diff) =>
+      [getApprovalKey(diff), getCompareKey(diff)].some(
+        (key) => key !== null && approvedKeys.has(key),
+      ),
+    )
+    .map((diff) => diff.id);
 }
 
 type PreviousBuildsScope = {
@@ -166,8 +193,8 @@ export async function getBuildReviewableDiffIds(
 }
 
 /**
- * Get the previously approved file ids.
- * Optionally specify a specific user.
+ * Get the approval keys (see {@link getApprovalKey}) of the previously
+ * approved diffs. Optionally specify a specific user.
  */
 async function getPreviousDiffApprovals(
   args: GetPreviousFilesApprovalQueryArgs,
@@ -190,8 +217,7 @@ async function getPreviousDiffApprovals(
     .orderBy("build_reviews.createdAt", "desc")
     .limit(1);
 
-  const diffs = await ScreenshotDiff.query()
-    .withGraphFetched("[compareScreenshot,baseScreenshot]")
+  const diffs = await selectApprovalKeyRows()
     .whereNotExists(
       IgnoredChange.query()
         .where("projectId", args.build.projectId)
@@ -206,34 +232,7 @@ async function getPreviousDiffApprovals(
         .whereIn("screenshot_diff_reviews.buildReviewId", buildReviewQuery),
     );
 
-  return diffs.reduce<{
-    fingerprints: Set<string>;
-    compareFileIds: Set<string>;
-    baseFileIds: Set<string>;
-  }>(
-    (indices, diff) => {
-      if (diff.fingerprint) {
-        indices.fingerprints.add(diff.fingerprint);
-        return indices;
-      }
-      if (diff.compareScreenshot) {
-        if (diff.compareScreenshot.fileId) {
-          indices.compareFileIds.add(diff.compareScreenshot.fileId);
-        }
-        return indices;
-      }
-      if (diff.baseScreenshot) {
-        if (diff.baseScreenshot.fileId) {
-          indices.baseFileIds.add(diff.baseScreenshot.fileId);
-        }
-        return indices;
-      }
-      return indices;
-    },
-    {
-      fingerprints: new Set(),
-      compareFileIds: new Set(),
-      baseFileIds: new Set(),
-    },
+  return new Set(
+    diffs.map(getApprovalKey).filter((key): key is string => key !== null),
   );
 }

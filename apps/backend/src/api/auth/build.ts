@@ -66,3 +66,24 @@ export async function loadBuildForAuth<
 
   return { auth, build, project: build.project };
 }
+
+/**
+ * A tokenless bearer only takes naming an in-progress run of a public
+ * repository, so it may upload to and finalize only builds another tokenless
+ * bearer created, never one created by the project token or an OIDC bearer.
+ * Binding it to its own run would add nothing: run ids are public too.
+ */
+export function assertAuthCanWriteBuild(
+  auth: AuthProjectPayload,
+  build: Pick<Build, "authSource">,
+): void {
+  if (
+    auth.source === "github-actions-tokenless" &&
+    build.authSource !== "github-actions-tokenless"
+  ) {
+    throw boom(
+      403,
+      "Tokenless authentication cannot change a build created with another token. Use the token that created it.",
+    );
+  }
+}

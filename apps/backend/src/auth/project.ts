@@ -39,20 +39,22 @@ const TOKENLESS_PERMISSIONS: readonly ProjectTokenPermission[] = [
  * Payload of a bearer bound to a single project: a short-lived token minted
  * from a CI identity, or a tokenless CI bearer.
  */
-function getSingleProjectPayload(
-  project: Project,
-  sha: string | null,
-  source: AuthProjectSource,
-): AuthProjectPayload {
+function getSingleProjectPayload(input: {
+  project: Project;
+  sha: string | null;
+  pullRequestNumber: number | null;
+  source: AuthProjectSource;
+}): AuthProjectPayload {
   return {
     type: "project",
-    source,
-    projects: [project],
+    source: input.source,
+    projects: [input.project],
     permissions:
-      source === "github-actions-tokenless"
+      input.source === "github-actions-tokenless"
         ? TOKENLESS_PERMISSIONS
         : PROJECT_TOKEN_PERMISSION_LIST,
-    sha,
+    sha: input.sha,
+    pullRequestNumber: input.pullRequestNumber,
   };
 }
 
@@ -122,6 +124,7 @@ async function getAuthPayloadFromProjectToken(
     projects,
     permissions: projectToken.permissions,
     sha: null,
+    pullRequestNumber: null,
   };
 }
 
@@ -146,11 +149,7 @@ export async function getAuthProjectPayloadFromBearerToken(
       throw boom(401, "Short-lived project token has expired or is invalid.");
     }
 
-    return getSingleProjectPayload(
-      resolved.project,
-      resolved.sha,
-      resolved.source,
-    );
+    return getSingleProjectPayload(resolved);
   }
 
   const strategy = tokenlessStrategies.find((strategy) =>
@@ -170,5 +169,10 @@ export async function getAuthProjectPayloadFromBearerToken(
     );
   }
 
-  return getSingleProjectPayload(project, null, "github-actions-tokenless");
+  return getSingleProjectPayload({
+    project,
+    sha: null,
+    pullRequestNumber: null,
+    source: "github-actions-tokenless",
+  });
 }

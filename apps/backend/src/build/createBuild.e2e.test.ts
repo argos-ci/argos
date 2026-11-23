@@ -35,6 +35,7 @@ describe("build", () => {
     function createMainBuild(buildProject: Project) {
       return createBuild({
         project: buildProject,
+        authSource: "project-token",
         prHeadCommit: null,
         prNumber: null,
         argosSdk: "@argos-ci/core@3.2.0",
@@ -229,6 +230,7 @@ describe("build", () => {
     it("creates a build", async () => {
       const build = await createBuild({
         project,
+        authSource: "project-token",
         prHeadCommit: null,
         prNumber: null,
         argosSdk: "@argos-ci/core@3.2.0",
@@ -266,6 +268,7 @@ describe("build", () => {
 
       const build = await createBuild({
         project,
+        authSource: "project-token",
         prHeadCommit: null,
         prNumber: 42,
         argosSdk: "@argos-ci/core@3.2.0",
@@ -299,6 +302,7 @@ describe("build", () => {
       await expect(
         createBuild({
           project,
+          authSource: "project-token",
           prHeadCommit: null,
           prNumber: null,
           argosSdk: "@argos-ci/core@3.2.0",

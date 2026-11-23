@@ -20,6 +20,7 @@ import { insertFilesAndScreenshots } from "@/database/services/screenshots";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
+import { assertAuthCanWriteBuild } from "../auth/build";
 import { assertAuthAttributes, findAuthProject } from "../auth/project";
 import {
   BuildIdSchema,
@@ -129,6 +130,7 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
     if (!project) {
       throw boom(403, "Build does not belong to project");
     }
+    assertAuthCanWriteBuild(auth, build);
 
     assertAuthAttributes(auth, {
       sha: build.compareScreenshotBucket.commit,

@@ -43,6 +43,15 @@ function assertOptionalCommitClaimMatchesInput(
   }
 }
 
+/**
+ * On a `pull_request` run, `sha` is the test merge commit GitHub builds from
+ * `refs/pull/<number>/merge`, not the head of the pull request.
+ */
+function getPullRequestNumberFromRef(ref: string | undefined): number | null {
+  const match = ref?.match(/^refs\/pull\/(\d+)\/merge$/);
+  return match?.[1] ? Number(match[1]) : null;
+}
+
 export async function exchangeGitHubActionsOidcToken(
   input: GitHubActionsOidcExchangeInput,
 ) {
@@ -94,5 +103,6 @@ export async function exchangeGitHubActionsOidcToken(
     projectId: project.id,
     source: "github-actions-oidc",
     sha: claims.sha ?? null,
+    pullRequestNumber: getPullRequestNumberFromRef(claims.ref),
   });
 }

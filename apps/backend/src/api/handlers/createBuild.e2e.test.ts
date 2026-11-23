@@ -11,18 +11,24 @@ import { createBuild } from "./createBuild";
 const app = createTestHandlerApp(createBuild);
 
 const test = base.extend<{ project: Project }>({
-  project: async ({}, use) => {
-    await setupDatabase();
-    const account = await factory.TeamAccount.create({ slug: "awesome-team" });
-    const project = await factory.Project.create({
-      accountId: account.id,
-    });
-    await factory.createProjectToken({
-      projects: [project],
-      token: "the-awesome-token",
-    });
-    await use(project);
-  },
+  project: [
+    async ({}, use) => {
+      await setupDatabase();
+      const account = await factory.TeamAccount.create({
+        slug: "awesome-team",
+      });
+      await factory.Subscription.create({ accountId: account.id });
+      const project = await factory.Project.create({
+        accountId: account.id,
+      });
+      await factory.createProjectToken({
+        projects: [project],
+        token: "the-awesome-token",
+      });
+      await use(project);
+    },
+    { auto: true },
+  ],
 });
 
 describe("createBuild", () => {
@@ -45,6 +51,31 @@ describe("createBuild", () => {
         .expect((res) => {
           expect(JSON.stringify(res.body)).toContain("parallel mode");
         });
+    });
+  });
+
+  test("binds each upload to the SHA-256 its key declares", async () => {
+    const key = "ab".repeat(32);
+
+    const res = await request(app)
+      .post("/builds")
+      .set("Authorization", "Bearer the-awesome-token")
+      .send({
+        commit: "a".repeat(40),
+        branch: "main",
+        screenshots: [{ key, contentType: "image/png" }],
+      })
+      .expect(201);
+
+    const [upload] = res.body.screenshots;
+    expect(upload.key).toBe(key);
+    const checksum = Buffer.from(key, "hex").toString("base64");
+    expect(upload.fields["x-amz-checksum-sha256"]).toBe(checksum);
+    const policy = JSON.parse(
+      Buffer.from(upload.fields.Policy, "base64").toString("utf8"),
+    );
+    expect(policy.conditions).toContainEqual({
+      "x-amz-checksum-sha256": checksum,
     });
   });
 });

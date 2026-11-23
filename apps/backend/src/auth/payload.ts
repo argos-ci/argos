@@ -31,6 +31,12 @@ export type AuthProjectPayload = {
    * tokens minted without a sha claim.
    */
   sha: string | null;
+  /**
+   * Pull request whose test merge commit `sha` is, when the bearer was minted
+   * on a `pull_request` run. Its head is the only other commit the bearer may
+   * report on.
+   */
+  pullRequestNumber: number | null;
 };
 
 export type AuthSessionPayload = {
