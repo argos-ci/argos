@@ -64,6 +64,7 @@ const CancellationsQuery = graphql(`
       staffContactedAt
       monthlyRevenue
       lifetimeRevenue
+      unpaidBill
       plan {
         id
         name
@@ -388,33 +389,59 @@ function ReasonCell(props: { cancellation: Cancellation }) {
   );
 }
 
-/** What the team paid a month, with what it paid in all under it. */
+/**
+ * What the team paid a month, with under it the bill it left unpaid, or else
+ * what it paid in all.
+ */
 function RevenueCell(props: { cancellation: Cancellation }) {
-  const { monthlyRevenue, lifetimeRevenue } = props.cancellation;
-
-  if (monthlyRevenue === null) {
-    return (
-      <div>
-        <span className="text-low">-</span>
-        {checkWasTrial(props.cancellation) ? (
-          <div className="text-low text-xs">trial</div>
-        ) : null}
-      </div>
-    );
-  }
+  const { monthlyRevenue } = props.cancellation;
 
   return (
     <div>
-      <Tooltip content="Its last paid cycle bill, tax excluded. A yearly bill counts a twelfth, and dollars are converted at the revenue page's fixed rate.">
-        <span className="font-medium">
-          {EUR_PRICE_FORMAT.format(monthlyRevenue)}
-        </span>
-      </Tooltip>
-      {lifetimeRevenue !== null ? (
-        <div className="text-low text-xs">
-          {EUR_PRICE_FORMAT.format(lifetimeRevenue)} in all
+      {monthlyRevenue === null ? (
+        <span className="text-low">-</span>
+      ) : (
+        <Tooltip content="Its last paid cycle bill, tax excluded. A yearly bill counts a twelfth, and dollars are converted at the revenue page's fixed rate.">
+          <span className="font-medium">
+            {EUR_PRICE_FORMAT.format(monthlyRevenue)}
+          </span>
+        </Tooltip>
+      )}
+      <RevenueCellDetail cancellation={props.cancellation} />
+    </div>
+  );
+}
+
+function RevenueCellDetail(props: { cancellation: Cancellation }) {
+  const { lifetimeRevenue, unpaidBill } = props.cancellation;
+
+  if (unpaidBill !== null) {
+    return (
+      <Tooltip
+        content={`Its last cycle bill, never paid. Tax excluded.${
+          lifetimeRevenue === null
+            ? ""
+            : ` ${EUR_PRICE_FORMAT.format(lifetimeRevenue)} paid in all.`
+        }`}
+      >
+        <div className="text-danger-low text-xs">
+          {EUR_PRICE_FORMAT.format(unpaidBill)} unpaid
         </div>
-      ) : null}
+      </Tooltip>
+    );
+  }
+
+  if (checkWasTrial(props.cancellation)) {
+    return <div className="text-low text-xs">trial</div>;
+  }
+
+  if (lifetimeRevenue === null) {
+    return null;
+  }
+
+  return (
+    <div className="text-low text-xs">
+      {EUR_PRICE_FORMAT.format(lifetimeRevenue)} in all
     </div>
   );
 }

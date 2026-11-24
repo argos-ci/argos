@@ -398,7 +398,7 @@ export const typeDefs = gql`
     cancellationComment: String
     """
     What one month of the subscription was worth, in euros, read off its last
-    cycle bill: a yearly bill counts a twelfth. Null when it never billed a
+    paid cycle bill: a yearly bill counts a twelfth. Null when it never paid a
     cycle, which is a trial canceled before it converted.
     """
     monthlyRevenue: Float
@@ -407,6 +407,12 @@ export const typeDefs = gql`
     shares no invoices.
     """
     lifetimeRevenue: Float
+    """
+    Its last cycle bill, in euros tax excluded, when that one was never paid:
+    usually the failed payment that ended it. Null when it was paid, and on
+    GitHub, which shares no invoices.
+    """
+    unpaidBill: Float
     """
     When a staff member wrote to the team about the cancellation, null if
     nobody did.
@@ -1039,6 +1045,10 @@ export const resolvers: IResolvers = {
     lifetimeRevenue: async (subscription, _args, ctx) => {
       const revenue = await ctx.loaders.SubscriptionRevenue.load(subscription);
       return revenue.lifetime;
+    },
+    unpaidBill: async (subscription, _args, ctx) => {
+      const revenue = await ctx.loaders.SubscriptionRevenue.load(subscription);
+      return revenue.unpaidBill;
     },
   },
   TeamStaffContact: {
