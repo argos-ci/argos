@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useQuery } from "@apollo/client/react";
+import { invariant } from "@argos/util/invariant";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { TeamMemberLabel } from "@/containers/UserList";
@@ -109,26 +110,40 @@ function TeamRoleMembers(props: { accountSlug: string; withBilling: boolean }) {
       first: MAX_LISTED_PER_ROLE,
       withBilling,
     },
+    // Roles change while a member keeps the tab open: show the last list at
+    // once, and the current one as soon as it arrives.
+    fetchPolicy: "cache-and-network",
   });
   const membersURL = `/${accountSlug}/settings/members`;
-  if (error) {
-    return (
-      <p className="px-2 py-1.5 text-sm">
-        The list did not load. <Link href={membersURL}>See all members</Link>
-      </p>
-    );
-  }
-  if (!data) {
+  if (!data && !error) {
     return (
       <div className="flex justify-center py-3">
         <Loader className="size-5" delay={0} />
       </div>
     );
   }
-  if (data.account?.__typename !== "Team") {
-    return null;
+  // No account: the viewer lost access to the team since the page loaded.
+  if (error || !data?.account) {
+    return (
+      <p className="px-2 py-1.5 text-sm">
+        The list did not load. <Link href={membersURL}>See all members</Link>
+      </p>
+    );
   }
+  invariant(data.account.__typename === "Team", "Owners belong to a team");
   const { owners, billingMembers } = data.account;
+  const billingCount = billingMembers ? billingMembers.pageInfo.totalCount : 0;
+  // SCIM can remove a team's last owner.
+  if (owners.pageInfo.totalCount === 0 && billingCount === 0) {
+    return (
+      <p className="px-2 py-1.5 text-sm">
+        {withBilling
+          ? "This team has no owner or billing member."
+          : "This team has no owner."}{" "}
+        <Link href={membersURL}>See all members</Link>
+      </p>
+    );
+  }
   return (
     <>
       <RoleMembers

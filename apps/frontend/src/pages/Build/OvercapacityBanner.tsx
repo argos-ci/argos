@@ -32,7 +32,9 @@ export const OvercapacityBanner = memo(
     const { plan, consumptionRatio } = account;
     const visible =
       plan && !plan.usageBased && consumptionRatio >= PLAN_LIMIT_WARNING_RATIO;
-    if (!visible) {
+    // A visitor of a public project reads the team's account too, and its
+    // plan usage is not theirs.
+    if (!visible || !account.permissions.includes(AccountPermission.View)) {
       return null;
     }
 
