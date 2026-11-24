@@ -279,7 +279,9 @@ function TeamHeader(props: { team: StaffTeam }) {
               disabled={!copyOwnerEmails}
               onClick={copyOwnerEmails ?? undefined}
             >
-              <ButtonIcon>
+              {/* Without their icons, both labels and the menu share one line
+                  on a phone instead of pushing the menu onto a line alone. */}
+              <ButtonIcon className="max-sm:hidden">
                 <MailIcon />
               </ButtonIcon>
               Copy owner emails
@@ -289,7 +291,7 @@ function TeamHeader(props: { team: StaffTeam }) {
             variant="secondary"
             href={getAccountURL({ accountSlug: team.slug })}
           >
-            <ButtonIcon>
+            <ButtonIcon className="max-sm:hidden">
               <ExternalLinkIcon />
             </ButtonIcon>
             Open in Argos
