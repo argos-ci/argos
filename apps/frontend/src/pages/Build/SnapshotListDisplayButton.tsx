@@ -21,7 +21,8 @@ import { useBuildDiffState } from "./BuildDiffState";
 import { useSnapshotDisplay } from "./SnapshotListPreferences";
 
 export function SnapshotListDisplayButton() {
-  const { grouping, setGrouping, setDisplay } = useBuildDiffState();
+  const { grouping, setGrouping, setDisplay, journeyMode } =
+    useBuildDiffState();
   const [display] = useSnapshotDisplay();
   return (
     <MenuRoot>
@@ -38,23 +39,27 @@ export function SnapshotListDisplayButton() {
         </MenuTrigger>
       </Tooltip>
       <Menu aria-label="Display options">
-        <MenuSection>
-          <MenuHeading>Group by</MenuHeading>
-          <MenuItem
-            icon={<CircleDotIcon />}
-            checked={grouping === "status"}
-            onAction={() => setGrouping("status")}
-          >
-            Status
-          </MenuItem>
-          <MenuItem
-            icon={<FlaskConicalIcon />}
-            checked={grouping === "test"}
-            onAction={() => setGrouping("test")}
-          >
-            Test
-          </MenuItem>
-        </MenuSection>
+        {/* A journey walk lists its screens in the order the test took
+            them, whatever the grouping: there is none to pick. */}
+        {journeyMode ? null : (
+          <MenuSection>
+            <MenuHeading>Group by</MenuHeading>
+            <MenuItem
+              icon={<CircleDotIcon />}
+              checked={grouping === "status"}
+              onAction={() => setGrouping("status")}
+            >
+              Status
+            </MenuItem>
+            <MenuItem
+              icon={<FlaskConicalIcon />}
+              checked={grouping === "test"}
+              onAction={() => setGrouping("test")}
+            >
+              Test
+            </MenuItem>
+          </MenuSection>
+        )}
         <MenuSection>
           <MenuHeading>Show</MenuHeading>
           <MenuItem

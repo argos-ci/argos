@@ -445,5 +445,17 @@ loggedTest(
     await expect(
       journeyHeader.getByRole("link", { name: "375×812" }),
     ).toHaveAttribute("aria-current", "true");
+
+    // The walk sets the list's order: the display options offer no grouping.
+    await page.getByRole("button", { name: "Display options" }).click();
+    await expect(
+      page.getByRole("option", { name: "Names", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("option", { name: "Status", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("option", { name: "Test", exact: true }),
+    ).toHaveCount(0);
   },
 );
