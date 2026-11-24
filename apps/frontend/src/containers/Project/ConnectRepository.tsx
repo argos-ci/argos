@@ -29,7 +29,7 @@ import {
   OriginRepositoryList,
   type OriginRepository,
 } from "../OriginRepositoryList";
-import { TeamOwnersLink } from "../Team/TeamOwnersLink";
+import { TeamOwnersPopover } from "../Team/TeamOwnersPopover";
 
 const ConnectRepositoryQuery = graphql(`
   query ConnectRepository($accountSlug: String!) {
@@ -373,7 +373,8 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
   if (!account.permissions.includes(AccountPermission.Admin)) {
     return (
       <div>
-        Only <TeamOwnersLink account={account}>team owners</TeamOwnersLink> can
+        Only{" "}
+        <TeamOwnersPopover account={account}>team owners</TeamOwnersPopover> can
         import projects into this team. Ask one to import yours.
       </div>
     );

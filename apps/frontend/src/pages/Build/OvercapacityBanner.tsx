@@ -2,10 +2,7 @@ import { memo } from "react";
 import { PLAN_LIMIT_WARNING_RATIO } from "@argos/schemas/plan-limit";
 import { AlertTriangleIcon } from "lucide-react";
 
-import {
-  TeamBillingMembersLink,
-  TeamOwnersLink,
-} from "@/containers/Team/TeamOwnersLink";
+import { TeamBillingPopover } from "@/containers/Team/TeamOwnersPopover";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { Banner } from "@/ui/Banner";
@@ -55,11 +52,10 @@ export const OvercapacityBanner = memo(
           </Link>
         ) : account.__typename === "Team" ? (
           <span>
-            Ask a <TeamOwnersLink account={account}>team owner</TeamOwnersLink>{" "}
-            or{" "}
-            <TeamBillingMembersLink account={account}>
-              billing member
-            </TeamBillingMembersLink>{" "}
+            Ask{" "}
+            <TeamBillingPopover account={account}>
+              a team owner or billing member
+            </TeamBillingPopover>{" "}
             to upgrade the plan.
           </span>
         ) : null}

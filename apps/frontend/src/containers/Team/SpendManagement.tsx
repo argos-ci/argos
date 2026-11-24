@@ -29,7 +29,7 @@ import { Separator } from "@/ui/Separator";
 import { SwitchField } from "@/ui/Switch";
 import { formatCurrency } from "@/util/intl";
 
-import { TeamBillingMembersLink, TeamOwnersLink } from "./TeamOwnersLink";
+import { TeamBillingPopover } from "./TeamOwnersPopover";
 
 const _AccountFragment = graphql(`
   fragment TeamSpendManagement_Account on Account {
@@ -251,15 +251,9 @@ function SpendManagementForm(props: {
           {canManageBilling ? null : (
             <p className="text-low mt-4 text-sm">
               Only{" "}
-              <TeamOwnersLink account={{ slug: account.slug, permissions }}>
-                team owners
-              </TeamOwnersLink>{" "}
-              and{" "}
-              <TeamBillingMembersLink
-                account={{ slug: account.slug, permissions }}
-              >
-                billing members
-              </TeamBillingMembersLink>{" "}
+              <TeamBillingPopover account={{ slug: account.slug, permissions }}>
+                team owners and billing members
+              </TeamBillingPopover>{" "}
               can change the spend limit.
             </p>
           )}

@@ -2,7 +2,7 @@ import { memo } from "react";
 import { invariant } from "@argos/util/invariant";
 import { AlertTriangleIcon } from "lucide-react";
 
-import { TeamOwnersLink } from "@/containers/Team/TeamOwnersLink";
+import { TeamOwnersPopover } from "@/containers/Team/TeamOwnersPopover";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { Banner } from "@/ui/Banner";
@@ -56,7 +56,10 @@ export const GithubIpAllowListBanner = memo(
       if (!isAdmin) {
         return (
           <span>
-            Ask <TeamOwnersLink account={account}>a team owner</TeamOwnersLink>{" "}
+            Ask{" "}
+            <TeamOwnersPopover account={account}>
+              a team owner
+            </TeamOwnersPopover>{" "}
             to enable Static IP.
           </span>
         );

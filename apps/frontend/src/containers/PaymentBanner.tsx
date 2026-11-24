@@ -7,10 +7,7 @@ import { invariant } from "@argos/util/invariant";
 import { config } from "@/config";
 import { ResumeSubscriptionButton } from "@/containers/Team/CancelSubscription";
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
-import {
-  TeamBillingMembersLink,
-  TeamOwnersLink,
-} from "@/containers/Team/TeamOwnersLink";
+import { TeamBillingPopover } from "@/containers/Team/TeamOwnersPopover";
 import { DocumentType, graphql } from "@/gql";
 import {
   AccountPermission,
@@ -97,10 +94,10 @@ function AskBillingManagers(props: {
   const { account, children } = props;
   return (
     <>
-      Ask a <TeamOwnersLink account={account}>team owner</TeamOwnersLink> or{" "}
-      <TeamBillingMembersLink account={account}>
-        billing member
-      </TeamBillingMembersLink>{" "}
+      Ask{" "}
+      <TeamBillingPopover account={account}>
+        a team owner or billing member
+      </TeamBillingPopover>{" "}
       {children}
     </>
   );

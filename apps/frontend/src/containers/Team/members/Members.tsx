@@ -12,11 +12,11 @@ import {
   CardTitle,
 } from "@/ui/Card";
 import { DialogTrigger, useDialogValueState } from "@/ui/Dialog";
+import { Link } from "@/ui/Link";
 import { List, ListRowLoader } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
 import { Tab, TabList, tabListScrollClassName, TabPanel, Tabs } from "@/ui/Tab";
 
-import { TeamOwnersLink } from "../TeamOwnersLink";
 import { TeamGithubMembersList } from "./GitHubMembersList";
 import { InviteDialog } from "./InviteDialog";
 import { TeamInvitesList } from "./InvitesList";
@@ -158,14 +158,14 @@ export function TeamMembers(props: {
         ) : (
           <div>
             Only{" "}
-            <TeamOwnersLink
-              account={team}
+            <Link
+              href={`/${team.slug}/settings/members?role=${TeamUserLevel.Owner}`}
               // The role filter belongs to the Members tab: from another tab
               // the link would only change the URL.
               onClick={() => setTab("members")}
             >
               team owners
-            </TeamOwnersLink>{" "}
+            </Link>{" "}
             can invite people.
           </div>
         )}

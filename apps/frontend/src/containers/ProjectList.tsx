@@ -21,7 +21,7 @@ import { HeadlessLink, Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
 import { RepositoryIcons } from "./Repository";
-import { TeamOwnersLink } from "./Team/TeamOwnersLink";
+import { TeamOwnersPopover } from "./Team/TeamOwnersPopover";
 
 const _ProjectFragment = graphql(`
   fragment ProjectList_Project on Project {
@@ -187,17 +187,17 @@ export function ProjectList(props: {
           ) : props.isContributor ? (
             <>
               You have not been added to any project yet. Ask{" "}
-              <TeamOwnersLink account={props.account}>
+              <TeamOwnersPopover account={props.account}>
                 a team owner
-              </TeamOwnersLink>{" "}
+              </TeamOwnersPopover>{" "}
               to add you to one.
             </>
           ) : (
             <>
               Only{" "}
-              <TeamOwnersLink account={props.account}>
+              <TeamOwnersPopover account={props.account}>
                 team owners
-              </TeamOwnersLink>{" "}
+              </TeamOwnersPopover>{" "}
               can create projects.
             </>
           )}

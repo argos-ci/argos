@@ -13,7 +13,7 @@ import {
   SlackInstallButton,
   SlackOwnerOnlyTooltip,
 } from "@/containers/Slack";
-import { TeamOwnersLink } from "@/containers/Team/TeamOwnersLink";
+import { TeamOwnersPopover } from "@/containers/Team/TeamOwnersPopover";
 import { graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
@@ -101,9 +101,9 @@ function SendSlackMessageAction(props: {
           ) : (
             <>
               To post to a Slack channel,{" "}
-              <TeamOwnersLink account={data.account}>
+              <TeamOwnersPopover account={data.account}>
                 a team owner
-              </TeamOwnersLink>{" "}
+              </TeamOwnersPopover>{" "}
               needs to connect your Slack workspace first.
             </>
           )}
@@ -134,9 +134,9 @@ function SendSlackMessageAction(props: {
           ) : (
             <>
               Slack permissions need an update, ask{" "}
-              <TeamOwnersLink account={data.account}>
+              <TeamOwnersPopover account={data.account}>
                 a team owner
-              </TeamOwnersLink>{" "}
+              </TeamOwnersPopover>{" "}
               to reconnect Slack to be able to post messages in channels.
             </>
           )}

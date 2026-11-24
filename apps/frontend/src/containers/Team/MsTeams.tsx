@@ -50,7 +50,7 @@ import { toast } from "@/ui/Toaster";
 import { Truncable } from "@/ui/Truncable";
 
 import { MsTeamsLogo } from "../MsTeamsLogo";
-import { TeamOwnersLink } from "./TeamOwnersLink";
+import { TeamOwnersPopover } from "./TeamOwnersPopover";
 
 const _AccountFragment = graphql(`
   fragment TeamMsTeams_Account on Account {
@@ -197,9 +197,9 @@ export function TeamMsTeams(props: { account: Account }) {
           ) : (
             <p className="text-low text-sm">
               Only{" "}
-              <TeamOwnersLink account={{ slug: account.slug, permissions }}>
+              <TeamOwnersPopover account={{ slug: account.slug, permissions }}>
                 team owners
-              </TeamOwnersLink>{" "}
+              </TeamOwnersPopover>{" "}
               can manage Microsoft Teams channels.
             </p>
           )}

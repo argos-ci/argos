@@ -33,7 +33,7 @@ import {
   SlackInstallButton,
   SlackOwnerOnlyTooltip,
 } from "../Slack";
-import { TeamOwnersLink } from "./TeamOwnersLink";
+import { TeamOwnersPopover } from "./TeamOwnersPopover";
 
 const _AccountFragment = graphql(`
   fragment TeamSlack_Account on Account {
@@ -145,11 +145,11 @@ export function TeamSlack(props: {
                 ) : (
                   <>
                     Slack permissions need an update, ask{" "}
-                    <TeamOwnersLink
+                    <TeamOwnersPopover
                       account={{ slug: account.slug, permissions }}
                     >
                       a team owner
-                    </TeamOwnersLink>{" "}
+                    </TeamOwnersPopover>{" "}
                     to reconnect.
                   </>
                 )}

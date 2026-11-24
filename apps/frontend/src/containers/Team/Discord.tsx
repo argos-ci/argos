@@ -50,7 +50,7 @@ import { toast } from "@/ui/Toaster";
 import { Truncable } from "@/ui/Truncable";
 
 import { DiscordLogo } from "../DiscordLogo";
-import { TeamOwnersLink } from "./TeamOwnersLink";
+import { TeamOwnersPopover } from "./TeamOwnersPopover";
 
 const _AccountFragment = graphql(`
   fragment TeamDiscord_Account on Account {
@@ -197,9 +197,9 @@ export function TeamDiscord(props: { account: Account }) {
           ) : (
             <p className="text-low text-sm">
               Only{" "}
-              <TeamOwnersLink account={{ slug: account.slug, permissions }}>
+              <TeamOwnersPopover account={{ slug: account.slug, permissions }}>
                 team owners
-              </TeamOwnersLink>{" "}
+              </TeamOwnersPopover>{" "}
               can manage Discord channels.
             </p>
           )}
