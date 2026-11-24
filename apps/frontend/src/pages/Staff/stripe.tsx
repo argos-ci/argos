@@ -34,12 +34,9 @@ export function StripeCustomerLink(props: { stripeCustomerId: string | null }) {
         // says "this leaves Argos for Stripe".
         external={false}
         aria-label="Open customer in Stripe"
-        // Pushed to the cell edge: next to the name the tile reads as a tag on
-        // the team rather than as a way out to Stripe, and following a
-        // variable-width name it lands somewhere different on every row. The
-        // logo carries its own brand color, so hover dims the whole tile rather
-        // than re-tinting it the way a monochrome icon would.
-        className="ml-auto shrink-0 opacity-75 transition hover:opacity-100"
+        // The logo carries its own brand color, so hover dims the whole tile
+        // rather than re-tinting it the way a monochrome icon would.
+        className="shrink-0 opacity-75 transition hover:opacity-100"
       >
         <img src={stripeLogo} alt="" className="size-4 rounded-xs" />
       </HeadlessLink>

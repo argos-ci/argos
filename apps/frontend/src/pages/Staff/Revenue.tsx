@@ -33,7 +33,6 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { Link } from "@/ui/Link";
 import { Loader } from "@/ui/Loader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { StatTile, StatTileGroup } from "@/ui/StatTile";
@@ -42,7 +41,7 @@ import { Tooltip } from "@/ui/Tooltip";
 
 import { PRO_MONTHLY_PRICE, PRO_PLAN_NAME } from "./pricing";
 import { StaffAccessRestricted } from "./StaffAccessRestricted";
-import { StripeCustomerLink } from "./stripe";
+import { StaffTeamCell } from "./StaffTeamCell";
 
 /**
  * Read from the backend's Stripe invoice mirror — this page is the query's
@@ -896,12 +895,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
                   {teamIndex + 1}
                 </td>
                 <td className="px-4 py-2.5 text-left">
-                  <div className="flex items-center gap-2">
-                    <Link href={`/${team.slug}`}>{team.name ?? team.slug}</Link>
-                    <StripeCustomerLink
-                      stripeCustomerId={team.stripeCustomerId}
-                    />
-                  </div>
+                  <StaffTeamCell team={team} />
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
                   {planPrice ? formatInvoiceAmount(planPrice) : null}
@@ -1425,13 +1419,8 @@ function ContractRow(props: { contract: YearlyContract; index: number }) {
 
   return (
     <tr className={clsx(index % 2 === 0 ? "bg-app" : "bg-subtle", "border-b")}>
-      <td className="p-4 text-left text-sm font-medium">
-        <div className="flex items-center gap-2">
-          <Link href={`/${contract.slug}`}>
-            {contract.name ?? contract.slug}
-          </Link>
-          <StripeCustomerLink stripeCustomerId={contract.stripeCustomerId} />
-        </div>
+      <td className="p-4 text-left text-sm">
+        <StaffTeamCell team={contract} />
       </td>
       <ContractPlanCell contract={contract} />
       <ContractPerMonthCell contract={contract} usage={contract.usage} />
