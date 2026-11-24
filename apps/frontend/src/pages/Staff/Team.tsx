@@ -4,7 +4,9 @@ import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import {
   BoxesIcon,
+  DownloadIcon,
   ExternalLinkIcon,
+  FileTextIcon,
   ImagesIcon,
   MailIcon,
   UsersIcon,
@@ -12,13 +14,19 @@ import {
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router";
 
+import {
+  getInvoiceStatusProps,
+  isPartiallyRefunded,
+} from "@/containers/Account/Invoices";
 import { AccountAvatar } from "@/containers/AccountAvatar";
+import { useAssertAuthAccount } from "@/containers/Auth";
 import { AuthGuard } from "@/containers/AuthGuard";
 import { TeamMemberLabel } from "@/containers/UserList";
 import { graphql, type DocumentType } from "@/gql";
 import { TeamUserLevel } from "@/gql/graphql";
 import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
 import { Card, CardBody } from "@/ui/Card";
+import { Chip } from "@/ui/Chip";
 import { useDialogValueState } from "@/ui/Dialog";
 import { Heading } from "@/ui/Heading";
 import {
@@ -30,11 +38,13 @@ import {
   PageHeaderHeadline,
 } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
+import { ListLoadMore } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
 import { PageLoader } from "@/ui/PageLoader";
 import { StatTile, StatTileGroup } from "@/ui/StatTile";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
+import { formatCurrency } from "@/util/intl";
 
 import { getAccountURL } from "../Account/AccountParams";
 import { NotFound } from "../NotFound";
@@ -55,11 +65,44 @@ import { SubscriptionLabel } from "./SubscriptionLabel";
 import { useCopyOwnerEmails } from "./useCopyOwnerEmails";
 
 const PROJECTS_LIMIT = 100;
+const INITIAL_INVOICES_COUNT = 5;
+const INVOICES_PER_PAGE = 20;
+
+const StaffTeamInvoicesFragment = graphql(`
+  fragment StaffTeamInvoices on InvoiceConnection {
+    pageInfo {
+      totalCount
+      hasNextPage
+    }
+    edges {
+      id
+      number
+      date
+      total
+      currency
+      status
+      refundedAmount
+      hostedUrl
+      pdfUrl
+    }
+  }
+`);
 
 const StaffTeamQuery = graphql(`
-  query StaffTeam_account($slug: String!, $projectsLimit: Int!) {
+  query StaffTeam_account(
+    $slug: String!
+    $projectsLimit: Int!
+    $invoicesFirst: Int!
+    $isStaff: Boolean!
+  ) {
     account(slug: $slug) {
       id
+      # Read for staff only: anyone else needs the billing permission, and a
+      # plain member refused it would get an error page instead of the
+      # restricted-access notice.
+      invoices(after: 0, first: $invoicesFirst) @include(if: $isStaff) {
+        ...StaffTeamInvoices
+      }
       ... on Team {
         createdAt
         slug
@@ -148,13 +191,30 @@ const StaffTeamQuery = graphql(`
   }
 `);
 
+const StaffTeamInvoicesQuery = graphql(`
+  query StaffTeam_invoices($slug: String!, $after: Int!, $first: Int!) {
+    account(slug: $slug) {
+      id
+      invoices(after: $after, first: $first) {
+        ...StaffTeamInvoices
+      }
+    }
+  }
+`);
+
 type AccountNode = NonNullable<DocumentType<typeof StaffTeamQuery>["account"]>;
 type TeamNode = Extract<AccountNode, { __typename?: "Team" }>;
-type StaffTeam = TeamNode & { staff: NonNullable<TeamNode["staff"]> };
+type StaffTeam = TeamNode & {
+  staff: NonNullable<TeamNode["staff"]>;
+  invoices: NonNullable<TeamNode["invoices"]>;
+};
 type BillingPeriod = NonNullable<
   StaffTeam["staff"]["periodUsage"]
 >["billingPeriods"][number];
 type StaffMember = StaffTeam["staff"]["members"][number];
+type StaffInvoice = DocumentType<
+  typeof StaffTeamInvoicesFragment
+>["edges"][number];
 
 function Dash() {
   return <span className="text-low">-</span>;
@@ -279,7 +339,9 @@ function TeamHeader(props: { team: StaffTeam }) {
               disabled={!copyOwnerEmails}
               onClick={copyOwnerEmails ?? undefined}
             >
-              <ButtonIcon>
+              {/* Without their icons, both labels and the menu share one line
+                  on a phone instead of pushing the menu onto a line alone. */}
+              <ButtonIcon className="max-sm:hidden">
                 <MailIcon />
               </ButtonIcon>
               Copy owner emails
@@ -289,7 +351,7 @@ function TeamHeader(props: { team: StaffTeam }) {
             variant="secondary"
             href={getAccountURL({ accountSlug: team.slug })}
           >
-            <ButtonIcon>
+            <ButtonIcon className="max-sm:hidden">
               <ExternalLinkIcon />
             </ButtonIcon>
             Open in Argos
@@ -624,6 +686,129 @@ function BillingPeriodsSection(props: { team: StaffTeam }) {
   );
 }
 
+function InvoiceLink(props: {
+  href: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Tooltip content={props.label}>
+      <LinkButton
+        variant="ghost"
+        size="small"
+        iconOnly
+        href={props.href}
+        target="_blank"
+        aria-label={props.label}
+      >
+        {props.children}
+      </LinkButton>
+    </Tooltip>
+  );
+}
+
+function InvoiceActions(props: { invoice: StaffInvoice }) {
+  const { invoice } = props;
+
+  return (
+    <div className="flex justify-end gap-1">
+      {invoice.hostedUrl ? (
+        <InvoiceLink href={invoice.hostedUrl} label="View invoice">
+          <FileTextIcon />
+        </InvoiceLink>
+      ) : null}
+      {invoice.pdfUrl ? (
+        <InvoiceLink href={invoice.pdfUrl} label="Download PDF">
+          <DownloadIcon />
+        </InvoiceLink>
+      ) : null}
+    </div>
+  );
+}
+
+function InvoiceRow(props: { invoice: StaffInvoice }) {
+  const { invoice } = props;
+  const status = getInvoiceStatusProps(invoice);
+
+  return (
+    <tr>
+      <Td className="whitespace-nowrap">
+        <Time date={invoice.date} format="date" />
+      </Td>
+      <Td>
+        {invoice.number ? (
+          <span className="font-mono text-xs">{invoice.number}</span>
+        ) : (
+          <Dash />
+        )}
+      </Td>
+      <Td>
+        <Chip scale="sm" color={status.color}>
+          {status.label}
+        </Chip>
+      </Td>
+      <Td className="text-right tabular-nums">
+        <div className="font-medium">
+          {formatCurrency(invoice.total, invoice.currency)}
+        </div>
+        {isPartiallyRefunded(invoice) ? (
+          <div className="text-low text-xs">
+            {formatCurrency(invoice.refundedAmount, invoice.currency)} refunded
+          </div>
+        ) : null}
+      </Td>
+      <Td className="py-2">
+        <InvoiceActions invoice={invoice} />
+      </Td>
+    </tr>
+  );
+}
+
+function InvoicesSection(props: {
+  team: StaffTeam;
+  onLoadMore: () => Promise<unknown>;
+}) {
+  const { invoices } = props.team;
+  const { totalCount } = invoices.pageInfo;
+
+  return (
+    <Section
+      title="Invoices"
+      description={
+        totalCount > 0
+          ? `${totalCount.toLocaleString()} ${totalCount === 1 ? "invoice" : "invoices"} from Stripe, most recent first. Totals include tax.`
+          : undefined
+      }
+    >
+      {totalCount === 0 ? (
+        <p className="text-low text-sm">No invoice yet.</p>
+      ) : (
+        <>
+          <StaffTable
+            className="min-w-160"
+            head={
+              <>
+                <Th>Date</Th>
+                <Th>Number</Th>
+                <Th>Status</Th>
+                <Th className="text-right">Total</Th>
+                <Th className="w-24" />
+              </>
+            }
+          >
+            {invoices.edges.map((invoice) => (
+              <InvoiceRow key={invoice.id} invoice={invoice} />
+            ))}
+          </StaffTable>
+          {invoices.pageInfo.hasNextPage ? (
+            <ListLoadMore onClick={props.onLoadMore} />
+          ) : null}
+        </>
+      )}
+    </Section>
+  );
+}
+
 function ProjectsSection(props: { team: StaffTeam }) {
   const { team } = props;
   const projects = [...team.projects.edges].sort(
@@ -748,8 +933,14 @@ function MembersSection(props: { team: StaffTeam }) {
 }
 
 function StaffTeamPage(props: { slug: string }) {
-  const { data, error } = useQuery(StaffTeamQuery, {
-    variables: { slug: props.slug, projectsLimit: PROJECTS_LIMIT },
+  const viewer = useAssertAuthAccount();
+  const { data, error, fetchMore } = useQuery(StaffTeamQuery, {
+    variables: {
+      slug: props.slug,
+      projectsLimit: PROJECTS_LIMIT,
+      invoicesFirst: INITIAL_INVOICES_COUNT,
+      isStaff: Boolean(viewer.staff),
+    },
   });
 
   if (error) {
@@ -776,7 +967,42 @@ function StaffTeamPage(props: { slug: string }) {
     );
   }
 
-  const team: StaffTeam = { ...account, staff: account.staff };
+  invariant(account.invoices, "invoices are read for staff");
+  const team: StaffTeam = {
+    ...account,
+    staff: account.staff,
+    invoices: account.invoices,
+  };
+
+  // The next page comes from a query of its own: refetching the page's would
+  // recompute every billing period just to append invoices.
+  const loadMoreInvoices = () =>
+    fetchMore({
+      query: StaffTeamInvoicesQuery,
+      variables: {
+        slug: props.slug,
+        after: team.invoices.edges.length,
+        first: INVOICES_PER_PAGE,
+      },
+      updateQuery: (prev, { fetchMoreResult }) => {
+        if (!prev.account?.invoices || !fetchMoreResult.account) {
+          return prev;
+        }
+        return {
+          ...prev,
+          account: {
+            ...prev.account,
+            invoices: {
+              ...fetchMoreResult.account.invoices,
+              edges: [
+                ...prev.account.invoices.edges,
+                ...fetchMoreResult.account.invoices.edges,
+              ],
+            },
+          },
+        };
+      },
+    });
 
   return (
     <PageContainer>
@@ -790,6 +1016,7 @@ function StaffTeamPage(props: { slug: string }) {
         <ActivityCard team={team} />
       </div>
       <BillingPeriodsSection team={team} />
+      <InvoicesSection team={team} onLoadMore={loadMoreInvoices} />
       <MembersSection team={team} />
       <ProjectsSection team={team} />
     </PageContainer>
