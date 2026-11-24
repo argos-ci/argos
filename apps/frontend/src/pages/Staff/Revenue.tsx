@@ -797,7 +797,7 @@ function MonthTeamsTable(props: { teams: readonly MonthTeam[] }) {
 
   return (
     <div className="bg-app overflow-x-auto rounded-sm border">
-      <table className="w-full table-fixed border-collapse">
+      <table className="w-full min-w-256 table-fixed border-collapse">
         <thead>
           <tr className="text-low border-b text-xs font-semibold">
             <th className="w-[5%] px-4 py-3 text-right">#</th>

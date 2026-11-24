@@ -1,6 +1,8 @@
 import { HeadlessLink } from "@/ui/Link";
 import { Tooltip } from "@/ui/Tooltip";
 
+import { getAccountURL } from "../Account/AccountParams";
+import argosLogo from "./argos.svg";
 import stripeLogo from "./stripe.svg";
 
 /**
@@ -26,19 +28,51 @@ export function StripeCustomerLink(props: { stripeCustomerId: string | null }) {
   }
 
   return (
-    <Tooltip content="Open customer in Stripe">
+    <ToolTileLink
+      href={getStripeCustomerURL(stripeCustomerId)}
+      target="_blank"
+      label="Open customer in Stripe"
+      logo={stripeLogo}
+    />
+  );
+}
+
+export function ArgosTeamLink(props: { teamSlug: string }) {
+  return (
+    <ToolTileLink
+      href={getAccountURL({ accountSlug: props.teamSlug })}
+      label="Open team in Argos"
+      logo={argosLogo}
+    />
+  );
+}
+
+/**
+ * A tool's square logo linking to the team in that tool. Each logo carries its
+ * own background, so every tile is the same filled square.
+ */
+function ToolTileLink(props: {
+  href: string;
+  target?: "_blank";
+  label: string;
+  logo: string;
+}) {
+  const { href, target, label, logo } = props;
+
+  return (
+    <Tooltip content={label}>
       <HeadlessLink
-        href={getStripeCustomerURL(stripeCustomerId)}
-        target="_blank"
+        href={href}
+        target={target}
         // The generic external arrow would compete with the logo that already
-        // says "this leaves Argos for Stripe".
+        // says which tool the link leaves for.
         external={false}
-        aria-label="Open customer in Stripe"
+        aria-label={label}
         // The logo carries its own brand color, so hover dims the whole tile
         // rather than re-tinting it the way a monochrome icon would.
         className="shrink-0 opacity-75 transition hover:opacity-100"
       >
-        <img src={stripeLogo} alt="" className="size-4 rounded-xs" />
+        <img src={logo} alt="" className="size-4 rounded-xs" />
       </HeadlessLink>
     </Tooltip>
   );

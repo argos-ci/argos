@@ -60,8 +60,8 @@ import {
 import { StaffAccessRestricted } from "./StaffAccessRestricted";
 import { StaffTeamActionsMenu } from "./StaffTeamActionsMenu";
 import { StaffTrialDialog, type StaffTrialMode } from "./StaffTrialDialog";
-import { StripeCustomerLink } from "./stripe";
 import { SubscriptionLabel } from "./SubscriptionLabel";
+import { StripeCustomerLink } from "./tool-links";
 import { useCopyOwnerEmails } from "./useCopyOwnerEmails";
 
 const PROJECTS_LIMIT = 100;

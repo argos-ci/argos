@@ -235,7 +235,10 @@ status). Argos screenshots stories, while e2e specs reach only a few states.
 Keep data fetching out of the part the stories render: a query in it has no
 Apollo provider in Storybook.
 
-If possible, put some screenshots or videos using `/argos-upload` skill.
+If possible, show the change with screenshots or videos through the
+`/argos-upload` skill, attached to the pull request with `--pr <number>` (or
+`--branch` before it exists): Argos then posts and maintains its own comment.
+Do not paste the Markdown into the pull request body.
 
 ## Notifications
 

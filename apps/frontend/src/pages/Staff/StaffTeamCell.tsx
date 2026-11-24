@@ -1,23 +1,19 @@
 import type { ComponentProps } from "react";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { BrandShield } from "@/ui/BrandShield";
-import { HeadlessLink, Link } from "@/ui/Link";
-import { Tooltip } from "@/ui/Tooltip";
+import { Link } from "@/ui/Link";
 
-import { getAccountURL } from "../Account/AccountParams";
 import { getStaffTeamURL } from "./StaffParams";
-import { StripeCustomerLink } from "./stripe";
+import { ArgosTeamLink, StripeCustomerLink } from "./tool-links";
 
 /**
- * A team in a staff table. The name opens the team's staff page, so a click on
- * it stays in the staff pages whichever table it is in; leaving them is the job
- * of the logos, one per tool the team can be opened in.
+ * A team in a staff table: the name opens the team's staff page, the logos open
+ * the team in each outside tool.
  */
 export function StaffTeamCell(props: {
   team: {
     slug: string;
-    name?: string | null;
+    name: string | null;
     stripeCustomerId: string | null;
     avatar?: ComponentProps<typeof AccountAvatar>["avatar"];
   };
@@ -27,7 +23,7 @@ export function StaffTeamCell(props: {
   const { team, children } = props;
 
   return (
-    <div className="flex min-w-0 items-center gap-3">
+    <div className="flex items-center gap-3">
       {team.avatar ? (
         <AccountAvatar avatar={team.avatar} className="size-8 shrink-0" />
       ) : null}
@@ -51,22 +47,5 @@ export function StaffTeamCell(props: {
         <StripeCustomerLink stripeCustomerId={team.stripeCustomerId} />
       </div>
     </div>
-  );
-}
-
-function ArgosTeamLink(props: { teamSlug: string }) {
-  return (
-    <Tooltip content="Open team in Argos">
-      <HeadlessLink
-        href={getAccountURL({ accountSlug: props.teamSlug })}
-        aria-label="Open team in Argos"
-        // A filled square like Stripe's, so the two logos read as one pair. The
-        // violet is fixed rather than a theme token, as Stripe's brand color
-        // is: the eye's dark pupil would vanish on the dark-mode violets.
-        className="flex size-4 items-center justify-center rounded-xs bg-[#ebe4ff] opacity-75 transition hover:opacity-100"
-      >
-        <BrandShield className="w-3" />
-      </HeadlessLink>
-    </Tooltip>
   );
 }
