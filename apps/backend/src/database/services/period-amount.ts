@@ -8,8 +8,8 @@ import { getEstimatedPeriodAmount, type AccountBilling } from "./period-usage";
  *
  * The flat price is taken in the period's own unit, exactly as the staff column
  * that displays it does — a yearly subscription's period is a year. This exists
- * so the staff ordering, the figure on screen and the Enterprise offer come out
- * of one rule; a team ordered above another has to read higher than it too.
+ * so the staff ordering, the figure on screen and the Billing Enterprise card
+ * come out of one rule; a team ordered above another has to read higher than it too.
  *
  * A closed period reads the invoice it closed on when the mirror holds one:
  * that is what was billed, add-ons and all, where the sum below is only an

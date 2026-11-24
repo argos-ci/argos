@@ -1,7 +1,15 @@
+import { invariant } from "@argos/util/invariant";
 import { describe, expect, test } from "vitest";
 
-import { Account, Plan, Subscription, type Project } from "@/database/models";
+import {
+  Account,
+  NotificationWorkflow,
+  Plan,
+  Subscription,
+  type Project,
+} from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
+import { sendEnterpriseOffer } from "@/notification/enterprise-offer";
 
 import {
   claimEnterpriseOffer,
@@ -28,6 +36,7 @@ const withProTeam = test.extend<Ctx>({
       name: "pro",
       usageBased: true,
       interval: "month",
+      includedScreenshots: INCLUDED_SCREENSHOTS,
     });
     const subscriber = await factory.User.create();
     await factory.Subscription.create({
@@ -97,7 +106,7 @@ describe("claimEnterpriseOffer", () => {
     "claims nothing below the threshold",
     async ({ account, project }) => {
       await bill(project, 1499.5);
-      await expect(claim(account)).resolves.toBe(false);
+      await expect(claim(account)).resolves.toBeNull();
       await expect(getSentAt(account)).resolves.toBeNull();
     },
   );
@@ -106,10 +115,12 @@ describe("claimEnterpriseOffer", () => {
     "claims the offer once, when the period reaches the threshold",
     async ({ account, project }) => {
       await bill(project, 1500);
-      await expect(claim(account)).resolves.toBe(true);
+      await expect(claim(account)).resolves.toEqual({
+        claimedAt: expect.any(String),
+      });
       await expect(getSentAt(account)).resolves.not.toBeNull();
       await bill(project, 3000);
-      await expect(claim(account)).resolves.toBe(false);
+      await expect(claim(account)).resolves.toBeNull();
     },
   );
 
@@ -118,16 +129,71 @@ describe("claimEnterpriseOffer", () => {
     async ({ account, subscription, project }) => {
       await leavePro(subscription);
       await bill(project, 5000);
-      await expect(claim(account)).resolves.toBe(false);
+      await expect(claim(account)).resolves.toBeNull();
     },
   );
 
   withProTeam(
     "claims nothing during a trial, which Stripe does not bill",
     async ({ account, subscription, project }) => {
-      await subscription.$query().patch({ status: "trialing" });
+      await subscription.$query().patch({
+        status: "trialing",
+        trialEndDate: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
+      });
       await bill(project, 5000);
-      await expect(claim(account)).resolves.toBe(false);
+      await expect(claim(account)).resolves.toBeNull();
+    },
+  );
+
+  withProTeam(
+    "prices the overage on the plan's quota when the subscription states none",
+    async ({ account, subscription, project }) => {
+      await subscription.$query().patch({ includedScreenshots: null });
+      await bill(project, 1500);
+      await expect(claim(account)).resolves.toEqual({
+        claimedAt: expect.any(String),
+      });
+    },
+  );
+});
+
+describe("sendEnterpriseOffer", () => {
+  async function getOffers() {
+    return NotificationWorkflow.query()
+      .where("type", "enterprise_offer")
+      .withGraphFetched("recipients");
+  }
+
+  async function send(account: Account) {
+    const fresh = await Account.query().findById(account.id).throwIfNotFound();
+    await sendEnterpriseOffer(fresh);
+  }
+
+  withProTeam("emails the owners once", async ({ account, project }) => {
+    invariant(account.teamId, "team account has no team");
+    const owner = await factory.User.create();
+    await factory.TeamUser.create({
+      teamId: account.teamId,
+      userId: owner.id,
+      userLevel: "owner",
+    });
+    await bill(project, 1500);
+    await send(account);
+    await send(account);
+    const offers = await getOffers();
+    expect(offers).toHaveLength(1);
+    expect(offers[0]?.recipients?.map((recipient) => recipient.userId)).toEqual(
+      [owner.id],
+    );
+  });
+
+  withProTeam(
+    "gives the claim back when the team has nobody to tell",
+    async ({ account, project }) => {
+      await bill(project, 1500);
+      await send(account);
+      await expect(getOffers()).resolves.toHaveLength(0);
+      await expect(getSentAt(account)).resolves.toBeNull();
     },
   );
 });

@@ -2,7 +2,6 @@ import { invariant } from "@argos/util/invariant";
 
 import { pushBuildNotification } from "@/build-notification";
 import { Build, Project, ScreenshotDiff } from "@/database/models";
-import { claimEnterpriseOffer } from "@/database/services/enterprise-offer";
 import { claimOverageAlert } from "@/database/services/overage-alert";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit";
 import { githubPullRequestJob } from "@/github-pull-request/job";
@@ -10,6 +9,7 @@ import { GITLAB_PROJECT_SYNC_INTERVAL, syncGitlabProject } from "@/gitlab";
 import { createModelJob, UnretryableError } from "@/job-core";
 import logger from "@/logger";
 import { sendNotification } from "@/notification";
+import { sendEnterpriseOffer } from "@/notification/enterprise-offer";
 import { originPullRequestJob } from "@/origin-pull-request/job";
 import { job as screenshotDiffJob } from "@/screenshot-diff";
 import { updateStripeUsage } from "@/stripe";
@@ -92,17 +92,7 @@ async function updateUsage(project: Project) {
       });
     }
 
-    if (await claimEnterpriseOffer(account)) {
-      const recipients = await account.$getUserIdsWithPermission("billing");
-      // SCIM offboarding can leave a team without an owner: nobody to tell.
-      if (recipients.length > 0) {
-        await sendNotification({
-          type: "enterprise_offer",
-          data: { accountName: account.name, accountSlug: account.slug },
-          recipients,
-        });
-      }
-    }
+    await sendEnterpriseOffer(account);
   });
 }
 

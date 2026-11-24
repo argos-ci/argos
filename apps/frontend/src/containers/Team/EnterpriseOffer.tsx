@@ -38,7 +38,9 @@ export function TeamEnterpriseOffer(props: {
     <Card intent="primary">
       <CardBody>
         <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <CardTitle className="mb-0">A better price for your volume</CardTitle>
+          <CardTitle className="!mb-0">
+            A better price for your volume
+          </CardTitle>
           <Chip color="primary" scale="sm">
             Enterprise
           </Chip>
