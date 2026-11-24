@@ -338,7 +338,9 @@ const INVOICE_STATUS_PROPS: Record<
  * Stripe keeps a refunded invoice `paid`, so the refund is read off the amount
  * given back rather than off the status.
  */
-function getInvoiceStatusProps(invoice: Invoice): {
+export function getInvoiceStatusProps(
+  invoice: Pick<Invoice, "status" | "total" | "refundedAmount">,
+): {
   label: string;
   color: ChipColor;
 } {

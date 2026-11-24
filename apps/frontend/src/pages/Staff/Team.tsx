@@ -1,10 +1,13 @@
+import { useTransition } from "react";
 import { useQuery } from "@apollo/client/react";
 import { formatDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import {
   BoxesIcon,
+  DownloadIcon,
   ExternalLinkIcon,
+  FileTextIcon,
   ImagesIcon,
   MailIcon,
   UsersIcon,
@@ -12,6 +15,7 @@ import {
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router";
 
+import { getInvoiceStatusProps } from "@/containers/Account/Invoices";
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AuthGuard } from "@/containers/AuthGuard";
 import { TeamMemberLabel } from "@/containers/UserList";
@@ -19,6 +23,7 @@ import { graphql, type DocumentType } from "@/gql";
 import { TeamUserLevel } from "@/gql/graphql";
 import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
 import { Card, CardBody } from "@/ui/Card";
+import { Chip } from "@/ui/Chip";
 import { useDialogValueState } from "@/ui/Dialog";
 import { Heading } from "@/ui/Heading";
 import {
@@ -35,6 +40,7 @@ import { PageLoader } from "@/ui/PageLoader";
 import { StatTile, StatTileGroup } from "@/ui/StatTile";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
+import { formatCurrency } from "@/util/intl";
 
 import { getAccountURL } from "../Account/AccountParams";
 import { NotFound } from "../NotFound";
@@ -55,11 +61,40 @@ import { SubscriptionLabel } from "./SubscriptionLabel";
 import { useCopyOwnerEmails } from "./useCopyOwnerEmails";
 
 const PROJECTS_LIMIT = 100;
+const INITIAL_INVOICES_COUNT = 5;
+const INVOICES_PER_PAGE = 20;
+
+const StaffTeamInvoiceFragment = graphql(`
+  fragment StaffTeamInvoice on Invoice {
+    id
+    number
+    date
+    total
+    currency
+    status
+    refundedAmount
+    hostedUrl
+    pdfUrl
+  }
+`);
 
 const StaffTeamQuery = graphql(`
-  query StaffTeam_account($slug: String!, $projectsLimit: Int!) {
+  query StaffTeam_account(
+    $slug: String!
+    $projectsLimit: Int!
+    $invoicesFirst: Int!
+  ) {
     account(slug: $slug) {
       id
+      invoices(after: 0, first: $invoicesFirst) {
+        pageInfo {
+          totalCount
+          hasNextPage
+        }
+        edges {
+          ...StaffTeamInvoice
+        }
+      }
       ... on Team {
         createdAt
         slug
@@ -148,6 +183,23 @@ const StaffTeamQuery = graphql(`
   }
 `);
 
+const StaffTeamInvoicesQuery = graphql(`
+  query StaffTeam_invoices($slug: String!, $after: Int!, $first: Int!) {
+    account(slug: $slug) {
+      id
+      invoices(after: $after, first: $first) {
+        pageInfo {
+          totalCount
+          hasNextPage
+        }
+        edges {
+          ...StaffTeamInvoice
+        }
+      }
+    }
+  }
+`);
+
 type AccountNode = NonNullable<DocumentType<typeof StaffTeamQuery>["account"]>;
 type TeamNode = Extract<AccountNode, { __typename?: "Team" }>;
 type StaffTeam = TeamNode & { staff: NonNullable<TeamNode["staff"]> };
@@ -155,6 +207,7 @@ type BillingPeriod = NonNullable<
   StaffTeam["staff"]["periodUsage"]
 >["billingPeriods"][number];
 type StaffMember = StaffTeam["staff"]["members"][number];
+type StaffInvoice = DocumentType<typeof StaffTeamInvoiceFragment>;
 
 function Dash() {
   return <span className="text-low">-</span>;
@@ -626,6 +679,140 @@ function BillingPeriodsSection(props: { team: StaffTeam }) {
   );
 }
 
+function InvoiceActions(props: { invoice: StaffInvoice }) {
+  const { invoice } = props;
+
+  return (
+    <div className="flex justify-end gap-1">
+      {invoice.hostedUrl ? (
+        <Tooltip content="View invoice">
+          <LinkButton
+            variant="ghost"
+            size="small"
+            iconOnly
+            href={invoice.hostedUrl}
+            target="_blank"
+            aria-label="View invoice"
+          >
+            <FileTextIcon />
+          </LinkButton>
+        </Tooltip>
+      ) : null}
+      {invoice.pdfUrl ? (
+        <Tooltip content="Download PDF">
+          <LinkButton
+            variant="ghost"
+            size="small"
+            iconOnly
+            href={invoice.pdfUrl}
+            target="_blank"
+            aria-label="Download PDF"
+          >
+            <DownloadIcon />
+          </LinkButton>
+        </Tooltip>
+      ) : null}
+    </div>
+  );
+}
+
+function InvoiceRow(props: { invoice: StaffInvoice }) {
+  const { invoice } = props;
+  const status = getInvoiceStatusProps(invoice);
+  const isPartiallyRefunded =
+    invoice.refundedAmount > 0 && invoice.refundedAmount < invoice.total;
+
+  return (
+    <tr>
+      <Td className="whitespace-nowrap">
+        <Time date={invoice.date} format="date" />
+      </Td>
+      <Td>
+        {invoice.number ? (
+          <span className="font-mono text-xs">{invoice.number}</span>
+        ) : (
+          <Dash />
+        )}
+      </Td>
+      <Td>
+        <Chip scale="sm" color={status.color}>
+          {status.label}
+        </Chip>
+      </Td>
+      <Td className="text-right tabular-nums">
+        <div className="font-medium">
+          {formatCurrency(invoice.total, invoice.currency)}
+        </div>
+        {isPartiallyRefunded ? (
+          <div className="text-low text-xs">
+            {formatCurrency(invoice.refundedAmount, invoice.currency)} refunded
+          </div>
+        ) : null}
+      </Td>
+      <Td className="py-2">
+        <InvoiceActions invoice={invoice} />
+      </Td>
+    </tr>
+  );
+}
+
+function InvoicesSection(props: {
+  team: StaffTeam;
+  onLoadMore: () => Promise<unknown>;
+}) {
+  const { invoices } = props.team;
+  const { totalCount } = invoices.pageInfo;
+  const [isLoadingMore, startLoadingMore] = useTransition();
+
+  return (
+    <Section
+      title="Invoices"
+      description={
+        totalCount > 0
+          ? `${totalCount === 1 ? "1 invoice" : `${totalCount.toLocaleString()} invoices`} from Stripe, most recent first. Totals include tax.`
+          : undefined
+      }
+    >
+      {invoices.edges.length === 0 ? (
+        <p className="text-low text-sm">No invoice yet.</p>
+      ) : (
+        <>
+          <StaffTable
+            className="min-w-160"
+            head={
+              <>
+                <Th>Date</Th>
+                <Th>Number</Th>
+                <Th>Status</Th>
+                <Th className="text-right">Total</Th>
+                <Th className="w-24" />
+              </>
+            }
+          >
+            {invoices.edges.map((invoice) => (
+              <InvoiceRow key={invoice.id} invoice={invoice} />
+            ))}
+          </StaffTable>
+          {invoices.pageInfo.hasNextPage ? (
+            <Button
+              variant="secondary"
+              className="mt-2 w-full justify-center"
+              pending={isLoadingMore}
+              onClick={() => {
+                startLoadingMore(async () => {
+                  await props.onLoadMore();
+                });
+              }}
+            >
+              Load more
+            </Button>
+          ) : null}
+        </>
+      )}
+    </Section>
+  );
+}
+
 function ProjectsSection(props: { team: StaffTeam }) {
   const { team } = props;
   const projects = [...team.projects.edges].sort(
@@ -750,8 +937,12 @@ function MembersSection(props: { team: StaffTeam }) {
 }
 
 function StaffTeamPage(props: { slug: string }) {
-  const { data, error } = useQuery(StaffTeamQuery, {
-    variables: { slug: props.slug, projectsLimit: PROJECTS_LIMIT },
+  const { data, error, fetchMore } = useQuery(StaffTeamQuery, {
+    variables: {
+      slug: props.slug,
+      projectsLimit: PROJECTS_LIMIT,
+      invoicesFirst: INITIAL_INVOICES_COUNT,
+    },
   });
 
   if (error) {
@@ -780,6 +971,36 @@ function StaffTeamPage(props: { slug: string }) {
 
   const team: StaffTeam = { ...account, staff: account.staff };
 
+  // The next page comes from a query of its own: refetching the page's would
+  // recompute every billing period just to append invoices.
+  const loadMoreInvoices = () =>
+    fetchMore({
+      query: StaffTeamInvoicesQuery,
+      variables: {
+        slug: props.slug,
+        after: team.invoices.edges.length,
+        first: INVOICES_PER_PAGE,
+      },
+      updateQuery: (prev, { fetchMoreResult }) => {
+        if (!prev.account || !fetchMoreResult.account) {
+          return prev;
+        }
+        return {
+          ...prev,
+          account: {
+            ...prev.account,
+            invoices: {
+              ...fetchMoreResult.account.invoices,
+              edges: [
+                ...prev.account.invoices.edges,
+                ...fetchMoreResult.account.invoices.edges,
+              ],
+            },
+          },
+        };
+      },
+    });
+
   return (
     <PageContainer>
       <Helmet>
@@ -792,6 +1013,7 @@ function StaffTeamPage(props: { slug: string }) {
         <ActivityCard team={team} />
       </div>
       <BillingPeriodsSection team={team} />
+      <InvoicesSection team={team} onLoadMore={loadMoreInvoices} />
       <MembersSection team={team} />
       <ProjectsSection team={team} />
     </PageContainer>
