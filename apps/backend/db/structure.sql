@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict JeLrejpzAjMoVrV2wKGjslVerCWdbljOEXMWsCtxUyALELQXHVLA6Rrvaox1UmQ
+\restrict PgD3qlVj6jk1Lb4LVVbvAIVhdwl36JMSZaM4HNa6TxKzk6rOj4Bnjgd1pSOTdNF
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.4 (Homebrew)
+-- Dumped by pg_dump version 18.6 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -7516,7 +7516,7 @@ ALTER TABLE ONLY public.webhooks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict JeLrejpzAjMoVrV2wKGjslVerCWdbljOEXMWsCtxUyALELQXHVLA6Rrvaox1UmQ
+\unrestrict PgD3qlVj6jk1Lb4LVVbvAIVhdwl36JMSZaM4HNa6TxKzk6rOj4Bnjgd1pSOTdNF
 
 -- Knex migrations
 
@@ -7808,3 +7808,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026112
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122120000_webhooks.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122184409_stalled-job-requeue-indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261123124108_build-auth-source.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261124150116_link-marketplace-teams-to-github.js', 1, NOW());

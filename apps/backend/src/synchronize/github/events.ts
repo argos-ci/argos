@@ -83,7 +83,10 @@ export async function handleGitHubEvents(
           const account = await getAccount(payload);
           if (!account) {
             eventLogger.error(
-              { payload },
+              {
+                error: new Error("Cannot update purchase, account not found"),
+                payload,
+              },
               "Cannot update purchase, account not found",
             );
             return;
@@ -95,7 +98,10 @@ export async function handleGitHubEvents(
           const account = await getAccount(payload);
           if (!account) {
             eventLogger.error(
-              { payload },
+              {
+                error: new Error("Cannot cancel purchase, account not found"),
+                payload,
+              },
               "Cannot cancel purchase, account not found",
             );
             return;

@@ -82,6 +82,11 @@ const findRelevantUserTeam = async (
   if (relevantTeams.length === 1) {
     const relevantTeam = relevantTeams[0];
     invariant(relevantTeam?.account, "account not fetched");
+    // `changed` and `cancelled` events find the team through this link only:
+    // without it they are dropped and the team keeps the plan for good.
+    if (githubAccountId && !relevantTeam.account.githubAccountId) {
+      return relevantTeam.account.$query().patchAndFetch({ githubAccountId });
+    }
     return relevantTeam.account;
   }
   // If there is no relevant team, we create a new team
