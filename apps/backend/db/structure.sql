@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict JeLrejpzAjMoVrV2wKGjslVerCWdbljOEXMWsCtxUyALELQXHVLA6Rrvaox1UmQ
+\restrict hc8X97TuvwaDcCW0JJMo4ArHPQhAgB1HjjcTe9X3z6rZ84d20nAgasWjBxUz4AY
 
 -- Dumped from database version 18.4
--- Dumped by pg_dump version 18.4 (Homebrew)
+-- Dumped by pg_dump version 18.6 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -131,6 +131,7 @@ CREATE TABLE public.accounts (
     "lastMonthlyReportAt" timestamp with time zone,
     "lastPlanLimitAlertLevel" text,
     "lastPlanLimitAlertAt" timestamp with time zone,
+    "enterpriseOfferSentAt" timestamp with time zone,
     CONSTRAINT "accounts_lastPlanLimitAlertLevel_check" CHECK (("lastPlanLimitAlertLevel" = ANY (ARRAY['warning'::text, 'rejected'::text]))),
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
@@ -7516,7 +7517,7 @@ ALTER TABLE ONLY public.webhooks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict JeLrejpzAjMoVrV2wKGjslVerCWdbljOEXMWsCtxUyALELQXHVLA6Rrvaox1UmQ
+\unrestrict hc8X97TuvwaDcCW0JJMo4ArHPQhAgB1HjjcTe9X3z6rZ84d20nAgasWjBxUz4AY
 
 -- Knex migrations
 
@@ -7808,3 +7809,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026112
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122120000_webhooks.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261122184409_stalled-job-requeue-indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261123124108_build-auth-source.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261124163701_enterprise-offer.js', 1, NOW());

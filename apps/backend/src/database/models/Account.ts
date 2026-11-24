@@ -207,6 +207,7 @@ export class Account extends Model {
           lastPlanLimitAlertLevel: { type: ["string", "null"] },
           lastPlanLimitAlertAt: { type: ["string", "null"] },
           lastMonthlyReportAt: { type: ["string", "null"] },
+          enterpriseOfferSentAt: { type: ["string", "null"] },
         },
       },
     ],
@@ -248,6 +249,12 @@ export class Account extends Model {
   lastPlanLimitAlertAt!: string | null;
   /** When the owners were last sent the monthly report. */
   lastMonthlyReportAt!: string | null;
+  /**
+   * When the billing members were emailed the Enterprise offer, null when they
+   * were not. Sent once per account, ever: the Billing page keeps the offer
+   * visible after that.
+   */
+  enterpriseOfferSentAt!: string | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);

@@ -5,7 +5,7 @@ import { getSurfaceClassName } from "./Panel";
 
 export function Card(
   props: ComponentPropsWithRef<"div"> & {
-    intent?: "danger";
+    intent?: "danger" | "primary";
   },
 ) {
   const { intent, ...rest } = props;
@@ -17,9 +17,12 @@ export function Card(
         // the hairline, so a danger card keeps the shape.
         getSurfaceClassName(),
         "w-full overflow-hidden border-(--card-border)",
-        intent === "danger"
-          ? "shadow-(color:--red-12) [--card-border:var(--border-color-danger-hover)] [--card-footer-bg:var(--background-color-danger-ui)]"
-          : "[--card-border:var(--border-color-default)]",
+        {
+          danger:
+            "shadow-(color:--red-12) [--card-border:var(--border-color-danger-hover)] [--card-footer-bg:var(--background-color-danger-ui)]",
+          primary: "[--card-border:var(--border-color-primary)]",
+          default: "[--card-border:var(--border-color-default)]",
+        }[intent ?? "default"],
         rest.className,
       )}
     />

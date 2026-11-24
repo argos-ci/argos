@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 
 import { pushBuildNotification } from "@/build-notification";
 import { Build, Project, ScreenshotDiff } from "@/database/models";
+import { claimEnterpriseOffer } from "@/database/services/enterprise-offer";
 import { claimOverageAlert } from "@/database/services/overage-alert";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit";
 import { githubPullRequestJob } from "@/github-pull-request/job";
@@ -39,7 +40,8 @@ async function pushDiffs(input: {
 
 /**
  * Update the usage in Stripe, then send the spend alert that became due: a
- * spend limit threshold when a limit is set, an overage alert otherwise.
+ * spend limit threshold when a limit is set, an overage alert otherwise. A Pro
+ * team whose period reaches the Enterprise offer threshold is sent the offer.
  */
 async function updateUsage(project: Project) {
   const { account } = project;
@@ -88,6 +90,18 @@ async function updateUsage(project: Project) {
         },
         recipients: await account.$getUserIdsWithPermission("billing"),
       });
+    }
+
+    if (await claimEnterpriseOffer(account)) {
+      const recipients = await account.$getUserIdsWithPermission("billing");
+      // SCIM offboarding can leave a team without an owner: nobody to tell.
+      if (recipients.length > 0) {
+        await sendNotification({
+          type: "enterprise_offer",
+          data: { accountName: account.name, accountSlug: account.slug },
+          recipients,
+        });
+      }
     }
   });
 }

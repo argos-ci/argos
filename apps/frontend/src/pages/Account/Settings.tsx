@@ -27,6 +27,7 @@ import { TeamDelete } from "@/containers/Team/Delete";
 import { TeamDiscord } from "@/containers/Team/Discord";
 import { TeamDomains } from "@/containers/Team/Domains";
 import { TeamEnforcedAuthMethod } from "@/containers/Team/EnforcedAuthMethod";
+import { TeamEnterpriseOffer } from "@/containers/Team/EnterpriseOffer";
 import { TeamGitHubLight } from "@/containers/Team/GitHubLight";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
 import { TeamMembers } from "@/containers/Team/members/Members";
@@ -84,6 +85,7 @@ const AccountQuery = graphql(`
       ...TeamDiscord_Account
       ...TeamMembers_Team
       ...TeamDelete_Team
+      ...TeamEnterpriseOffer_Team
       ...AccountChangeName_Account
       ...AccountChangeSlug_Account
       ...PlanCard_Account
@@ -238,6 +240,7 @@ function PageContent() {
       slug: "billing",
       element: (
         <>
+          {isTeam && canManageBilling && <TeamEnterpriseOffer team={account} />}
           {canManageBilling && <PlanCard account={account} />}
           {isTeam && hasAdminPermission && <TeamAddOns team={account} />}
           {isTeam && account.subscription ? (
