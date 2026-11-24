@@ -334,6 +334,12 @@ const INVOICE_STATUS_PROPS: Record<
   [InvoiceStatus.Uncollectible]: { label: "Uncollectible", color: "danger" },
 };
 
+export function isPartiallyRefunded(
+  invoice: Pick<Invoice, "total" | "refundedAmount">,
+): boolean {
+  return invoice.refundedAmount > 0 && invoice.refundedAmount < invoice.total;
+}
+
 /**
  * Stripe keeps a refunded invoice `paid`, so the refund is read off the amount
  * given back rather than off the status.
@@ -345,9 +351,9 @@ export function getInvoiceStatusProps(
   color: ChipColor;
 } {
   if (invoice.status === InvoiceStatus.Paid && invoice.refundedAmount > 0) {
-    return invoice.refundedAmount >= invoice.total
-      ? { label: "Refunded", color: "neutral" }
-      : { label: "Partially refunded", color: "neutral" };
+    return isPartiallyRefunded(invoice)
+      ? { label: "Partially refunded", color: "neutral" }
+      : { label: "Refunded", color: "neutral" };
   }
   return INVOICE_STATUS_PROPS[invoice.status];
 }
@@ -355,8 +361,6 @@ export function getInvoiceStatusProps(
 function InvoiceRow(props: { invoice: Invoice }) {
   const { invoice } = props;
   const status = getInvoiceStatusProps(invoice);
-  const isPartiallyRefunded =
-    invoice.refundedAmount > 0 && invoice.refundedAmount < invoice.total;
   const date = new Date(invoice.date);
 
   return (
@@ -376,7 +380,7 @@ function InvoiceRow(props: { invoice: Invoice }) {
       amount={
         <>
           {formatCurrency(invoice.total, invoice.currency)}
-          {isPartiallyRefunded ? (
+          {isPartiallyRefunded(invoice) ? (
             <div className="text-low text-xs font-normal">
               {formatCurrency(invoice.refundedAmount, invoice.currency)}{" "}
               refunded

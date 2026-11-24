@@ -102,7 +102,7 @@ export function ListRowLoader(props: ListRowProps & ListLoaderProps) {
   );
 }
 
-export function ListLoadMore(props: { onClick: () => void }) {
+export function ListLoadMore(props: { onClick: () => unknown }) {
   const [isPending, startTransition] = useTransition();
   return (
     <div className="pt-2">
@@ -111,8 +111,10 @@ export function ListLoadMore(props: { onClick: () => void }) {
         className="w-full justify-center"
         pending={isPending}
         onClick={() => {
-          startTransition(() => {
-            props.onClick();
+          // Awaited so a non-suspense `fetchMore` keeps the button pending
+          // until the page arrives; a callback returning nothing ends at once.
+          startTransition(async () => {
+            await props.onClick();
           });
         }}
       >

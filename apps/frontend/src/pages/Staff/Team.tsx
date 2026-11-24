@@ -1,4 +1,3 @@
-import { useTransition } from "react";
 import { useQuery } from "@apollo/client/react";
 import { formatDate } from "@argos/util/date-format";
 import { invariant } from "@argos/util/invariant";
@@ -15,8 +14,12 @@ import {
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router";
 
-import { getInvoiceStatusProps } from "@/containers/Account/Invoices";
+import {
+  getInvoiceStatusProps,
+  isPartiallyRefunded,
+} from "@/containers/Account/Invoices";
 import { AccountAvatar } from "@/containers/AccountAvatar";
+import { useAssertAuthAccount } from "@/containers/Auth";
 import { AuthGuard } from "@/containers/AuthGuard";
 import { TeamMemberLabel } from "@/containers/UserList";
 import { graphql, type DocumentType } from "@/gql";
@@ -35,6 +38,7 @@ import {
   PageHeaderHeadline,
 } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
+import { ListLoadMore } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
 import { PageLoader } from "@/ui/PageLoader";
 import { StatTile, StatTileGroup } from "@/ui/StatTile";
@@ -64,17 +68,23 @@ const PROJECTS_LIMIT = 100;
 const INITIAL_INVOICES_COUNT = 5;
 const INVOICES_PER_PAGE = 20;
 
-const StaffTeamInvoiceFragment = graphql(`
-  fragment StaffTeamInvoice on Invoice {
-    id
-    number
-    date
-    total
-    currency
-    status
-    refundedAmount
-    hostedUrl
-    pdfUrl
+const StaffTeamInvoicesFragment = graphql(`
+  fragment StaffTeamInvoices on InvoiceConnection {
+    pageInfo {
+      totalCount
+      hasNextPage
+    }
+    edges {
+      id
+      number
+      date
+      total
+      currency
+      status
+      refundedAmount
+      hostedUrl
+      pdfUrl
+    }
   }
 `);
 
@@ -83,17 +93,15 @@ const StaffTeamQuery = graphql(`
     $slug: String!
     $projectsLimit: Int!
     $invoicesFirst: Int!
+    $isStaff: Boolean!
   ) {
     account(slug: $slug) {
       id
-      invoices(after: 0, first: $invoicesFirst) {
-        pageInfo {
-          totalCount
-          hasNextPage
-        }
-        edges {
-          ...StaffTeamInvoice
-        }
+      # Read for staff only: anyone else needs the billing permission, and a
+      # plain member refused it would get an error page instead of the
+      # restricted-access notice.
+      invoices(after: 0, first: $invoicesFirst) @include(if: $isStaff) {
+        ...StaffTeamInvoices
       }
       ... on Team {
         createdAt
@@ -188,13 +196,7 @@ const StaffTeamInvoicesQuery = graphql(`
     account(slug: $slug) {
       id
       invoices(after: $after, first: $first) {
-        pageInfo {
-          totalCount
-          hasNextPage
-        }
-        edges {
-          ...StaffTeamInvoice
-        }
+        ...StaffTeamInvoices
       }
     }
   }
@@ -202,12 +204,17 @@ const StaffTeamInvoicesQuery = graphql(`
 
 type AccountNode = NonNullable<DocumentType<typeof StaffTeamQuery>["account"]>;
 type TeamNode = Extract<AccountNode, { __typename?: "Team" }>;
-type StaffTeam = TeamNode & { staff: NonNullable<TeamNode["staff"]> };
+type StaffTeam = TeamNode & {
+  staff: NonNullable<TeamNode["staff"]>;
+  invoices: NonNullable<TeamNode["invoices"]>;
+};
 type BillingPeriod = NonNullable<
   StaffTeam["staff"]["periodUsage"]
 >["billingPeriods"][number];
 type StaffMember = StaffTeam["staff"]["members"][number];
-type StaffInvoice = DocumentType<typeof StaffTeamInvoiceFragment>;
+type StaffInvoice = DocumentType<
+  typeof StaffTeamInvoicesFragment
+>["edges"][number];
 
 function Dash() {
   return <span className="text-low">-</span>;
@@ -679,38 +686,41 @@ function BillingPeriodsSection(props: { team: StaffTeam }) {
   );
 }
 
+function InvoiceLink(props: {
+  href: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Tooltip content={props.label}>
+      <LinkButton
+        variant="ghost"
+        size="small"
+        iconOnly
+        href={props.href}
+        target="_blank"
+        aria-label={props.label}
+      >
+        {props.children}
+      </LinkButton>
+    </Tooltip>
+  );
+}
+
 function InvoiceActions(props: { invoice: StaffInvoice }) {
   const { invoice } = props;
 
   return (
     <div className="flex justify-end gap-1">
       {invoice.hostedUrl ? (
-        <Tooltip content="View invoice">
-          <LinkButton
-            variant="ghost"
-            size="small"
-            iconOnly
-            href={invoice.hostedUrl}
-            target="_blank"
-            aria-label="View invoice"
-          >
-            <FileTextIcon />
-          </LinkButton>
-        </Tooltip>
+        <InvoiceLink href={invoice.hostedUrl} label="View invoice">
+          <FileTextIcon />
+        </InvoiceLink>
       ) : null}
       {invoice.pdfUrl ? (
-        <Tooltip content="Download PDF">
-          <LinkButton
-            variant="ghost"
-            size="small"
-            iconOnly
-            href={invoice.pdfUrl}
-            target="_blank"
-            aria-label="Download PDF"
-          >
-            <DownloadIcon />
-          </LinkButton>
-        </Tooltip>
+        <InvoiceLink href={invoice.pdfUrl} label="Download PDF">
+          <DownloadIcon />
+        </InvoiceLink>
       ) : null}
     </div>
   );
@@ -719,8 +729,6 @@ function InvoiceActions(props: { invoice: StaffInvoice }) {
 function InvoiceRow(props: { invoice: StaffInvoice }) {
   const { invoice } = props;
   const status = getInvoiceStatusProps(invoice);
-  const isPartiallyRefunded =
-    invoice.refundedAmount > 0 && invoice.refundedAmount < invoice.total;
 
   return (
     <tr>
@@ -743,7 +751,7 @@ function InvoiceRow(props: { invoice: StaffInvoice }) {
         <div className="font-medium">
           {formatCurrency(invoice.total, invoice.currency)}
         </div>
-        {isPartiallyRefunded ? (
+        {isPartiallyRefunded(invoice) ? (
           <div className="text-low text-xs">
             {formatCurrency(invoice.refundedAmount, invoice.currency)} refunded
           </div>
@@ -762,18 +770,17 @@ function InvoicesSection(props: {
 }) {
   const { invoices } = props.team;
   const { totalCount } = invoices.pageInfo;
-  const [isLoadingMore, startLoadingMore] = useTransition();
 
   return (
     <Section
       title="Invoices"
       description={
         totalCount > 0
-          ? `${totalCount === 1 ? "1 invoice" : `${totalCount.toLocaleString()} invoices`} from Stripe, most recent first. Totals include tax.`
+          ? `${totalCount.toLocaleString()} ${totalCount === 1 ? "invoice" : "invoices"} from Stripe, most recent first. Totals include tax.`
           : undefined
       }
     >
-      {invoices.edges.length === 0 ? (
+      {totalCount === 0 ? (
         <p className="text-low text-sm">No invoice yet.</p>
       ) : (
         <>
@@ -794,18 +801,7 @@ function InvoicesSection(props: {
             ))}
           </StaffTable>
           {invoices.pageInfo.hasNextPage ? (
-            <Button
-              variant="secondary"
-              className="mt-2 w-full justify-center"
-              pending={isLoadingMore}
-              onClick={() => {
-                startLoadingMore(async () => {
-                  await props.onLoadMore();
-                });
-              }}
-            >
-              Load more
-            </Button>
+            <ListLoadMore onClick={props.onLoadMore} />
           ) : null}
         </>
       )}
@@ -937,11 +933,13 @@ function MembersSection(props: { team: StaffTeam }) {
 }
 
 function StaffTeamPage(props: { slug: string }) {
+  const viewer = useAssertAuthAccount();
   const { data, error, fetchMore } = useQuery(StaffTeamQuery, {
     variables: {
       slug: props.slug,
       projectsLimit: PROJECTS_LIMIT,
       invoicesFirst: INITIAL_INVOICES_COUNT,
+      isStaff: Boolean(viewer.staff),
     },
   });
 
@@ -969,7 +967,12 @@ function StaffTeamPage(props: { slug: string }) {
     );
   }
 
-  const team: StaffTeam = { ...account, staff: account.staff };
+  invariant(account.invoices, "invoices are read for staff");
+  const team: StaffTeam = {
+    ...account,
+    staff: account.staff,
+    invoices: account.invoices,
+  };
 
   // The next page comes from a query of its own: refetching the page's would
   // recompute every billing period just to append invoices.
@@ -982,7 +985,7 @@ function StaffTeamPage(props: { slug: string }) {
         first: INVOICES_PER_PAGE,
       },
       updateQuery: (prev, { fetchMoreResult }) => {
-        if (!prev.account || !fetchMoreResult.account) {
+        if (!prev.account?.invoices || !fetchMoreResult.account) {
           return prev;
         }
         return {
