@@ -15,6 +15,12 @@ const RUNNING_STATUSES = ["active", "trialing", "past_due"];
  */
 const CYCLE_BILLING_REASONS = ["subscription_create", "subscription_cycle"];
 
+/**
+ * Finalized and still owed. "open" is also where a bill sits during Stripe's
+ * payment retries; "uncollectible" is where they give up, if so configured.
+ */
+const UNPAID_INVOICE_STATUSES = ["open", "uncollectible"];
+
 const MONTH_MS = (365.25 / 12) * 24 * 3600 * 1000;
 
 /**
@@ -81,12 +87,18 @@ export async function getStaffCancellations(
 /** What a subscription brought in, in euros. */
 export type SubscriptionRevenue = {
   /**
-   * What one month of it was worth, read off its last cycle bill. Null when it
-   * never billed a cycle: canceled during its trial.
+   * What one month of it was worth, read off its last paid cycle bill. Null
+   * when it never paid a cycle: canceled during its trial.
    */
   monthly: number | null;
   /** Everything it was paid. Null when the provider shares no invoices. */
   lifetime: number | null;
+  /**
+   * Its last cycle bill, when that one was never paid: the failed payment that
+   * usually ends the subscription, often a bill much larger than the paid one
+   * before it. Null when the last cycle bill was paid.
+   */
+  unpaidBill: number | null;
 };
 
 /**
@@ -113,7 +125,7 @@ export async function getSubscriptionRevenues(
     stripeSubscriptionIds.length > 0
       ? StripeInvoice.query()
           .whereIn("stripeSubscriptionId", stripeSubscriptionIds)
-          .where("status", "paid")
+          .whereIn("status", ["paid", ...UNPAID_INVOICE_STATUSES])
           .orderBy("stripeCreatedAt", "desc")
       : [],
     githubPlanIds.length > 0 ? Plan.query().findByIds(githubPlanIds) : [],
@@ -140,25 +152,36 @@ export async function getSubscriptionRevenues(
             ? toEuros({ amount: priceCents / 100, currency: "usd" })
             : null,
         lifetime: null,
+        unpaidBill: null,
       };
     }
 
     const subscriptionInvoices =
       invoicesBySubscriptionId.get(subscription.stripeSubscriptionId) ?? [];
-    const lifetime = subscriptionInvoices.reduce(
-      (total, invoice) => total + toEuros(getInvoiceRevenue(invoice)),
-      0,
-    );
-    const lastCycle = subscriptionInvoices.find(
+    const lifetime = subscriptionInvoices
+      .filter((invoice) => invoice.status === "paid")
+      .reduce(
+        (total, invoice) => total + toEuros(getInvoiceRevenue(invoice)),
+        0,
+      );
+    const cycleBills = subscriptionInvoices.filter(
       (invoice) =>
         invoice.billingReason !== null &&
         CYCLE_BILLING_REASONS.includes(invoice.billingReason) &&
         getInvoiceRevenue(invoice).amount > 0,
     );
+    const lastPaidCycle = cycleBills.find(
+      (invoice) => invoice.status === "paid",
+    );
+    const lastCycle = cycleBills[0];
 
     return {
-      monthly: lastCycle ? getMonthlyAmount(lastCycle) : null,
+      monthly: lastPaidCycle ? getMonthlyAmount(lastPaidCycle) : null,
       lifetime,
+      unpaidBill:
+        lastCycle && lastCycle.status !== "paid"
+          ? toEuros(getInvoiceRevenue(lastCycle))
+          : null,
     };
   });
 }

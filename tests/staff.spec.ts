@@ -657,6 +657,8 @@ async function createCanceledTeams(input: {
     name: string,
     subscription: Partial<Subscription> & {
       invoices?: number[];
+      /** A bill after the paid ones, whose payment failed. */
+      unpaidInvoice?: number;
       /** Defaults to a month before the first of its monthly bills. */
       createdDaysAgo?: number;
     },
@@ -665,6 +667,7 @@ async function createCanceledTeams(input: {
     const { account, team } = await createTeamAccount({ slug, name });
     const {
       invoices = [],
+      unpaidInvoice,
       createdDaysAgo = 30 * (invoices.length + 1),
       ...data
     } = subscription;
@@ -683,18 +686,28 @@ async function createCanceledTeams(input: {
       ...data,
     });
     // Monthly bills, the most recent last, each one month further back.
+    const bills = [
+      ...invoices.map((amount, index) => ({
+        amount,
+        status: "paid",
+        daysAgo: 30 * (invoices.length - index),
+      })),
+      ...(unpaidInvoice === undefined
+        ? []
+        : [{ amount: unpaidInvoice, status: "uncollectible", daysAgo: 0 }]),
+    ];
     await Promise.all(
-      invoices.map((amount, index) =>
+      bills.map((bill, index) =>
         StripeInvoice.query().insert({
           stripeInvoiceId: `in_${slug}_${index}`,
           stripeCustomerId: `cus_${slug}`,
           stripeSubscriptionId: `sub_${slug}`,
-          stripeCreatedAt: daysFromNow(-30 * (invoices.length - index)),
-          status: "paid",
+          stripeCreatedAt: daysFromNow(-bill.daysAgo),
+          status: bill.status,
           billingReason: "subscription_cycle",
           currency: "eur",
-          total: amount * 100,
-          totalExcludingTax: amount * 100,
+          total: bill.amount * 100,
+          totalExcludingTax: bill.amount * 100,
           creditedAmountExcludingTax: 0,
           refundedAmount: 0,
         }),
@@ -767,6 +780,15 @@ async function createCanceledTeams(input: {
       cancellationFeedback: "too_expensive",
       invoices: [100, 100, 100, 100, 100, 100],
     }),
+    // The bill that failed was larger than the last one it paid.
+    createTeam("Initech", {
+      status: "canceled",
+      canceledAt: daysFromNow(-3),
+      endDate: daysFromNow(-1),
+      cancellationReason: "payment_failed",
+      invoices: [100, 100],
+      unpaidInvoice: 240,
+    }),
     createTeam("Cyberdyne", {
       provider: "github",
       createdDaysAgo: 150,
@@ -820,7 +842,7 @@ staffTest("staff cancellations", async ({ page, plan, user }, testInfo) => {
     page.getByRole("heading", { name: "Cancellations" }),
   ).toBeVisible();
   await page.getByRole("searchbox").fill(prefix);
-  await expect(page.getByText(/^Showing 6 of \d+ teams$/)).toBeVisible();
+  await expect(page.getByText(/^Showing 7 of \d+ teams$/)).toBeVisible();
   // A trial that ran out on its own is the trial pipeline's.
   await expect(page.getByText("Massive Dynamic")).toBeHidden();
 
@@ -841,6 +863,9 @@ staffTest("staff cancellations", async ({ page, plan, user }, testInfo) => {
     cancellationAmount(1000),
   );
   await expect(page.getByRole("row", { name: /Stark/ })).toContainText("trial");
+  const initech = page.getByRole("row", { name: /Initech/ });
+  await expect(initech).toContainText(cancellationAmount(100));
+  await expect(initech).toContainText(`${cancellationAmount(240)} unpaid`);
 
   await screenshot(page, "staff-cancellations");
 

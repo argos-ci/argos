@@ -24,6 +24,7 @@ const CancellationsQuery = `
       staffContactedAt
       monthlyRevenue
       lifetimeRevenue
+      unpaidBill
     }
   }
 `;
@@ -98,6 +99,7 @@ async function queryCancellations(viewer: Viewer, days = 90) {
     staffContactedAt: string | null;
     monthlyRevenue: number | null;
     lifetimeRevenue: number | null;
+    unpaidBill: number | null;
   }[];
 }
 
@@ -153,7 +155,7 @@ describe("GraphQL staffCancellations", () => {
         totalExcludingTax: 12_000,
       }),
       // The bill whose payment failed: it was never paid, so it is worth
-      // nothing to the figures.
+      // nothing to the figures, and is shown apart.
       factory.StripeInvoice.create({
         stripeSubscriptionId: "sub_churned",
         stripeCreatedAt: daysFromNow(-5),
@@ -171,6 +173,7 @@ describe("GraphQL staffCancellations", () => {
     // The last paid cycle, tax excluded.
     expect(entry.monthlyRevenue).toBe(120);
     expect(entry.lifetimeRevenue).toBe(220);
+    expect(entry.unpaidBill).toBe(500);
   });
 
   it("leaves out a trial that ran out without a card", async () => {
