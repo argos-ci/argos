@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
@@ -21,27 +20,26 @@ afterAll(() => {
   server.close();
 });
 
-type Answer = () => Response;
+type Failure = () => Response;
 
-const found: Answer = () => HttpResponse.json({ id: 1 });
 const failWith =
-  (status: number): Answer =>
+  (status: number): Failure =>
   () =>
     HttpResponse.json({ message: "GitHub error" }, { status });
-const dropConnection: Answer = () => HttpResponse.error();
+const dropConnection: Failure = () => HttpResponse.error();
 
 /**
- * Answer the repository lookup with `answers` in turn, repeating the last one.
+ * Fail the first `failures` repository lookups, then find the repository.
  * Returns the requests GitHub received.
  */
-function stubRepository(answers: Answer[]) {
+function stubRepository(failure: Failure, failures = Infinity) {
   const received = { count: 0 };
   server.use(
     http.get("https://api.github.com/repos/acme/web", () => {
-      const answer = answers[Math.min(received.count, answers.length - 1)];
-      invariant(answer, "No answer stubbed");
       received.count += 1;
-      return answer();
+      return received.count > failures
+        ? HttpResponse.json({ id: 1 })
+        : failure();
     }),
   );
   return received;
@@ -57,13 +55,13 @@ describe("GitHub requests", () => {
     ["a server error", failWith(503)],
     ["a dropped connection", dropConnection],
   ])("are retried after %s", async (_, failure) => {
-    const received = stubRepository([failure, failure, found]);
+    const received = stubRepository(failure, 2);
     await expect(getRepository()).resolves.toMatchObject({ data: { id: 1 } });
     expect(received.count).toBe(3);
   });
 
   it("fail after three retries", async () => {
-    const received = stubRepository([failWith(502)]);
+    const received = stubRepository(failWith(502));
     await expect(getRepository()).rejects.toMatchObject({ status: 502 });
     expect(received.count).toBe(4);
   });
@@ -71,7 +69,7 @@ describe("GitHub requests", () => {
   it.each([401, 403, 404, 409, 422])(
     "return a %i without retrying",
     async (status) => {
-      const received = stubRepository([failWith(status)]);
+      const received = stubRepository(failWith(status));
       await expect(getRepository()).rejects.toMatchObject({ status });
       expect(received.count).toBe(1);
     },

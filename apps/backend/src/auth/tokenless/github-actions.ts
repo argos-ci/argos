@@ -125,7 +125,7 @@ type WorkflowRunLookup = {
  */
 const inProgressRunStore = redisCache.createStore({
   maxAge: 60 * 1000,
-  // The default (3s) would cut the retries short.
+  // The default (3s) would cut short the GitHub client's retries.
   timeout: 20 * 1000,
   getCacheKey: (lookup: WorkflowRunLookup) => [
     "tokenless-github-run",

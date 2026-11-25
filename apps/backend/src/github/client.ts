@@ -11,7 +11,7 @@ import config from "@/config";
 import { GithubInstallation } from "@/database/models";
 import { boom } from "@/util/error";
 
-import { checkOctokitErrorStatus, getOctokitErrorStatus } from "./error";
+import { checkIsOctokitServerError, checkOctokitErrorStatus } from "./error";
 import {
   createIpAllowListError,
   markInstallationIpAllowListBlocked,
@@ -73,20 +73,19 @@ interface GetOctokitOptions extends Omit<OctokitOptions, "debug" | "request"> {
 }
 
 /**
- * Retry the requests GitHub failed to answer: 5xx responses, and network
- * errors, which Octokit reports as a 500. Any other status is an answer, and
- * callers rely on getting it at once (an empty repository's 409 during build
- * creation).
+ * Retry the requests GitHub failed to answer. Any other status is an answer,
+ * and callers rely on getting it at once (an empty repository's 409 during
+ * build creation).
  */
 function retryServerErrors(octokit: Octokit) {
   octokit.hook.wrap("request", (request, options) =>
     pRetry(() => request(options), {
       retries: 3,
       minTimeout: config.get("github.retryDelay"),
-      shouldRetry: ({ error }) => {
-        const status = getOctokitErrorStatus(error);
-        return status !== null && status >= 500;
-      },
+      // Blips only: a job times out after 20s, and longer outages are left to
+      // its own retries.
+      maxRetryTime: 10_000,
+      shouldRetry: ({ error }) => checkIsOctokitServerError(error),
     }),
   );
 }
