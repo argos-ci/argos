@@ -96,6 +96,14 @@
       }
     },
     {
+      "files": ["apps/backend/src/database/models/*.ts"],
+      "excludeFiles": ["**/*.test.ts"],
+      "jsPlugins": ["./tools/oxlint-plugin-argos.js"],
+      "rules": {
+        "argos/relation-matches-schema": "error"
+      }
+    },
+    {
       "files": ["apps/frontend/src/**", "apps/backend/src/**"],
       "excludeFiles": [
         "**/*.test.ts",

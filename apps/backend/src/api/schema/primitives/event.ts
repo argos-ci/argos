@@ -3,7 +3,7 @@ import {
   type ProjectEventName,
 } from "@argos/schemas/project-event";
 import { assertNever } from "@argos/util/assertNever";
-import { invariant } from "@argos/util/invariant";
+import type { WithGraphModel } from "objection";
 import { z } from "zod";
 
 import type {
@@ -111,15 +111,13 @@ export type EventMessage =
   | {
       name: "deployment.created" | "deployment.ready";
       deployment: Deployment;
-      /** The deployment's project, with its account. */
-      project: Project;
+      project: WithGraphModel<Project, "account">;
     };
 
 async function serializeEventProject(
-  project: Project,
+  project: WithGraphModel<Project, "account">,
 ): Promise<z.infer<typeof EventProjectSchema>> {
   const url = await project.getUrl();
-  invariant(project.account, "account is not fetched");
   return {
     id: project.id,
     name: project.name,
@@ -135,7 +133,7 @@ type EventData = z.infer<(typeof EVENT_SCHEMAS)[ProjectEventName]>["data"];
  */
 export async function serializeEventData(
   message: EventMessage,
-  project: Project,
+  project: WithGraphModel<Project, "account">,
 ): Promise<EventData> {
   const projectData = await serializeEventProject(project);
   switch (message.name) {

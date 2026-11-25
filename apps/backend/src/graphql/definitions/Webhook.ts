@@ -192,7 +192,6 @@ async function loadAdminWebhook(
   if (!webhook) {
     throw boom(404, "Webhook not found.");
   }
-  invariant(webhook.account, "webhook account not fetched");
   await assertAccountAdmin(webhook.account, auth);
   return webhook;
 }

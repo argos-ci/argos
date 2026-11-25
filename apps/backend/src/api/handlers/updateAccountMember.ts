@@ -77,9 +77,7 @@ export const setAccountMemberLevel: CreateAPIHandler = ({ patch }) => {
 
     // `setTeamMemberLevel` returns the membership without the joined account
     // when the level was already the requested one, so load it for the payload.
-    await teamUser.$fetchGraph("user.account");
-
-    res.send(serializeTeamMember(teamUser));
+    res.send(serializeTeamMember(await teamUser.$fetchGraph("user.account")));
   });
 };
 

@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import type { RelationMappings, TransactionOrKnex } from "objection";
 
 import config from "@/config";
@@ -80,17 +79,14 @@ export class Test extends Model {
    * (notification emails, integrations).
    */
   async getUrl({ trx }: { trx?: TransactionOrKnex } = {}) {
-    if (!this.project?.account) {
-      await this.$fetchGraph(
-        "project.account",
-        trx ? { transaction: trx } : undefined,
-      );
-    }
-    invariant(this.project?.account, "account not found");
+    const { project } = await this.$fetchGraph("project.account", {
+      skipFetched: true,
+      ...(trx ? { transaction: trx } : {}),
+    });
 
     return getTestUrl({
-      accountSlug: this.project.account.slug,
-      projectName: this.project.name,
+      accountSlug: project.account.slug,
+      projectName: project.name,
       testId: this.id,
     });
   }

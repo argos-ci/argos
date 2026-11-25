@@ -199,7 +199,6 @@ export async function buildMsTeamsCard(args: {
       ? Build.getAggregatedBuildStatuses([build])
       : [null],
   ]);
-  invariant(richBuild.project, "project not found");
 
   body.push(titleBlock({ build, buildUrl }));
   body.push(projectBlock({ project: richBuild.project }));

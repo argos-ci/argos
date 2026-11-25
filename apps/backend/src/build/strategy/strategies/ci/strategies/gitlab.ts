@@ -9,18 +9,14 @@ import { MergeBaseStrategy } from "../types";
 export const GitlabStrategy: MergeBaseStrategy<GitlabProjectClient> = {
   detect: (project: Project) => Boolean(project.gitlabProjectId),
   getContext: async (project: Project) => {
-    await project.$fetchGraph("[account, gitlabProject]", {
-      skipFetched: true,
-    });
-
-    invariant(project.account, "no account found", UnretryableError);
-    invariant(
-      project.gitlabProject,
-      "no gitlab project found",
-      UnretryableError,
+    const { account, gitlabProject } = await project.$fetchGraph(
+      "[account, gitlabProject]",
+      { skipFetched: true },
     );
 
-    return getGitlabClientForProject(project.account, project.gitlabProject, {
+    invariant(gitlabProject, "no gitlab project found", UnretryableError);
+
+    return getGitlabClientForProject(account, gitlabProject, {
       mode: "headless",
     });
   },

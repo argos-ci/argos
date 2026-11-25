@@ -25,7 +25,6 @@ export async function checkExpiringSamlCertificates(now = new Date()) {
 
   for (const samlConfig of samlConfigs) {
     try {
-      invariant(samlConfig.account, "TeamSamlConfig account should be fetched");
       invariant(
         samlConfig.expirationCheckAt,
         "TeamSamlConfig expirationCheckAt should be set",

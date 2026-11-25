@@ -317,8 +317,6 @@ describe("#getCIMergeQueueBase", () => {
       }),
     ]);
 
-    invariant(baseBucket);
-
     const virtualBucket = { screenshots: [] };
     mockGetCIBase.mockResolvedValue({
       baseBucket,

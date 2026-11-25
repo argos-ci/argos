@@ -1,5 +1,3 @@
-import { invariant } from "@argos/util/invariant";
-
 import { Build } from "@/database/models";
 
 import { BuildStrategy, GetBaseResult } from "../../types";
@@ -23,11 +21,6 @@ async function getBase(build: Build): GetBaseResult {
       baseBranchResolvedFrom: null,
     };
   }
-
-  invariant(
-    lastApprovedBuild.compareScreenshotBucket,
-    "No compareScreenshotBucket found",
-  );
 
   return {
     baseBucket: lastApprovedBuild.compareScreenshotBucket,

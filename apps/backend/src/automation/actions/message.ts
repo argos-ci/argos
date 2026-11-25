@@ -19,18 +19,6 @@ export async function getAutomationMessage(
     "automationRun.[build.compareScreenshotBucket,buildReview]",
   );
 
-  invariant(
-    richActionRun,
-    "automationRun relation not found",
-    UnretryableError,
-  );
-
-  invariant(
-    richActionRun.automationRun,
-    "automationRun relation not found",
-    UnretryableError,
-  );
-
   const { automationRun } = richActionRun;
 
   switch (automationRun.event) {
@@ -38,11 +26,6 @@ export async function getAutomationMessage(
       invariant(
         automationRun.build,
         "build relation not found",
-        UnretryableError,
-      );
-      invariant(
-        automationRun.build.compareScreenshotBucket,
-        "compareScreenshotBucket relation not found",
         UnretryableError,
       );
       return {
@@ -57,11 +40,6 @@ export async function getAutomationMessage(
       invariant(
         automationRun.build,
         "build relation not found",
-        UnretryableError,
-      );
-      invariant(
-        automationRun.build.compareScreenshotBucket,
-        "compareScreenshotBucket relation not found",
         UnretryableError,
       );
       invariant(

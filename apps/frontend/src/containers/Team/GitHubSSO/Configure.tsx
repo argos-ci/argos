@@ -95,7 +95,6 @@ function GitHubInstallationsSelectControl<
     if (!data) {
       return null;
     }
-    invariant(installations, "Expected installations");
     invariant(data.teamAccount?.__typename === "Team", "Expected teamAccount");
     return data.teamAccount.githubLightInstallation ? "light" : "main";
   })();

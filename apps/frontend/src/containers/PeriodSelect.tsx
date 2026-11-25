@@ -48,7 +48,7 @@ export function PeriodSelect<TDef extends PeriodsDefinition>(props: {
 }) {
   const { state } = props;
   const { value, setValue, definition } = state;
-  const current = definition[value];
+  const current: PeriodEntry | undefined = definition[value];
   invariant(current, "Current period is not defined");
   return (
     <Select

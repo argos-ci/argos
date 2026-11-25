@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import type { TransactionOrKnex } from "objection";
 
 import {
@@ -105,9 +104,7 @@ export async function rotateRefreshToken(params: {
   if (!existing) {
     return { ok: false, error: "invalid_grant" };
   }
-  invariant(existing.grant, "refresh token without a grant");
   const grant = existing.grant;
-  invariant(grant.client, "grant without a client");
 
   // The refresh token is bound to the authenticating client.
   if (grant.client.clientId !== params.clientId) {
@@ -255,7 +252,6 @@ export async function introspectToken(
     return { active: false };
   }
   const { grant } = accessToken;
-  invariant(grant.client);
   if (accessToken.revokedAt || grant.revokedAt) {
     return { active: false };
   }

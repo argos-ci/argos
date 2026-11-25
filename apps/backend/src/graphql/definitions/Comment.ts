@@ -585,8 +585,6 @@ export const resolvers: IResolvers = {
         throw notFound("Build not found");
       }
 
-      invariant(build.project?.account);
-
       const permissions = await build.project.$getPermissions(auth);
 
       if (!permissions.includes("review")) {

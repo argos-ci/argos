@@ -33,7 +33,7 @@ no per-workspace `lint` script. It lints the whole monorepo in well under a
 second, so `pnpm run lint` at the root is the only command you need. The rule set
 is oxlint's `correctness` category across the `typescript`, `unicorn`, `oxc`,
 `react` and `vitest` plugins, plus the deviations listed in `rules` /
-`overrides`. Three project-specific guards live there:
+`overrides`. Four project-specific guards live there:
 
 - `no-restricted-imports` keeps `sonner` out of the frontend (import from
   `@/ui/Toaster` instead).
@@ -45,6 +45,10 @@ is oxlint's `correctness` category across the `typescript`, `unicorn`, `oxc`,
   [Copy](#copy): it rejects em and en dashes in every string and JSX text in
   `apps/frontend/src` and `apps/backend/src`, tests and generated code aside.
   Write a range with a hyphen or "to": "2-5 min", "Nov 1 to Dec 1".
+- `argos/relation-matches-schema`, in the same plugin, checks each to-one
+  relation of a model in `apps/backend/src/database/models` against
+  `apps/backend/db/structure.sql`: the field is `| null` exactly when a fetched
+  relation can come back null (see [Database](#database)).
 
 Suppress with `// oxlint-disable-next-line <rule>`. Oxlint still honours
 `eslint-disable` comments, but do not write new ones.
@@ -138,6 +142,8 @@ without a change.
 ## TypeScript
 
 - Never use `!` (non-null assertion). Use `invariant` for required values.
+  Passing `invariant` a value whose type is never falsy is a type error: the
+  check could never fail, so delete it instead of silencing it.
 - Program by assertion, not by defense: when a value is _expected_ to be present
   (a context provided by an ancestor, a required param, an invariant of the call
   site), assert it with `invariant` (or a hook built on it, e.g.
@@ -167,6 +173,23 @@ models. To add or change a column:
    `NODE_ENV=test pnpm run --filter @argos/backend db:reset`.
    `pnpm test:integration` needs nothing — it rebuilds its own databases
    whenever `structure.sql` changes.
+
+**Relations are typed by what fetched them.** `withGraphFetched`,
+`withGraphJoined` and `$fetchGraph` return the model narrowed to the relations
+they load (`WithGraphModel<M, E>` from `objection`), so don't assert that a
+relation is loaded:
+
+- Use what `$fetchGraph` returns (`const { account } = await
+  project.$fetchGraph("account")`), not the instance it mutated.
+- A function that needs relations takes `WithGraphModel<Project, "account">`,
+  and its caller's query provides them. Don't declare a return type or a
+  `string` relation option that drops the narrowing.
+- An `invariant` on a relation is left for data that can be missing. A to-one
+  relation is `| null` once loaded unless its foreign key is on the model's
+  table, NOT NULL and constrained, and its mapping filters nothing.
+  `argos/relation-matches-schema` enforces that, since `invariant` trusts these
+  types. `User.account` and `Team.account` are typed non-null with a suppression:
+  the app creates each in the same transaction as its owner.
 
 **Idempotent inserts:** never gate an insert on a prior existence check — two
 concurrent requests can both pass it and race on the primary key. Insert

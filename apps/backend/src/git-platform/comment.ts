@@ -1,6 +1,7 @@
 import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
 import type { BuildType } from "@argos/schemas/build-type";
 import { invariant } from "@argos/util/invariant";
+import type { WithGraphModel } from "objection";
 
 import { getApprovalEmoji, getBuildLabel } from "@/build/label";
 import { getStatsMessage } from "@/build/stats";
@@ -218,21 +219,16 @@ function formatReviewLabel(
 }
 
 async function getBuildRows(input: {
-  builds: Build[];
+  builds: WithGraphModel<Build, "project">[];
   hasMultipleProjects: boolean;
 }) {
-  const builds = input.builds.filter((build) => {
-    invariant(build.project, "Relation `project` should be fetched");
-    return build.project.prCommentEnabled;
-  });
+  const builds = input.builds.filter((build) => build.project.prCommentEnabled);
   const [aggregateStatuses, urls, reviewSummaries] = await Promise.all([
     Build.getAggregatedBuildStatuses(builds),
     Promise.all(builds.map((build) => build.getUrl())),
     getBuildReviewSummaries(builds),
   ]);
   return builds.map((build, index) => {
-    invariant(build.project, "Relation `project` should be fetched");
-
     const url = urls[index];
     invariant(url, "missing build URL");
 
@@ -264,23 +260,16 @@ async function getBuildRows(input: {
 }
 
 function getDeploymentRows(input: {
-  deployments: Deployment[];
+  deployments: WithGraphModel<Deployment, "[project, aliases]">[];
   hasMultipleProjects: boolean;
 }) {
   return input.deployments
-    .filter((deployment) => {
-      invariant(deployment.project, "Relation `project` should be fetched");
-      return deployment.project.prCommentEnabled;
-    })
+    .filter((deployment) => deployment.project.prCommentEnabled)
     .map((deployment) => {
-      invariant(deployment.project, "Relation `project` should be fetched");
-
       const name = getDeploymentName({
         deployment,
         project: input.hasMultipleProjects ? deployment.project : null,
       });
-
-      invariant(deployment.aliases, "Relation `aliases` should be fetched");
 
       const url = getDeploymentPreferredUrl({
         slug: deployment.slug,

@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import type { AuthViewer } from "@/auth/payload";
@@ -49,7 +48,6 @@ async function loadBuildForReviewerMutation(
   if (!build) {
     throw notFound("Build not found");
   }
-  invariant(build.project?.account);
   const permissions = await build.project.$getPermissions(auth);
   if (!permissions.includes("review")) {
     throw forbidden("You cannot request reviewers for this build");

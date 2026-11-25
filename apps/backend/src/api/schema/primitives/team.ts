@@ -1,5 +1,5 @@
 import { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
-import { invariant } from "@argos/util/invariant";
+import type { WithGraphModel } from "objection";
 import { z } from "zod";
 
 import { TeamInvite, type TeamUser } from "@/database/models";
@@ -29,17 +29,14 @@ export const TeamMemberSchema = z
   .meta({ description: "A member of a team.", id: "TeamMember" });
 
 /**
- * Serialize a team membership. Requires the `user.account` relation, which
- * `queryTeamMembers` joins in.
+ * Serialize a team membership.
  */
 export function serializeTeamMember(
-  teamUser: TeamUser,
+  teamUser: WithGraphModel<TeamUser, "user.account">,
 ): z.infer<typeof TeamMemberSchema> {
-  const account = teamUser.user?.account;
-  invariant(account, "user account is not fetched");
   return {
     id: teamUser.id,
-    user: serializeUser(account),
+    user: serializeUser(teamUser.user.account),
     level: teamUser.userLevel,
   };
 }

@@ -74,7 +74,6 @@ export async function getProjectsByTokenId(
     .orderBy("project.name");
   const projectsByTokenId = new Map<string, Project[]>();
   for (const link of links) {
-    invariant(link.project, "Project token link without project");
     const projects = projectsByTokenId.get(link.projectTokenId) ?? [];
     projects.push(link.project);
     projectsByTokenId.set(link.projectTokenId, projects);

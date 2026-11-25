@@ -273,9 +273,7 @@ export async function getNotificationPayload(args: {
   build: Build;
 }): Promise<NotificationPayload> {
   const { buildNotification, build } = args;
-  await build.$fetchGraph("project", { skipFetched: true });
-  const { project } = build;
-  invariant(project, "Project not found", UnretryableError);
+  const { project } = await build.$fetchGraph("project", { skipFetched: true });
   const description = getNotificationDescription({
     buildNotificationType: buildNotification.type,
     build: build,

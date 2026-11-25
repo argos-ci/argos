@@ -175,7 +175,6 @@ export async function buildDiscordEmbed(args: {
       ? Build.getAggregatedBuildStatuses([build])
       : [null],
   ]);
-  invariant(richBuild.project, "project not found");
 
   const description = await (async () => {
     switch (message.event) {

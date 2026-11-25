@@ -95,7 +95,6 @@ const test = base.extend<{
       key: "diff-file-key",
       type: "screenshotDiff",
     });
-    invariant(diffFile);
     await use(diffFile);
   },
   screenshots: async ({ factory, buckets, files }, use) => {

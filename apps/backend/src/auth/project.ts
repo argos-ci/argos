@@ -2,7 +2,6 @@ import {
   PROJECT_TOKEN_PERMISSION_LIST,
   type ProjectTokenPermission,
 } from "@argos/schemas/project-token";
-import { invariant } from "@argos/util/invariant";
 
 import { waitUntil } from "@/api/request-context";
 import type { AuthProjectPayload, AuthProjectSource } from "@/auth/payload";
@@ -89,8 +88,6 @@ async function getAuthPayloadFromProjectToken(
   }
 
   const { account } = projectToken;
-  invariant(account, "Project token account not fetched");
-  invariant(projectToken.projects, "Project token projects not fetched");
   // The rule of `getProjectsByTokenId`: only the projects of its own account.
   const projects = projectToken.projects.filter(
     (project) => project.accountId === projectToken.accountId,

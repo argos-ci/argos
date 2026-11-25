@@ -214,8 +214,6 @@ async function reportGitHubDeployment(deploymentId: string) {
 
   invariant(deployment, "Deployment not found", UnretryableError);
   const { aliases, project } = deployment;
-  invariant(aliases, "Relation `aliases` not loaded", UnretryableError);
-  invariant(project, "Relation `project` not loaded", UnretryableError);
 
   const state = getGitHubDeploymentState(deployment, aliases);
 
@@ -236,7 +234,6 @@ async function reportGitHubDeployment(deploymentId: string) {
   }
 
   const { githubAccount } = githubRepository;
-  invariant(githubAccount, "Relation `githubAccount` not loaded");
 
   const installation = GithubRepository.pickBestInstallation(githubRepository);
   if (!installation) {

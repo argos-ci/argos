@@ -52,8 +52,6 @@ export async function unfurlBuild(
       : null,
   ]);
   invariant(status, "Status should be loaded");
-  invariant(build.project, "Project should be loaded");
-  invariant(build.project.account, "Account should be loaded");
 
   const screenshot =
     screenshotDiff?.compareScreenshot || screenshotDiff?.baseScreenshot;
@@ -120,9 +118,6 @@ export async function unfurlTest(
   if (!test) {
     return null;
   }
-
-  invariant(test.project, "Project should be loaded");
-  invariant(test.project.account, "Account should be loaded");
 
   const [metrics, latestDiff] = await Promise.all([
     getTestAllMetrics([test.id], { from: new Date(0) }).then(([m]) => m),

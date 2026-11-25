@@ -41,12 +41,9 @@ export async function updateSubscription(
     return;
   }
 
-  await activeSubscription.$fetchGraph("plan");
+  const { plan: activePlan } = await activeSubscription.$fetchGraph("plan");
 
-  if (
-    activeSubscription.plan!.githubPlanId ===
-    payload.marketplace_purchase.plan?.id
-  ) {
+  if (activePlan.githubPlanId === payload.marketplace_purchase.plan?.id) {
     return;
   }
 

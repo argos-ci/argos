@@ -1,5 +1,3 @@
-import { invariant } from "@argos/util/invariant";
-
 import type { AuthViewer } from "@/auth/payload";
 import { Build } from "@/database/models/Build";
 
@@ -22,7 +20,6 @@ export async function assertCanViewBuild(
   if (!build) {
     throw notFound("Build not found");
   }
-  invariant(build.project?.account, "Build project account not found");
   const permissions = await build.project.$getPermissions(auth);
   if (!permissions.includes("view")) {
     throw forbidden("You cannot view this build");

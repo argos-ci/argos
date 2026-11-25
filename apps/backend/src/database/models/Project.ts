@@ -357,20 +357,21 @@ export class Project extends Model {
       return ALL_PROJECT_PERMISSIONS;
     }
 
-    await project.$fetchGraph("account", { skipFetched: true });
-    invariant(project.account);
+    const { account } = await project.$fetchGraph("account", {
+      skipFetched: true,
+    });
 
     // If it's a personal project, only the owner can access the project.
-    if (project.account.type === "user") {
-      return project.account.userId === user.id ? ALL_PROJECT_PERMISSIONS : [];
+    if (account.type === "user") {
+      return account.userId === user.id ? ALL_PROJECT_PERMISSIONS : [];
     }
 
-    invariant(project.account.teamId, "Team account has no team");
+    invariant(account.teamId, "Team account has no team");
     const [projectUser, teamAccess] = await Promise.all([
       ProjectUser.query()
         .select("userLevel")
         .findOne({ projectId: project.id, userId: user.id }),
-      Team.getAccess(project.account.teamId, auth),
+      Team.getAccess(account.teamId, auth),
     ]);
 
     // Outside the team, or kept out by its required sign-in method: a member
@@ -529,9 +530,10 @@ export class Project extends Model {
   }
 
   async getUrl() {
-    await this.$fetchGraph("account", { skipFetched: true });
-    invariant(this.account, "account is not fetched");
-    const pathname = `/${this.account.slug}/${this.name}`;
+    const { account } = await this.$fetchGraph("account", {
+      skipFetched: true,
+    });
+    const pathname = `/${account.slug}/${this.name}`;
     return `${config.get("server.url")}${pathname}`;
   }
 }

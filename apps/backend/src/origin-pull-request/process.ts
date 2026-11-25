@@ -1,5 +1,4 @@
 import type { OriginPullRequest } from "@/database/models";
-import { unretryable } from "@/job-core/error";
 import logger from "@/logger";
 import { getInstallationOriginApi } from "@/origin/client";
 
@@ -9,14 +8,10 @@ import { fetchOriginPullRequest, parseOriginPullRequestData } from "./remote";
  * Fetch the pull request from Origin and update the database.
  */
 export async function processOriginPullRequest(pullRequest: OriginPullRequest) {
-  await pullRequest.$fetchGraph("originRepository.installation");
-
-  unretryable(
-    pullRequest.originRepository,
-    "`originRepository` relation not found",
+  const { originRepository } = await pullRequest.$fetchGraph(
+    "originRepository.installation",
   );
-
-  const { installation } = pullRequest.originRepository;
+  const { installation } = originRepository;
 
   if (!installation || installation.deleted) {
     logger.info(
@@ -37,8 +32,8 @@ export async function processOriginPullRequest(pullRequest: OriginPullRequest) {
   }
 
   const data = await fetchOriginPullRequest(api, {
-    owner: pullRequest.originRepository.ownerSlug,
-    repo: pullRequest.originRepository.name,
+    owner: originRepository.ownerSlug,
+    repo: originRepository.name,
     number: pullRequest.number,
   });
 

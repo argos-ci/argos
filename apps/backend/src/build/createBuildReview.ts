@@ -318,7 +318,6 @@ async function notifyBuildSubscribers(input: {
     return;
   }
   const project = await getCommentTargetProject({ type: "build", build });
-  invariant(project.account, "project account not found");
   const recipients = await getProjectNotificationRecipients({
     project,
     userIds: candidates,

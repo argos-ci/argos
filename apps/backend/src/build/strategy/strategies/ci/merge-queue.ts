@@ -180,9 +180,5 @@ async function getRecentMergedBucket(args: {
   if (!recentlyMergedBuild) {
     return null;
   }
-  invariant(
-    recentlyMergedBuild.compareScreenshotBucket,
-    "Relation `compareScreenshotBucket` not loaded",
-  );
   return recentlyMergedBuild.compareScreenshotBucket;
 }

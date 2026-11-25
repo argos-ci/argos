@@ -12,7 +12,6 @@
  * runner needs, refusing anything belonging to another account.
  */
 import type { AutomationEvent } from "@argos/schemas/automation-event";
-import { invariant } from "@argos/util/invariant";
 import type { QueryBuilder } from "objection";
 import { z } from "zod";
 
@@ -150,8 +149,10 @@ export async function resolveAutomationActions(args: {
 
   async function getSlackInstallation(): Promise<SlackInstallation> {
     if (slackInstallation === undefined) {
-      await project.$fetchGraph("account.slackInstallation");
-      slackInstallation = project.account?.slackInstallation ?? null;
+      const { account } = await project.$fetchGraph(
+        "account.slackInstallation",
+      );
+      slackInstallation = account.slackInstallation;
     }
     if (!slackInstallation) {
       throw boom(400, "Slack installation not found for the project account.");
@@ -313,7 +314,7 @@ export async function getAutomationRuleForAdmin(args: {
   auth: AuthViewer;
   /** When set, the rule must belong to this project. */
   projectId?: string;
-}): Promise<AutomationRule> {
+}) {
   // The id reaches us from a URL path or a GraphQL argument, and the column is
   // a bigint: handing Postgres a non-numeric one raises a cast error, which the
   // API surfaces as a 500 carrying the query text. A malformed id is simply a
@@ -362,8 +363,6 @@ export async function updateAutomationRule(args: {
 }): Promise<AutomationRule> {
   const automationRule = await getAutomationRuleForAdmin(args);
   const { project } = automationRule;
-  // `getAutomationRuleForAdmin` fetched it to check permissions.
-  invariant(project, "automation rule project not fetched");
   const data = await buildAutomationRuleData({
     project,
     input: args.input,

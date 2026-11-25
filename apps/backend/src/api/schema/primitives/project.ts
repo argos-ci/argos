@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
 import { GithubRepository, type Project } from "@/database/models";
@@ -135,11 +134,10 @@ export const ProjectSchema = z
 export async function serializeProject(
   project: Project,
 ): Promise<z.infer<typeof ProjectSchema>> {
-  await project.$fetchGraph(
-    "[account,githubRepository.repoInstallations.installation,gitlabProject,originRepository.installation]",
-  );
-
-  invariant(project.account, "account is not fetched");
+  const { account, githubRepository, originRepository } =
+    await project.$fetchGraph(
+      "[account,githubRepository.repoInstallations.installation,gitlabProject,originRepository.installation]",
+    );
 
   const [
     defaultBaseBranch,
@@ -153,27 +151,25 @@ export async function serializeProject(
     project.$checkIsPublic(),
   ]);
 
-  const installation = project.githubRepository
-    ? GithubRepository.pickBestInstallation(project.githubRepository)
+  const installation = githubRepository
+    ? GithubRepository.pickBestInstallation(githubRepository)
     : null;
 
   // We have remote content access if the GitHub installation is the main app,
   // or if the Origin installation was granted the contents scope.
-  const hasRemoteContentAccess = project.originRepository
+  const hasRemoteContentAccess = originRepository
     ? Boolean(
-        project.originRepository.installation &&
-        !project.originRepository.installation.deleted &&
-        project.originRepository.installation.hasScope(
-          ORIGIN_CONTENTS_READ_SCOPE,
-        ),
+        originRepository.installation &&
+        !originRepository.installation.deleted &&
+        originRepository.installation.hasScope(ORIGIN_CONTENTS_READ_SCOPE),
       )
     : installation?.app === "main";
 
   return {
     id: project.id,
     account: {
-      id: project.account.id,
-      slug: project.account.slug,
+      id: account.id,
+      slug: account.slug,
     },
     name: project.name,
     defaultBaseBranch,

@@ -184,12 +184,14 @@ export class User extends Model {
     };
   }
 
+  // The user's account is created with the user, in one transaction.
+  // oxlint-disable-next-line argos/relation-matches-schema
   account?: Account;
   teams?: Team[];
   teamInvites?: TeamInvite[];
   ownedTeams?: Team[];
-  gitlabUser?: GitlabUser;
-  googleUser?: GoogleUser;
+  gitlabUser?: GitlabUser | null;
+  googleUser?: GoogleUser | null;
   emails?: UserEmail[];
   verifiedEmails?: UserEmail[];
   userAccessTokens?: UserAccessToken[];

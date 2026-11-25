@@ -113,7 +113,6 @@ export async function inviteTeamMembers(args: {
     .withGraphJoined("user.[teams,account]");
 
   const usersInTeam = userEmails.filter((userEmail) => {
-    invariant(userEmail.user?.teams, "relation not fetched");
     return userEmail.user.teams.some((team) => team.id === teamId);
   });
 

@@ -1,7 +1,7 @@
 import { TEAM_AUTH_METHODS } from "@argos/schemas/team-auth-method";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import { RelationExpression, TransactionOrKnex } from "objection";
+import { TransactionOrKnex } from "objection";
 
 import type { AuthViewer } from "@/auth/payload";
 import {
@@ -69,7 +69,6 @@ async function deleteUserAccessTokenScopesByAccountId(args: {
 export async function getAdminAccount(args: {
   id: string;
   auth: AuthViewer | null;
-  withGraphFetched?: RelationExpression<Account>;
 }): Promise<Account> {
   return getAccountWithPermission({ ...args, permission: "admin" });
 }
@@ -78,7 +77,6 @@ export async function getAccountWithPermission(args: {
   id: string;
   auth: AuthViewer | null;
   permission: AccountPermission;
-  withGraphFetched?: RelationExpression<Account>;
 }): Promise<Account> {
   if (!isValidPgBigInt(args.id)) {
     throw invalidId();
@@ -86,11 +84,7 @@ export async function getAccountWithPermission(args: {
   if (!args.auth) {
     throw unauthenticated();
   }
-  const query = Account.query().findById(args.id).throwIfNotFound();
-  if (args.withGraphFetched) {
-    query.withGraphFetched(args.withGraphFetched);
-  }
-  const account = await query;
+  const account = await Account.query().findById(args.id).throwIfNotFound();
   await assertAccountPermission(account, args.auth, args.permission);
   return account;
 }
@@ -145,10 +139,10 @@ export async function deleteAccount(args: {
   const account = await getAdminAccount({
     id: args.id,
     auth: args.auth,
-    withGraphFetched: "[projects,slackInstallation,user]",
-  });
+  }).then((account) =>
+    account.$fetchGraph("[projects,slackInstallation,user]"),
+  );
   const projects = account.projects;
-  invariant(projects, "projects not fetched");
 
   const manager = account.$getSubscriptionManager();
   const subscription = await manager.getActiveSubscription();
@@ -212,8 +206,6 @@ export async function deleteAccount(args: {
           .withGraphFetched("[owners,account]");
 
         for (const team of teams) {
-          invariant(team.owners, "team.owners is undefined");
-          invariant(team.account, "team.account is undefined");
           const singleOwner = team.owners.length === 1 ? team.owners[0] : null;
           if (singleOwner && singleOwner.id === userId) {
             throw badUserInput(

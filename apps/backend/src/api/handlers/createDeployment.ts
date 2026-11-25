@@ -2,7 +2,6 @@ import {
   DeploymentEnvironmentSchema,
   type DeploymentEnvironment,
 } from "@argos/schemas/deployment";
-import { invariant } from "@argos/util/invariant";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -195,7 +194,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
 
     await assertAuthCanDeploy(auth, { project, environment, branch });
 
-    const [pullRequest] = await Promise.all([
+    const [pullRequest, projectWithAccount] = await Promise.all([
       body.prNumber && project.githubRepositoryId
         ? await getOrCreatePullRequest({
             githubRepositoryId: project.githubRepositoryId,
@@ -204,8 +203,6 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
         : null,
       project.$fetchGraph("account"),
     ]);
-
-    invariant(project.account, "Account relation is not loaded");
 
     // Create the deployment row in PostgreSQL
     const deployment = await Deployment.query().insertAndFetch({
@@ -216,7 +213,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
       commitSha: body.commit,
       prHeadCommit: body.prHeadCommit ?? null,
       slug: generateDeploymentSlug({
-        accountSlug: project.account.slug,
+        accountSlug: projectWithAccount.account.slug,
         projectName: project.name,
       }),
       githubPullRequestId: pullRequest?.id ?? null,
@@ -229,7 +226,11 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
         deploymentId: deployment.id,
         type: "progress",
       }),
-      trySendProjectEvent({ name: "deployment.created", deployment, project }),
+      trySendProjectEvent({
+        name: "deployment.created",
+        deployment,
+        project: projectWithAccount,
+      }),
       // Insert all files into DynamoDB deployment_files table
       writeDeploymentFiles(deployment.id, body.files),
     ]);

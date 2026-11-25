@@ -127,5 +127,5 @@ export class GithubPullRequest extends Model {
 
   builds?: Build[];
   githubRepository?: GithubRepository;
-  creator?: GithubAccount;
+  creator?: GithubAccount | null;
 }

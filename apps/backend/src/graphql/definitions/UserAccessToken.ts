@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { getAuthMethodForTeam } from "@/auth/payload";
@@ -69,7 +68,6 @@ export const resolvers: IResolvers = {
         .where("userAccessTokenId", userAccessToken.id)
         .withGraphFetched("account");
       return scopes.map((scope) => {
-        invariant(scope.account);
         return scope.account;
       });
     },

@@ -1,7 +1,3 @@
-import { invariant } from "@argos/util/invariant";
-
-import { UnretryableError } from "@/job-core";
-
 import { BuildStrategy } from "../../types";
 import { getCIBase } from "./base";
 import { getCIMergeQueueBase } from "./merge-queue";
@@ -16,10 +12,10 @@ export type CIStrategyContext = {
 export const CIStrategy: BuildStrategy<CIStrategyContext> = {
   detect: (build) => build.mode === "ci",
   getContext: async (build) => {
-    await build.$fetchGraph("project", { skipFetched: true });
-    invariant(build.project, "no project found", UnretryableError);
-    const isAutoApprovedBranch =
-      await build.project.$getAutoApprovedBranchMatcher();
+    const { project } = await build.$fetchGraph("project", {
+      skipFetched: true,
+    });
+    const isAutoApprovedBranch = await project.$getAutoApprovedBranchMatcher();
     return {
       isAutoApprovedBranch,
       checkIsAutoApproved: (branch: string) => {
@@ -54,13 +50,6 @@ export const CIStrategy: BuildStrategy<CIStrategyContext> = {
       pullRequest = null,
       originPullRequest = null,
     } = richBuild;
-
-    invariant(
-      compareScreenshotBucket,
-      "no compare screenshot bucket found",
-      UnretryableError,
-    );
-    invariant(project, "no project found", UnretryableError);
 
     const args = {
       build,

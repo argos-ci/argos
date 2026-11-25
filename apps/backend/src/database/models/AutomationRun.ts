@@ -64,6 +64,6 @@ export class AutomationRun extends Model {
   };
 
   automationRule?: AutomationRule;
-  build?: Build;
-  buildReview?: BuildReview;
+  build?: Build | null;
+  buildReview?: BuildReview | null;
 }

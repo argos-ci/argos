@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import { test as base, describe, expect } from "vitest";
 
 import {
@@ -85,7 +84,6 @@ async function getRerunState(rerun: Build) {
       .throwIfNotFound(),
     BuildShard.query().where("buildId", rerun.id).orderBy("index"),
   ]);
-  invariant(build.compareScreenshotBucket, "Bucket should be fetched");
   return {
     partial: build.partial,
     shardIndices: shards.map((shard) => shard.index),

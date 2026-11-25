@@ -58,5 +58,5 @@ export class GoogleUser extends Model {
     };
   }
 
-  user?: User;
+  user?: User | null;
 }

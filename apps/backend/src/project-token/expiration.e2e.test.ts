@@ -36,7 +36,6 @@ const test = base.extend<{
       factory.Project.create({ accountId: account.id, name: "web" }),
       factory.Project.create({ accountId: account.id, name: "docs" }),
     ]);
-    invariant(web && docs);
     await use({ account, ownerId: owner.id, web, docs });
   },
   personalAccount: async ({}, use) => {
