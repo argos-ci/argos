@@ -151,6 +151,8 @@ export class Team extends Model {
     };
   }
 
+  // The team's account is created with the team, in one transaction.
+  // oxlint-disable-next-line argos/relation-matches-schema
   account?: Account;
   users?: User[];
   owners?: User[];

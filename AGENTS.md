@@ -33,7 +33,7 @@ no per-workspace `lint` script. It lints the whole monorepo in well under a
 second, so `pnpm run lint` at the root is the only command you need. The rule set
 is oxlint's `correctness` category across the `typescript`, `unicorn`, `oxc`,
 `react` and `vitest` plugins, plus the deviations listed in `rules` /
-`overrides`. Three project-specific guards live there:
+`overrides`. Four project-specific guards live there:
 
 - `no-restricted-imports` keeps `sonner` out of the frontend (import from
   `@/ui/Toaster` instead).
@@ -45,6 +45,10 @@ is oxlint's `correctness` category across the `typescript`, `unicorn`, `oxc`,
   [Copy](#copy): it rejects em and en dashes in every string and JSX text in
   `apps/frontend/src` and `apps/backend/src`, tests and generated code aside.
   Write a range with a hyphen or "to": "2-5 min", "Nov 1 to Dec 1".
+- `argos/relation-matches-schema`, in the same plugin, checks each to-one
+  relation of a model in `apps/backend/src/database/models` against
+  `apps/backend/db/structure.sql`: the field is `| null` exactly when a fetched
+  relation can come back null (see [Database](#database)).
 
 Suppress with `// oxlint-disable-next-line <rule>`. Oxlint still honours
 `eslint-disable` comments, but do not write new ones.
@@ -180,11 +184,12 @@ relation is loaded:
 - A function that needs relations takes `WithGraphModel<Project, "account">`,
   and its caller's query provides them. Don't declare a return type or a
   `string` relation option that drops the narrowing.
-- An `invariant` on a relation is left for data that can be missing: a to-one
-  relation is `| null` once loaded, exactly when its foreign key is nullable or
-  lives on the other table. Keep a model's relation types true to
-  `structure.sql`, because the checks rely on them. `User.account` and
-  `Team.account` are the exceptions: the app creates each with its owner.
+- An `invariant` on a relation is left for data that can be missing. A to-one
+  relation is `| null` once loaded unless its foreign key is on the model's
+  table, NOT NULL and constrained, and its mapping filters nothing.
+  `argos/relation-matches-schema` enforces that, since `invariant` trusts these
+  types. `User.account` and `Team.account` are typed non-null with a suppression:
+  the app creates each in the same transaction as its owner.
 
 **Idempotent inserts:** never gate an insert on a prior existence check — two
 concurrent requests can both pass it and race on the primary key. Insert
