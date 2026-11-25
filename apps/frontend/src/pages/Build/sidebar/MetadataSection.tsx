@@ -2,10 +2,12 @@ import { ChipContext } from "@/ui/Chip";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 
 import type { Diff } from "../BuildDiffState";
+import { getDiffBrowserVersionChange } from "../metadata/browser/browserVersionChange";
 import { resolveDiffMetadata } from "../metadata/utils";
 import { AnnotationsRow } from "./metadata/AnnotationsRow";
 import { AutomationLibraryRow } from "./metadata/AutomationLibraryRow";
 import { BaselineRow } from "./metadata/BaselineRow";
+import { BrowserVersionRow } from "./metadata/BrowserVersionRow";
 import { RepeatRow } from "./metadata/RepeatRow";
 import { RetryRow } from "./metadata/RetryRow";
 import { SdkRow } from "./metadata/SdkRow";
@@ -24,7 +26,7 @@ import {
   ViewportRow,
 } from "./metadata/VariantRows";
 
-const CHIP_DEFAULTS = { color: "blank", scale: "sm" } as const;
+export const CHIP_DEFAULTS = { color: "blank", scale: "sm" } as const;
 
 export type MetadataSectionProps = {
   diff: Diff;
@@ -66,6 +68,7 @@ export function MetadataSection(props: MetadataSectionProps) {
             automationLibrary={metadata?.automationLibrary ?? null}
           />
           <BrowserRow metadata={metadata} />
+          <BrowserVersionRow change={getDiffBrowserVersionChange(diff)} />
           <ViewportRow metadata={metadata} />
           <ColorSchemeRow metadata={metadata} />
           <MediaTypeRow metadata={metadata} />
