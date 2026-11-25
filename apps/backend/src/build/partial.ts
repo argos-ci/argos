@@ -1,47 +1,32 @@
 import { invariant } from "@argos/util/invariant";
 import { captureException } from "@sentry/node";
-import pTimeout, { TimeoutError } from "p-timeout";
 
 import {
   Build,
   BuildShard,
   GithubRepository,
-  Project,
   Screenshot,
 } from "@/database/models";
 import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
-import logger from "@/logger";
 
 import { finalizeBuild } from "./finalizeBuild";
 import { job as buildJob } from "./job";
 
 /**
- * Check if the build is a partial build.
- * It means the build is a rerun of a previous build and only a subset of the jobs are run.
- * To determine if a build is a partial build, we compare the jobs of the current run with the jobs of the previous run.
- * Only GitHub Actions builds are supported.
+ * Check if the build comes from a partial rerun: a rerun of a GitHub Actions
+ * workflow where only a subset of the jobs ran again. To find out, compare the
+ * jobs of the run attempt with the jobs of the previous one.
  */
-export async function checkIsPartialBuild(input: {
-  ciProvider: string | null;
-  runId: string | null;
-  runAttempt: number | null;
-  project: Project;
-}) {
-  const { runAttempt, runId, ciProvider } = input;
-  const isEligibleBuild =
-    ciProvider === "github-actions" && runAttempt && runAttempt > 1 && runId;
+async function checkIsPartialBuild(build: Build): Promise<boolean> {
+  const { runId, runAttempt } = build;
+  invariant(runId && runAttempt, "Expected a GitHub Actions run attempt");
 
-  if (!isEligibleBuild) {
-    return false;
-  }
-
-  const project = input.project.$clone();
-
-  await project.$fetchGraph(
-    "githubRepository.[githubAccount,repoInstallations.installation]",
+  await build.$fetchGraph(
+    "project.githubRepository.[githubAccount,repoInstallations.installation]",
   );
 
-  const { githubRepository } = project;
+  invariant(build.project, "Relation `project` should be fetched");
+  const { githubRepository } = build.project;
 
   if (!githubRepository) {
     return false;
@@ -68,32 +53,16 @@ export async function checkIsPartialBuild(input: {
     return false;
   }
 
-  const previousRunAttempt = runAttempt - 1;
-
   const getJobsForRunAttempt = async (attempt: number) => {
     try {
-      return await pTimeout(
-        octokit.actions.listJobsForWorkflowRunAttempt({
-          attempt_number: attempt,
-          owner: githubAccount.login,
-          repo: githubRepository.name,
-          run_id: Number(runId),
-          per_page: 30,
-        }),
-        { milliseconds: 5000 },
-      );
+      return await octokit.actions.listJobsForWorkflowRunAttempt({
+        attempt_number: attempt,
+        owner: githubAccount.login,
+        repo: githubRepository.name,
+        run_id: Number(runId),
+        per_page: 30,
+      });
     } catch (error) {
-      if (error instanceof TimeoutError) {
-        logger.info(
-          {
-            runId,
-            runAttempt: attempt,
-            error,
-          },
-          "Timeout while fetching jobs for run attempt",
-        );
-        return null;
-      }
       if (checkOctokitErrorStatus(404, error)) {
         return null;
       }
@@ -104,7 +73,7 @@ export async function checkIsPartialBuild(input: {
 
   try {
     const [previousRun, currentRun] = await Promise.all([
-      getJobsForRunAttempt(previousRunAttempt),
+      getJobsForRunAttempt(runAttempt - 1),
       getJobsForRunAttempt(runAttempt),
     ]);
 
@@ -136,7 +105,12 @@ export async function checkIsPartialBuild(input: {
 }
 
 /**
- * Finalize partial builds by inserting missing screenshots from the previous run.
+ * Finalize the builds of a partial rerun once its workflow run is completed,
+ * by inserting the shards it did not run again from the previous run attempt.
+ *
+ * The rerun is only checked to be partial here, once no client waits on the
+ * answer: checked when the build was created, a GitHub API answering in more
+ * than a few seconds left the build waiting for shards that would never come.
  */
 export async function finalizePartialBuilds(input: {
   runId: string;
@@ -152,7 +126,6 @@ export async function finalizePartialBuilds(input: {
     .where("runAttempt", input.runAttempt)
     .where("ciProvider", "github-actions")
     .where("jobStatus", "pending")
-    .where("partial", true)
     .whereNotNull("totalBatch");
 
   await Promise.all(
@@ -180,6 +153,11 @@ export async function finalizePartialBuilds(input: {
       );
 
       if (missingShards.length === 0) {
+        return;
+      }
+
+      // A full rerun can miss shards too, when some of its jobs were cancelled.
+      if (!(await checkIsPartialBuild(build))) {
         return;
       }
 
@@ -212,6 +190,7 @@ export async function finalizePartialBuilds(input: {
         await Screenshot.query().insert(missingScreenshots);
       }
 
+      await Build.query().findById(build.id).patch({ partial: true });
       await finalizeBuild({ build });
       await buildJob.push(build.id);
     }),

@@ -66,6 +66,36 @@ export function stubWorkflowRuns(runs: Record<number, Partial<WorkflowRun>>) {
   return lookups;
 }
 
+type WorkflowJob = {
+  name: string;
+  conclusion: string | null;
+  started_at: string;
+};
+
+/**
+ * Answer the job listings of run `runId` from `attempts`, by attempt number.
+ * Any other attempt is not found.
+ */
+export function stubWorkflowRunJobs(
+  runId: number,
+  attempts: Record<number, WorkflowJob[]>,
+) {
+  githubServer.use(
+    http.get<{ attempt: string }>(
+      `https://api.github.com/repos/:owner/:repo/actions/runs/${runId}/attempts/:attempt/jobs`,
+      ({ params }) => {
+        const jobs = attempts[Number(params.attempt)];
+
+        if (!jobs) {
+          return HttpResponse.json({ message: "Not Found" }, { status: 404 });
+        }
+
+        return HttpResponse.json({ total_count: jobs.length, jobs });
+      },
+    ),
+  );
+}
+
 /**
  * Answer the lookups of a pull request of `argos-ci/argos`: GitHub reports
  * `head` as its head, and `parents` as the parents of its test merge commit.
