@@ -16,7 +16,7 @@ import {
 import { Banner, BannerProps } from "@/ui/Banner";
 import { Button, LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
-import { StripePortalLink } from "@/ui/StripeLink";
+import { StripePortalLink, StripeSetupButton } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
 
 const _PaymentBannerFragment = graphql(`
@@ -183,14 +183,19 @@ export const PaymentBanner = memo(
               ) : null}
               Add a payment method to retain access to team features.
             </p>
-            {canManageBilling && (
-              <ManageStripeButton
-                stripeCustomerId={stripeCustomerId ?? null}
-                accountId={account.id}
-              >
-                Add payment method
-              </ManageStripeButton>
-            )}
+            {canManageBilling &&
+              (subscription.provider === AccountSubscriptionProvider.Stripe ? (
+                <StripeSetupButton accountId={account.id}>
+                  Add payment method
+                </StripeSetupButton>
+              ) : (
+                <ManageStripeButton
+                  stripeCustomerId={stripeCustomerId ?? null}
+                  accountId={account.id}
+                >
+                  Add payment method
+                </ManageStripeButton>
+              ))}
           </BannerTemplate>
         );
       }

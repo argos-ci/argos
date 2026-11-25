@@ -19,6 +19,7 @@ import {
   notifySubscriptionStatusUpdate,
 } from "@/database/services/subscription";
 import { sendNotification } from "@/notification";
+import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
 import {
@@ -508,7 +509,7 @@ async function getArgosSubscriptionDataFromStripe(
   } satisfies Partial<Subscription>;
 }
 
-export async function createArgosSubscriptionFromStripe({
+async function createArgosSubscriptionFromStripe({
   account,
   subscriberId,
   stripeSubscription,
@@ -870,7 +871,7 @@ async function getArgosSubscriptionFromStripeSubscriptionId(
 /**
  * Get Stripe prices for the default team plan.
  */
-export async function getDefaultTeamPlanItems(
+async function getDefaultTeamPlanItems(
   plan: Plan,
 ): Promise<{ price: string; quantity?: number }[]> {
   invariant(
@@ -1172,6 +1173,9 @@ export async function handleStripeEvent({
         typeof paymentMethod.customer === "string",
         "customer is not a string",
       );
+      // Before the sync marks the payment method filled, which lets usage end
+      // the trial: the invoice that opens must already be taxed.
+      await enableCustomerPendingAutomaticTax(paymentMethod.customer);
       await updateSubscriptionsFromCustomer(paymentMethod.customer, {
         // This event can be sent before the subscription is created in Argos.
         allowNotFound: true,
@@ -1188,6 +1192,10 @@ export async function handleStripeEvent({
       return;
     }
     case "customer.updated": {
+      const customer = data.object as Stripe.Customer;
+      // An address or a default payment method can give Stripe the location
+      // a subscription created without tax waits for.
+      await enableCustomerPendingAutomaticTax(customer.id);
       // Only update from customer if the "default_payment_method" changes,
       // for everything else we will get a "customer.subscription.updated".
       if (
@@ -1196,7 +1204,6 @@ export async function handleStripeEvent({
         data.previous_attributes.invoice_settings &&
         "default_payment_method" in data.previous_attributes.invoice_settings
       ) {
-        const customer = data.object as Stripe.Customer;
         await updateSubscriptionsFromCustomer(customer.id);
       }
       return;
@@ -1204,6 +1211,11 @@ export async function handleStripeEvent({
 
     case "checkout.session.completed": {
       const session = data.object as Stripe.Checkout.Session;
+
+      if (session.mode === "setup") {
+        await setDefaultPaymentMethodFromSetupSession(session);
+        return;
+      }
 
       const { accountId, subscriberId } =
         getClientReferenceIdFromSession(session);
@@ -1244,6 +1256,10 @@ export async function handleStripeEvent({
         argosSubscription,
         `no Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
       );
+
+      // A payment method set on the subscription itself locates the customer
+      // too. Before the sync, as on "payment_method.attached".
+      await enablePendingAutomaticTax(stripeSubscription);
 
       await Promise.all([
         updateArgosSubscriptionFromStripe(
@@ -1329,7 +1345,7 @@ export const TRIAL_DAYS = 14;
 /**
  * Get Stripe subscription data common to all subscriptions.
  */
-export function getSubscriptionData(args: {
+function getSubscriptionData(args: {
   accountId: string;
   subscriberId: string;
   /** Length of the trial the subscription opens on, null for none. */
@@ -1352,6 +1368,91 @@ export function getSubscriptionData(args: {
 }
 
 /**
+ * Stripe Tax is active on the account, but it only taxes the objects created
+ * with it enabled: a subscription or checkout session without it is billed
+ * the bare price, whatever the customer's country.
+ */
+const AUTOMATIC_TAX = { enabled: true } as const;
+
+/**
+ * Flags a subscription created without tax because its customer had no
+ * location yet. Only flagged subscriptions are switched on later, so the ones
+ * created before tax was enabled are left for the Dashboard.
+ */
+const AUTOMATIC_TAX_PENDING_KEY = "automaticTaxPending";
+
+function checkIsTaxLocationError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    "code" in error &&
+    error.code === "customer_tax_location_invalid"
+  );
+}
+
+/**
+ * Create a subscription that Stripe taxes.
+ *
+ * Stripe refuses to enable tax for a customer it can't locate, which is every
+ * trial opened server side from an email alone. That subscription is created
+ * untaxed and flagged instead: `enablePendingAutomaticTax` turns tax on once a
+ * card or an address locates the customer, before the first paid invoice.
+ */
+async function createTaxedStripeSubscription(
+  params: Stripe.SubscriptionCreateParams,
+): Promise<Stripe.Subscription> {
+  try {
+    return await stripe.subscriptions.create({
+      ...params,
+      automatic_tax: AUTOMATIC_TAX,
+    });
+  } catch (error) {
+    if (!checkIsTaxLocationError(error)) {
+      throw error;
+    }
+    return stripe.subscriptions.create({
+      ...params,
+      metadata: { ...params.metadata, [AUTOMATIC_TAX_PENDING_KEY]: "true" },
+    });
+  }
+}
+
+/**
+ * Turn tax on for a subscription created without it, if Stripe can now locate
+ * its customer. Otherwise it stays flagged, for the next card or address
+ * change to try again.
+ */
+async function enablePendingAutomaticTax(
+  stripeSubscription: Stripe.Subscription,
+): Promise<void> {
+  if (
+    !stripeSubscription.metadata[AUTOMATIC_TAX_PENDING_KEY] ||
+    stripeSubscription.automatic_tax.enabled
+  ) {
+    return;
+  }
+  try {
+    await stripe.subscriptions.update(stripeSubscription.id, {
+      automatic_tax: AUTOMATIC_TAX,
+      // An empty value deletes the key.
+      metadata: { [AUTOMATIC_TAX_PENDING_KEY]: "" },
+    });
+  } catch (error) {
+    if (!checkIsTaxLocationError(error)) {
+      throw error;
+    }
+  }
+}
+
+async function enableCustomerPendingAutomaticTax(
+  customerId: string,
+): Promise<void> {
+  const stripeSubscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+  });
+  await Promise.all(stripeSubscriptions.data.map(enablePendingAutomaticTax));
+}
+
+/**
  * Open a trial of the Pro plan for a team, server side rather than through
  * checkout, and record it.
  */
@@ -1364,7 +1465,7 @@ export async function createStripeTrialSubscription(args: {
   const { teamAccount, subscriberId, stripeCustomerId, days } = args;
   const plan = await getStripeProPlanOrThrow();
   const items = await getDefaultTeamPlanItems(plan);
-  const stripeSubscription = await stripe.subscriptions.create({
+  const stripeSubscription = await createTaxedStripeSubscription({
     customer: stripeCustomerId,
     items,
     ...getSubscriptionData({
@@ -1448,9 +1549,99 @@ export async function createStripeCheckoutSession(args: {
     success_url: successUrl,
     cancel_url: cancelUrl,
     payment_method_collection: trial ? "if_required" : "always",
+    automatic_tax: AUTOMATIC_TAX,
+    // Asked even for a trial taken without a card: the address is what Stripe
+    // Tax locates the customer by, and a VAT number makes an EU sale a
+    // reverse charge.
+    billing_address_collection: "required",
+    tax_id_collection: { enabled: true },
     ...(teamAccount.stripeCustomerId && {
       customer: teamAccount.stripeCustomerId,
+      // Keep what was entered on the customer, which later invoices read.
+      // Stripe requires `name: "auto"` to collect a tax id for an existing
+      // customer.
+      customer_update: { address: "auto", name: "auto" },
     }),
+  });
+}
+
+/**
+ * Create the checkout session a trialing team adds its card through.
+ *
+ * Used instead of the customer portal, which can't require an address: the
+ * invoices the trial turns into need the customer's address, which is also
+ * what Stripe Tax locates the customer by, and its VAT number for a reverse
+ * charge.
+ */
+export async function createStripeSetupSession(args: {
+  account: Account;
+  returnUrl: string;
+}): Promise<Stripe.Checkout.Session> {
+  const { account, returnUrl } = args;
+  const subscription = await account
+    .$getSubscriptionManager()
+    .getActiveSubscription();
+  if (
+    !subscription ||
+    subscription.provider !== "stripe" ||
+    subscription.status !== "trialing"
+  ) {
+    throw boom(400, "This team has no trial running. Reload the page.");
+  }
+  invariant(
+    subscription.stripeSubscriptionId,
+    "trialing Stripe subscription without id",
+  );
+  // The card goes on the customer the trial bills, which is not always the
+  // team's own: a trial extended by a member bills that member's customer.
+  const stripeSubscription = await stripe.subscriptions.retrieve(
+    subscription.stripeSubscriptionId,
+  );
+  return stripe.checkout.sessions.create({
+    mode: "setup",
+    customer:
+      typeof stripeSubscription.customer === "string"
+        ? stripeSubscription.customer
+        : stripeSubscription.customer.id,
+    currency: stripeSubscription.currency,
+    billing_address_collection: "required",
+    tax_id_collection: { enabled: true },
+    customer_update: { address: "auto", name: "auto" },
+    custom_text: {
+      submit: { message: "Your card is charged when your trial ends." },
+    },
+    success_url: returnUrl,
+    cancel_url: returnUrl,
+  });
+}
+
+/**
+ * Make the card saved through a setup session the customer's default, which
+ * the session itself doesn't do. The "customer.updated" that follows marks the
+ * trial's payment method filled.
+ */
+async function setDefaultPaymentMethodFromSetupSession(
+  session: Stripe.Checkout.Session,
+): Promise<void> {
+  invariant(
+    session.setup_intent,
+    `empty setup intent in Stripe session "${session.id}"`,
+  );
+  const setupIntent =
+    typeof session.setup_intent === "string"
+      ? await stripe.setupIntents.retrieve(session.setup_intent)
+      : session.setup_intent;
+  invariant(
+    setupIntent.payment_method,
+    `empty payment method in Stripe setup intent "${setupIntent.id}"`,
+  );
+  await stripe.customers.update(getCustomerIdFromSession(session), {
+    invoice_settings: {
+      default_payment_method:
+        typeof setupIntent.payment_method === "string"
+          ? setupIntent.payment_method
+          : setupIntent.payment_method.id,
+    },
   });
 }
 

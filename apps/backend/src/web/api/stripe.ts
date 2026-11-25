@@ -8,6 +8,7 @@ import { getAccountWithPermission } from "@/graphql/services/account";
 import parentLogger from "@/logger";
 import {
   createStripeCheckoutSession,
+  createStripeSetupSession,
   getStripeProPlanOrThrow,
   handleStripeEvent,
   stripe,
@@ -103,6 +104,38 @@ router.use(
       );
       res.redirect(302, "/error");
     }
+  }),
+);
+
+router.use(
+  "/stripe/create-setup-session",
+  allowApp,
+  allowOnlyPost,
+  requireCsrf,
+  express.json(),
+  asyncHandler(async (req, res) => {
+    const auth = await sessionAuthFromExpressReq(req);
+    const { accountId } = req.body;
+    if (typeof accountId !== "string") {
+      throw boom(400, "accountId missing");
+    }
+
+    const account = await getAccountWithPermission({
+      id: accountId,
+      auth,
+      permission: "billing",
+    });
+
+    const session = await createStripeSetupSession({
+      account,
+      returnUrl: new URL(
+        `/${account.slug}/settings/billing`,
+        config.get("server.url"),
+      ).href,
+    });
+    invariant(session.url, "no session url");
+
+    res.json({ sessionUrl: session.url });
   }),
 );
 

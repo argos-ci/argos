@@ -84,6 +84,33 @@ export function StripePortalLink({
   );
 }
 
+/**
+ * Add a card to a running trial through Stripe Checkout, which requires the
+ * billing address the customer portal leaves optional.
+ */
+export function StripeSetupButton(props: {
+  accountId: string;
+  variant?: ButtonProps["variant"];
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      variant={props.variant}
+      onAsyncAction={async () => {
+        const { sessionUrl } = await fetchApi<{ sessionUrl: string }>(
+          "/stripe/create-setup-session",
+          { data: { accountId: props.accountId } },
+        );
+        window.location.href = sessionUrl;
+        // Stay pending while the browser leaves for Stripe.
+        await new Promise(() => {});
+      }}
+    >
+      {props.children}
+    </Button>
+  );
+}
+
 async function getCheckoutSessionLink(props: {
   accountId: string;
   successUrl: string;

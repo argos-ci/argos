@@ -273,4 +273,84 @@ describe("handleStripeEvent", () => {
       expect(content).toContain(account.slug);
     });
   });
+
+  describe("customer.updated", () => {
+    const pendingTaxSubscription = {
+      ...TRIALING_SUBSCRIPTION_WITH_PAYMENT_METHOD,
+      id: "sub_pending_tax_test",
+      metadata: { automaticTaxPending: "true" },
+    } as unknown as Stripe.Subscription;
+
+    const customerUpdated = () =>
+      handleStripeEvent({
+        type: "customer.updated",
+        data: {
+          object: { id: TRIALING_CUSTOMER_ID },
+          previous_attributes: { address: null },
+        } as unknown as Stripe.CustomerUpdatedEvent.Data,
+      });
+
+    it("turns tax on for the subscriptions created without it, and only those", async () => {
+      vi.spyOn(stripe.subscriptions, "list").mockResolvedValue({
+        // The first one predates Stripe Tax: it is left for the Dashboard.
+        data: [
+          TRIALING_SUBSCRIPTION_WITH_PAYMENT_METHOD,
+          pendingTaxSubscription,
+        ],
+      } as unknown as Stripe.Response<Stripe.ApiList<Stripe.Subscription>>);
+      const update = vi
+        .spyOn(stripe.subscriptions, "update")
+        .mockResolvedValue(
+          pendingTaxSubscription as Stripe.Response<Stripe.Subscription>,
+        );
+
+      await customerUpdated();
+
+      expect(update).toHaveBeenCalledExactlyOnceWith("sub_pending_tax_test", {
+        automatic_tax: { enabled: true },
+        metadata: { automaticTaxPending: "" },
+      });
+    });
+
+    it("keeps the subscription flagged while Stripe still can't locate the customer", async () => {
+      vi.spyOn(stripe.subscriptions, "list").mockResolvedValue({
+        data: [pendingTaxSubscription],
+      } as unknown as Stripe.Response<Stripe.ApiList<Stripe.Subscription>>);
+      vi.spyOn(stripe.subscriptions, "update").mockRejectedValue(
+        Object.assign(new Error("The customer's location isn't recognized."), {
+          code: "customer_tax_location_invalid",
+        }),
+      );
+
+      await expect(customerUpdated()).resolves.toBeUndefined();
+    });
+  });
+
+  describe("checkout.session.completed in setup mode", () => {
+    it("makes the card saved during the trial the customer's default", async () => {
+      vi.spyOn(stripe.setupIntents, "retrieve").mockResolvedValue({
+        id: "seti_trial_card_test",
+        payment_method: "pm_trial_card_test",
+      } as unknown as Stripe.Response<Stripe.SetupIntent>);
+      const update = vi
+        .spyOn(stripe.customers, "update")
+        .mockResolvedValue({} as unknown as Stripe.Response<Stripe.Customer>);
+
+      await handleStripeEvent({
+        type: "checkout.session.completed",
+        data: {
+          object: {
+            id: "cs_setup_test",
+            mode: "setup",
+            customer: TRIALING_CUSTOMER_ID,
+            setup_intent: "seti_trial_card_test",
+          },
+        } as unknown as Stripe.CheckoutSessionCompletedEvent.Data,
+      });
+
+      expect(update).toHaveBeenCalledExactlyOnceWith(TRIALING_CUSTOMER_ID, {
+        invoice_settings: { default_payment_method: "pm_trial_card_test" },
+      });
+    });
+  });
 });
