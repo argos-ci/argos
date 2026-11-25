@@ -32,7 +32,7 @@ import {
 import { Details, Summary } from "@/ui/Details";
 import { Link } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
-import { StripePortalLink, StripeSetupButton } from "@/ui/StripeLink";
+import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
 
 import { AccountPlanChip } from "./AccountPlanChip";
@@ -443,11 +443,7 @@ function PlanAction(props: {
         </TeamSubscribeDialog>
       );
     case AccountSubscriptionStatus.Trialing:
-      return (
-        <StripeSetupButton accountId={account.id} variant="primary">
-          Add payment method
-        </StripeSetupButton>
-      );
+      return portal("Add payment method", "primary");
     case AccountSubscriptionStatus.PastDue:
       return portal("Update payment method", "primary");
     case AccountSubscriptionStatus.Unpaid:

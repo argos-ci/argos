@@ -19,7 +19,6 @@ import {
   notifySubscriptionStatusUpdate,
 } from "@/database/services/subscription";
 import { sendNotification } from "@/notification";
-import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
 import {
@@ -1230,11 +1229,6 @@ export async function handleStripeEvent({
     case "checkout.session.completed": {
       const session = data.object as Stripe.Checkout.Session;
 
-      if (session.mode === "setup") {
-        await setDefaultPaymentMethodFromSetupSession(session);
-        return;
-      }
-
       const { accountId, subscriberId } =
         getClientReferenceIdFromSession(session);
 
@@ -1574,7 +1568,6 @@ export async function createStripeCheckoutSession(args: {
       ? await getCheckoutCustomerParams({
           customerId: teamAccount.stripeCustomerId,
           accountId: teamAccount.id,
-          mode: "subscription",
         })
       : { tax_id_collection: { enabled: true } }),
   });
@@ -1593,14 +1586,13 @@ export async function createStripeCheckoutSession(args: {
 async function getCheckoutCustomerParams(args: {
   customerId: string;
   accountId: string;
-  mode: "subscription" | "setup";
 }): Promise<
   Pick<
     Stripe.Checkout.SessionCreateParams,
     "customer" | "customer_update" | "tax_id_collection"
   >
 > {
-  const { customerId, accountId, mode } = args;
+  const { customerId, accountId } = args;
   const [otherTeam, stripeSubscriptions] = await Promise.all([
     Account.query()
       .where({ stripeCustomerId: customerId })
@@ -1621,9 +1613,6 @@ async function getCheckoutCustomerParams(args: {
       tax_id_collection: { enabled: true },
     };
   }
-  if (mode === "setup") {
-    return { customer: customerId };
-  }
   // Automatic tax in a subscription checkout needs an address on the
   // customer. Saving one where there is none overwrites nothing.
   const customer = await stripe.customers.retrieve(customerId);
@@ -1632,88 +1621,6 @@ async function getCheckoutCustomerParams(args: {
     customer: customerId,
     ...(!hasAddress && { customer_update: { address: "auto" } }),
   };
-}
-
-/**
- * Create the checkout session a trialing team adds its card through.
- *
- * Used instead of the customer portal, which can't require an address: the
- * invoices the trial turns into need the customer's address, which is also
- * what Stripe Tax locates the customer by, and its VAT number for a reverse
- * charge.
- */
-export async function createStripeSetupSession(args: {
-  account: Account;
-  returnUrl: string;
-}): Promise<Stripe.Checkout.Session> {
-  const { account, returnUrl } = args;
-  const subscription = await account
-    .$getSubscriptionManager()
-    .getActiveSubscription();
-  if (
-    !subscription ||
-    subscription.provider !== "stripe" ||
-    subscription.status !== "trialing"
-  ) {
-    throw boom(400, "This team has no trial running. Reload the page.");
-  }
-  invariant(
-    subscription.stripeSubscriptionId,
-    "trialing Stripe subscription without id",
-  );
-  // The card goes on the customer the trial bills, which is not always the
-  // team's own: a trial extended by a member bills that member's customer.
-  const stripeSubscription = await stripe.subscriptions.retrieve(
-    subscription.stripeSubscriptionId,
-  );
-  return stripe.checkout.sessions.create({
-    mode: "setup",
-    ...(await getCheckoutCustomerParams({
-      customerId:
-        typeof stripeSubscription.customer === "string"
-          ? stripeSubscription.customer
-          : stripeSubscription.customer.id,
-      accountId: account.id,
-      mode: "setup",
-    })),
-    currency: stripeSubscription.currency,
-    billing_address_collection: "required",
-    custom_text: {
-      submit: { message: "Your card is charged when your trial ends." },
-    },
-    success_url: returnUrl,
-    cancel_url: returnUrl,
-  });
-}
-
-/**
- * Make the card saved through a setup session the customer's default, which
- * the session itself doesn't do. The "customer.updated" that follows marks the
- * trial's payment method filled.
- */
-async function setDefaultPaymentMethodFromSetupSession(
-  session: Stripe.Checkout.Session,
-): Promise<void> {
-  invariant(
-    session.setup_intent,
-    `empty setup intent in Stripe session "${session.id}"`,
-  );
-  const setupIntent =
-    typeof session.setup_intent === "string"
-      ? await stripe.setupIntents.retrieve(session.setup_intent)
-      : session.setup_intent;
-  invariant(
-    setupIntent.payment_method,
-    `empty payment method in Stripe setup intent "${setupIntent.id}"`,
-  );
-  await stripe.customers.update(getCustomerIdFromSession(session), {
-    invoice_settings: {
-      default_payment_method:
-        typeof setupIntent.payment_method === "string"
-          ? setupIntent.payment_method
-          : setupIntent.payment_method.id,
-    },
-  });
 }
 
 async function getCustomerByEmail(

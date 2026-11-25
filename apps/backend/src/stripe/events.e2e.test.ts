@@ -326,32 +326,4 @@ describe("handleStripeEvent", () => {
       await expect(customerUpdated()).resolves.toBeUndefined();
     });
   });
-
-  describe("checkout.session.completed in setup mode", () => {
-    it("makes the card saved during the trial the customer's default", async () => {
-      vi.spyOn(stripe.setupIntents, "retrieve").mockResolvedValue({
-        id: "seti_trial_card_test",
-        payment_method: "pm_trial_card_test",
-      } as unknown as Stripe.Response<Stripe.SetupIntent>);
-      const update = vi
-        .spyOn(stripe.customers, "update")
-        .mockResolvedValue({} as unknown as Stripe.Response<Stripe.Customer>);
-
-      await handleStripeEvent({
-        type: "checkout.session.completed",
-        data: {
-          object: {
-            id: "cs_setup_test",
-            mode: "setup",
-            customer: TRIALING_CUSTOMER_ID,
-            setup_intent: "seti_trial_card_test",
-          },
-        } as unknown as Stripe.CheckoutSessionCompletedEvent.Data,
-      });
-
-      expect(update).toHaveBeenCalledExactlyOnceWith(TRIALING_CUSTOMER_ID, {
-        invoice_settings: { default_payment_method: "pm_trial_card_test" },
-      });
-    });
-  });
 });
