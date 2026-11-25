@@ -146,6 +146,26 @@ describe("claimEnterpriseOffer", () => {
   );
 
   withProTeam(
+    "compares a team billed in euros at the revenue rate",
+    async ({ account, subscription, project }) => {
+      // $1,500 is €1,282.50 at the fixed rate.
+      await subscription.$query().patch({ currency: "eur" });
+      await bill(project, 1280);
+      await expect(claim(account)).resolves.toBeNull();
+      await expect(getIsEnterpriseOfferShown(account)).resolves.toBe(false);
+      // Ten more euros of overage: the period comes to €1,290.
+      await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        screenshotCount: 10 / ADDITIONAL_SCREENSHOT_PRICE,
+      });
+      await expect(getIsEnterpriseOfferShown(account)).resolves.toBe(true);
+      await expect(claim(account)).resolves.toEqual({
+        claimedAt: expect.any(String),
+      });
+    },
+  );
+
+  withProTeam(
     "prices the overage on the plan's quota when the subscription states none",
     async ({ account, subscription, project }) => {
       await subscription.$query().patch({ includedScreenshots: null });

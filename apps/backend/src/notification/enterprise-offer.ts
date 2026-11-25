@@ -14,9 +14,10 @@ import { sendNotification } from ".";
  *
  * The email is sent once per account, ever, so a claim that reached nobody is
  * given back: when the team has no one to tell yet, or the email could not be
- * queued, the next build tries again.
+ * queued, the next build or media upload tries again.
  *
- * Never throws: the build job that calls it must not be retried over an email.
+ * Never throws: neither the build job nor the media upload that call it may
+ * fail over an email, and the upload does not even await it.
  */
 export async function sendEnterpriseOffer(account: Account): Promise<void> {
   try {

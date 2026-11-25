@@ -1,7 +1,9 @@
+import { Suspense } from "react";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { CheckIcon } from "lucide-react";
 
 import { BOOK_A_CALL_HREF, CONTACT_HREF } from "@/constants";
-import { DocumentType, graphql } from "@/gql";
+import { graphql } from "@/gql";
 import { LinkButton } from "@/ui/Button";
 import {
   Card,
@@ -13,10 +15,16 @@ import {
 import { Chip } from "@/ui/Chip";
 import { Link } from "@/ui/Link";
 
-const _TeamFragment = graphql(`
-  fragment TeamEnterpriseOffer_Team on Team {
-    id
-    showEnterpriseOffer
+// Its own query rather than a fragment of the settings one: pricing the
+// periods takes a billing aggregate, which only the Billing tab should pay for.
+const EnterpriseOfferQuery = graphql(`
+  query TeamEnterpriseOffer_account($slug: String!) {
+    account(slug: $slug) {
+      id
+      ... on Team {
+        showEnterpriseOffer
+      }
+    }
   }
 `);
 
@@ -28,10 +36,24 @@ const ENTERPRISE_FEATURES = [
   "99.99% uptime SLA",
 ];
 
-export function TeamEnterpriseOffer(props: {
-  team: DocumentType<typeof _TeamFragment>;
-}) {
-  if (!props.team.showEnterpriseOffer) {
+export function TeamEnterpriseOffer(props: { accountSlug: string }) {
+  // Nothing while it loads: almost no team gets the card, so a placeholder
+  // would reserve room for something that is not coming.
+  return (
+    <Suspense fallback={null}>
+      <EnterpriseOffer accountSlug={props.accountSlug} />
+    </Suspense>
+  );
+}
+
+function EnterpriseOffer(props: { accountSlug: string }) {
+  const { data } = useSuspenseQuery(EnterpriseOfferQuery, {
+    variables: { slug: props.accountSlug },
+  });
+  if (
+    data.account?.__typename !== "Team" ||
+    !data.account.showEnterpriseOffer
+  ) {
     return null;
   }
   return (

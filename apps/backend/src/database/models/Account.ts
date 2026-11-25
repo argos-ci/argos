@@ -250,9 +250,9 @@ export class Account extends Model {
   /** When the owners were last sent the monthly report. */
   lastMonthlyReportAt!: string | null;
   /**
-   * When the billing members were emailed the Enterprise offer, null when they
-   * were not. Sent once per account, ever: the Billing page keeps the offer
-   * visible after that.
+   * When the owners and billing members were emailed the Enterprise offer, null
+   * when they were not. Sent once per account, ever. The Billing card does not
+   * read it: it follows the amounts of the current and previous periods.
    */
   enterpriseOfferSentAt!: string | null;
 

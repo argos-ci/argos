@@ -8,6 +8,7 @@ import { isUniqueViolationError } from "@/database/error";
 import { Account, Media, MediaVersion, Project } from "@/database/models";
 import { generateRandomString } from "@/database/services/crypto";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
+import { sendEnterpriseOffer } from "@/notification/enterprise-offer";
 import { sendPlanLimitAlert } from "@/notification/plan-limit";
 import { getS3Client } from "@/storage/s3";
 import { endTrialToUnlockUsage } from "@/stripe";
@@ -373,6 +374,9 @@ async function assertAccountCanUpload(account: Account): Promise<void> {
   }
 
   void sendPlanLimitAlert(account);
+  // A team can reach the offer on media alone, and the capacity check above
+  // has already counted the period it is priced on.
+  void sendEnterpriseOffer(account);
 
   switch (outOfCapacityReason) {
     case null:
