@@ -226,42 +226,37 @@ function getBuildRows(input: {
   reviewSummaries: Map<string, BuildReviewSummary>;
   urls: string[];
 }) {
-  return input.builds
-    .filter((build) => {
-      invariant(build.project, "Relation `project` should be fetched");
-      return build.project.prCommentEnabled;
-    })
-    .map((build, index) => {
-      invariant(build.project, "Relation `project` should be fetched");
+  return input.builds.map((build, index) => {
+    invariant(build.project, "Relation `project` should be fetched");
 
-      const url = input.urls[index];
-      invariant(url, "missing build URL");
+    const url = input.urls[index];
+    invariant(url, "missing build URL");
 
-      const status = input.aggregateStatuses[index];
-      invariant(status, "missing build status");
+    const status = input.aggregateStatuses[index];
+    invariant(status, "missing build status");
 
-      const stats = build.stats
-        ? getStatsMessage(build.stats, { isSubsetBuild: build.subset })
-        : null;
+    const stats = build.stats
+      ? getStatsMessage(build.stats, { isSubsetBuild: build.subset })
+      : null;
 
-      const label = getReviewAwareBuildLabel({
-        type: build.type,
-        status,
-        summary: input.reviewSummaries.get(build.id),
-      });
-      const review =
-        status === "changes-detected" && build.type !== "reference"
-          ? ` ([Review](${url}))`
-          : "";
-      const name = getBuildName({
-        build,
-        project: input.hasMultipleProjects ? build.project : null,
-      });
-
-      return `| **${name}** ([Inspect](${url})) | ${label}${review} | ${
-        stats || "-"
-      } | ${formatDate(build.updatedAt)} |`;
+    const label = getReviewAwareBuildLabel({
+      type: build.type,
+      status,
+      summary: input.reviewSummaries.get(build.id),
     });
+    const review =
+      status === "changes-detected" && build.type !== "reference"
+        ? ` ([Review](${url}))`
+        : "";
+    const name = getBuildName({
+      build,
+      project: input.hasMultipleProjects ? build.project : null,
+    });
+
+    return `| **${name}** ([Inspect](${url})) | ${label}${review} | ${
+      stats || "-"
+    } | ${formatDate(build.updatedAt)} |`;
+  });
 }
 
 function getDeploymentRows(input: {
@@ -338,13 +333,17 @@ export async function getCommentBody(props: {
       ...builds.map((build) => build.projectId),
       ...deployments.map((deployment) => deployment.projectId),
     ]).size > 1;
+  const commentedBuilds = builds.filter((build) => {
+    invariant(build.project, "Relation `project` should be fetched");
+    return build.project.prCommentEnabled;
+  });
   const [aggregateStatuses, urls, reviewSummaries] = await Promise.all([
-    Build.getAggregatedBuildStatuses(builds),
-    Promise.all(builds.map((build) => build.getUrl())),
-    getBuildReviewSummaries(builds),
+    Build.getAggregatedBuildStatuses(commentedBuilds),
+    Promise.all(commentedBuilds.map((build) => build.getUrl())),
+    getBuildReviewSummaries(commentedBuilds),
   ]);
   const buildRows = getBuildRows({
-    builds,
+    builds: commentedBuilds,
     hasMultipleProjects,
     aggregateStatuses,
     reviewSummaries,

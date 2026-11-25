@@ -220,6 +220,38 @@ describe("getCommentBody", () => {
     expect(body).toContain(`| **${otherProject.name}/production**`);
   });
 
+  test("pairs each build with its own link and status when a project hides PR comments", async ({
+    project,
+  }) => {
+    // Created after `project`, so its build is listed first and the visible
+    // build's row comes after a skipped one.
+    const hiddenProject = await factory.Project.create({
+      name: "storybook",
+      prCommentEnabled: false,
+    });
+    const [build, hiddenBuild] = await Promise.all([
+      createBuild({
+        projectId: project.id,
+        updatedAt: "2026-05-07T12:00:00.000Z",
+      }),
+      createBuild({
+        projectId: hiddenProject.id,
+        conclusion: "changes-detected",
+      }),
+    ]);
+
+    const [buildUrl, hiddenBuildUrl] = await Promise.all([
+      build.getUrl(),
+      hiddenBuild.getUrl(),
+    ]);
+    const body = await getCommentBody({ commit });
+
+    expect(body).toContain(
+      `| **docs/default** ([Inspect](${buildUrl})) | ✅ No changes detected | - | May 7, 2026, 12:00 PM |`,
+    );
+    expect(body).not.toContain(hiddenBuildUrl);
+  });
+
   test("shows the reviewers and comment count for an approved build", async ({
     project,
   }) => {
