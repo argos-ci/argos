@@ -339,6 +339,10 @@ Specs live in `tests/*.spec.ts` and run against the **built** app.
   `packages/*` must be built too or module resolution fails.
 - The `setup` project truncates the DB; each test seeds its own data via the
   `loggedTest` fixtures (real session cookie), so keep seeded data isolated.
+- CI splits the tests between shards by duration, not count:
+  `tests/shard-balancer.ts` reads `tests/durations.json`, where a test missing
+  counts as the median. After adding or reworking slow specs, refresh it with
+  `UPDATE_E2E_DURATIONS=1 NODE_ENV=test pnpm test:e2e`.
 - Take screenshots with the `screenshot()` helper in `tests/util.ts`. Content
   marked `data-visual-test="transparent"` (e.g. `<Time>`) is neutralized
   automatically; use the helper's `replacements` for other unstable text.

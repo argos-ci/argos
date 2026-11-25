@@ -16,7 +16,7 @@ env:
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
 # The organization's plan runs 20 jobs at once, across every repository, and a
-# run takes 11. A pull request pushed again cancels its previous run instead of
+# run takes 10. A pull request pushed again cancels its previous run instead of
 # queueing behind it. Pushes to `main` each get a group of their own: every
 # commit there needs its Argos builds, the baselines of later pull requests.
 concurrency:
@@ -134,7 +134,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3]
     env:
       API_BASE_URL: http://localhost:3000
       NODE_ENV: test

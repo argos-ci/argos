@@ -52,6 +52,7 @@ const config = defineConfig({
   reporter: [
     ["list"],
     ["html"],
+    ["./tests/shard-balancer.ts"],
     [
       "@argos-ci/playwright/reporter",
       createArgosReporterOptions({
