@@ -324,6 +324,12 @@ export async function getCommentBody(props: {
       .withGraphFetched("[project,aliases]")
       .where("deployments.commitSha", commit)
       .whereNull("project.deletedAt")
+      // With hosting off, Argos no longer serves the deployments it hosts.
+      .where((query) =>
+        query
+          .whereNotNull("deployments.externalUrl")
+          .orWhere("project.deploymentEnabled", true),
+      )
       .orderBy([
         { column: "deployments.projectId", order: "desc" },
         { column: "deployments.environment", order: "desc" },
