@@ -16,16 +16,14 @@ export async function mergeBucketWithBuildDiffs(
   baseBucket: ScreenshotBucket | VirtualScreenshotBucket,
   headBuild: Build,
 ): Promise<VirtualScreenshotBucket> {
-  await headBuild.$fetchGraph(
+  const { screenshotDiffs } = await headBuild.$fetchGraph(
     "screenshotDiffs.[compareScreenshot,baseScreenshot]",
   );
-  invariant(headBuild.screenshotDiffs, "Relation `screenshotDiffs` not loaded");
 
   const baseScreenshots = await (async () => {
     if (baseBucket instanceof ScreenshotBucket) {
-      await baseBucket.$fetchGraph("screenshots");
-      invariant(baseBucket.screenshots, "Relation `screenshots` not loaded");
-      return baseBucket.screenshots;
+      const { screenshots } = await baseBucket.$fetchGraph("screenshots");
+      return screenshots;
     }
 
     return baseBucket.screenshots;
@@ -39,21 +37,21 @@ export async function mergeBucketWithBuildDiffs(
     {},
   );
 
-  for (const diff of headBuild.screenshotDiffs) {
+  for (const diff of screenshotDiffs) {
     const status = await diff.$getDiffStatus();
     switch (status) {
       case "changed":
       case "added": {
         invariant(
           diff.compareScreenshot,
-          "Relation `compareScreenshot` not loaded",
+          `A ${status} diff has a compare screenshot`,
         );
         screenshotsByName[diff.compareScreenshot.$getBaselineName()] =
           diff.compareScreenshot;
         break;
       }
       case "removed": {
-        invariant(diff.baseScreenshot, "Relation `baseScreenshot` not loaded");
+        invariant(diff.baseScreenshot, "A removed diff has a base screenshot");
         delete screenshotsByName[diff.baseScreenshot.$getBaselineName()];
         break;
       }

@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import type { WithGraphModel } from "objection";
 import pRetry from "p-retry";
 import z from "zod";
 
@@ -54,11 +55,9 @@ function decodeToken(bearerToken: string, marker: string) {
 }
 
 /**
- * Compute the slug ("account/project-name") of a project. Requires the
- * `account` relation to be fetched.
+ * Compute the slug ("account/project-name") of a project.
  */
-function getProjectSlug(project: Project): string {
-  invariant(project.account, "account is not fetched");
+function getProjectSlug(project: WithGraphModel<Project, "account">): string {
   return `${project.account.slug}/${project.name}`;
 }
 
@@ -218,8 +217,6 @@ export async function resolveTokenlessGitHubActionsContext(
   if (!repository) {
     return null;
   }
-
-  invariant(repository.projects);
 
   // Dropped here rather than in the graph: the deleted rows still hold the
   // repository link, and leaving them in would let one shadow the live project

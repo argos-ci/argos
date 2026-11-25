@@ -61,8 +61,6 @@ export async function loadBuildForAuth<
     throw boom(404, "Not found");
   }
 
-  invariant(build.project?.account, "Build project account not found");
-
   await assertProjectPermission(auth, build.project, access);
 
   return { auth, build, project: build.project };

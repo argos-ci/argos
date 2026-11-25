@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
@@ -150,7 +149,6 @@ describe("finalizeBuilds", () => {
       const freshBuild = await build
         .$query()
         .withGraphFetched("compareScreenshotBucket");
-      invariant(freshBuild.compareScreenshotBucket);
       expect(freshBuild.compareScreenshotBucket.complete).toBe(true);
 
       expect(res.body).toEqual({

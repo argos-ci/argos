@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -81,7 +80,6 @@ export const finalizeBuilds: CreateAPIHandler = ({ post }) => {
     const finalized = await transaction(async (trx) => {
       return Promise.all(
         builds.map(async (build) => {
-          invariant(build.compareScreenshotBucket);
           if (build.compareScreenshotBucket.complete) {
             return false;
           }

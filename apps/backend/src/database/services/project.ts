@@ -406,9 +406,10 @@ export async function updateProject(args: {
 
   if (input.deploymentAuth != null) {
     if (input.deploymentAuth === "private") {
-      await project.$fetchGraph("account", { skipFetched: true });
-      invariant(project.account, "account not fetched");
-      if (project.account.type !== "team") {
+      const { account } = await project.$fetchGraph("account", {
+        skipFetched: true,
+      });
+      if (account.type !== "team") {
         throw boom(400, "All deployments protection requires a team.", {
           field: "deploymentAuth",
         });
@@ -509,9 +510,9 @@ export async function transferProject(args: {
     throw boom(400, "Project is already owned by this account.");
   }
 
-  await project.$fetchGraph("account", { skipFetched: true });
-  const previousAccount = project.account;
-  invariant(previousAccount, "account is not fetched");
+  const { account: previousAccount } = await project.$fetchGraph("account", {
+    skipFetched: true,
+  });
   // Read before patching: `patchAndFetch` mutates the instance in place.
   const previousName = project.name;
 

@@ -130,10 +130,6 @@ export async function concludeBuild(input: {
             );
 
             const { compareScreenshotBucket } = updatedBuild;
-            invariant(
-              compareScreenshotBucket,
-              `Compare screenshot bucket not found for build: ${updatedBuild.id}`,
-            );
 
             await Promise.all([
               buildNotificationJob.push(buildNotification.id),

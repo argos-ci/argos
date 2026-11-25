@@ -26,7 +26,6 @@ for (const gitlabProject of gitlabProjects) {
   invariant(gitlabProject.projects, "projects not fetched");
   try {
     for (const project of gitlabProject.projects) {
-      invariant(project.account, "account not fetched");
       // "manual": a sweep would otherwise email the owners of every account
       // whose GitLab token has expired.
       const synced = await syncGitlabProject(gitlabProject, project.account, {

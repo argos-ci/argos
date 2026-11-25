@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -125,8 +124,6 @@ export const addTeamDomainHandler: CreateAPIHandler = ({ post }) => {
       auth,
       domain: req.ctx.body.domain,
     });
-
-    invariant(teamDomain, "team domain not created");
 
     res.status(201).send({
       domain: teamDomain.domain,

@@ -63,5 +63,5 @@ export class GitlabUser extends Model {
     };
   }
 
-  user?: User;
+  user?: User | null;
 }

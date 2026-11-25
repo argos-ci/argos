@@ -98,19 +98,11 @@ export async function createBuildDiffs(build: Build) {
       "[project, baseScreenshotBucket.screenshots.file, compareScreenshotBucket.screenshots.file]",
     );
 
-  const project = richBuild.project;
-  invariant(project, "no project found for build");
-
   const compareScreenshotBucket = richBuild.compareScreenshotBucket;
-  invariant(
-    compareScreenshotBucket,
-    "no compare screenshot bucket found for build",
-  );
 
   invariant(compareScreenshotBucket.complete, "compare bucket is not complete");
 
   const compareScreenshots = compareScreenshotBucket.screenshots;
-  invariant(compareScreenshots, "no compare screenshots found for build");
 
   const ctx = await strategy.getContext(richBuild);
   const baseBucket = await getOrRetrieveBaseBucket({

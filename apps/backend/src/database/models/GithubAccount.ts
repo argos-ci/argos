@@ -71,5 +71,5 @@ export class GithubAccount extends Model {
     };
   }
 
-  account?: Account;
+  account?: Account | null;
 }

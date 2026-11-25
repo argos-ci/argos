@@ -138,6 +138,8 @@ without a change.
 ## TypeScript
 
 - Never use `!` (non-null assertion). Use `invariant` for required values.
+  Passing `invariant` a value whose type is never falsy is a type error: the
+  check could never fail, so delete it instead of silencing it.
 - Program by assertion, not by defense: when a value is _expected_ to be present
   (a context provided by an ancestor, a required param, an invariant of the call
   site), assert it with `invariant` (or a hook built on it, e.g.
@@ -167,6 +169,22 @@ models. To add or change a column:
    `NODE_ENV=test pnpm run --filter @argos/backend db:reset`.
    `pnpm test:integration` needs nothing — it rebuilds its own databases
    whenever `structure.sql` changes.
+
+**Relations are typed by what fetched them.** `withGraphFetched`,
+`withGraphJoined` and `$fetchGraph` return the model narrowed to the relations
+they load (`WithGraphModel<M, E>` from `objection`), so don't assert that a
+relation is loaded:
+
+- Use what `$fetchGraph` returns (`const { account } = await
+  project.$fetchGraph("account")`), not the instance it mutated.
+- A function that needs relations takes `WithGraphModel<Project, "account">`,
+  and its caller's query provides them. Don't declare a return type or a
+  `string` relation option that drops the narrowing.
+- An `invariant` on a relation is left for data that can be missing: a to-one
+  relation is `| null` once loaded, exactly when its foreign key is nullable or
+  lives on the other table. Keep a model's relation types true to
+  `structure.sql`, because the checks rely on them. `User.account` and
+  `Team.account` are the exceptions: the app creates each with its owner.
 
 **Idempotent inserts:** never gate an insert on a prior existence check — two
 concurrent requests can both pass it and race on the primary key. Insert

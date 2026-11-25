@@ -32,20 +32,16 @@ async function checkIsPartialBuild(build: Build): Promise<boolean> {
   const { runId, runAttempt } = build;
   invariant(runId && runAttempt, "Expected a GitHub Actions run attempt");
 
-  await build.$fetchGraph(
+  const { project } = await build.$fetchGraph(
     "project.githubRepository.[githubAccount,repoInstallations.installation]",
   );
-
-  invariant(build.project, "Relation `project` should be fetched");
-  const { githubRepository } = build.project;
+  const { githubRepository } = project;
 
   if (!githubRepository) {
     return false;
   }
 
   const githubAccount = githubRepository.githubAccount;
-
-  invariant(githubAccount, "Relation `githubAccount` should be fetched");
 
   const installation = GithubRepository.pickBestInstallation(githubRepository);
 
@@ -111,12 +107,6 @@ export async function finalizePartialBuild(buildId: string) {
     .withGraphFetched("[shards, compareScreenshotBucket]")
     .throwIfNotFound();
 
-  invariant(build.shards, "Relation `shards` should be fetched");
-  invariant(
-    build.compareScreenshotBucket,
-    "Relation `compareScreenshotBucket` should be fetched",
-  );
-
   // Finalized from the shards it got, by `argos finalize` for instance.
   if (build.compareScreenshotBucket.complete) {
     return;
@@ -138,8 +128,6 @@ export async function finalizePartialBuild(buildId: string) {
   if (!previousBuild) {
     return;
   }
-
-  invariant(previousBuild.shards, "Relation `shards` should be fetched");
 
   // Older SDKs upload shards without `parallelIndex`: they cannot be matched.
   const shards = [...build.shards, ...previousBuild.shards];

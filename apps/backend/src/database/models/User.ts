@@ -188,8 +188,8 @@ export class User extends Model {
   teams?: Team[];
   teamInvites?: TeamInvite[];
   ownedTeams?: Team[];
-  gitlabUser?: GitlabUser;
-  googleUser?: GoogleUser;
+  gitlabUser?: GitlabUser | null;
+  googleUser?: GoogleUser | null;
   emails?: UserEmail[];
   verifiedEmails?: UserEmail[];
   userAccessTokens?: UserAccessToken[];

@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { test as base, beforeAll, describe, expect, vi } from "vitest";
 import z from "zod";
@@ -86,7 +85,6 @@ describe("updateBuild", () => {
       const partial = await build
         .$query()
         .withGraphFetched("compareScreenshotBucket");
-      invariant(partial.compareScreenshotBucket);
       expect(partial.compareScreenshotBucket.complete).toBe(false);
       expect(await countScreenshots(compareScreenshotBucket.id)).toBe(1);
 
@@ -98,7 +96,6 @@ describe("updateBuild", () => {
       const finalized = await build
         .$query()
         .withGraphFetched("compareScreenshotBucket");
-      invariant(finalized.compareScreenshotBucket);
       expect(finalized.compareScreenshotBucket.complete).toBe(true);
       expect(finalized.compareScreenshotBucket.screenshotCount).toBe(2);
       expect(await countScreenshots(compareScreenshotBucket.id)).toBe(2);
@@ -113,7 +110,6 @@ describe("updateBuild", () => {
       const finalized = await build
         .$query()
         .withGraphFetched("compareScreenshotBucket");
-      invariant(finalized.compareScreenshotBucket);
       expect(finalized.compareScreenshotBucket.complete).toBe(true);
       expect(await countScreenshots(compareScreenshotBucket.id)).toBe(1);
     });
@@ -283,7 +279,6 @@ describe("updateBuild", () => {
         const partial = await build
           .$query()
           .withGraphFetched("compareScreenshotBucket");
-        invariant(partial.compareScreenshotBucket);
         expect(partial.compareScreenshotBucket.complete).toBe(false);
 
         await put(build.id, {
@@ -296,7 +291,6 @@ describe("updateBuild", () => {
         const finalized = await build
           .$query()
           .withGraphFetched("compareScreenshotBucket");
-        invariant(finalized.compareScreenshotBucket);
         expect(finalized.compareScreenshotBucket.complete).toBe(true);
         expect(finalized.batchCount).toBe(2);
         expect(await countShards(build.id)).toBe(2);
@@ -322,7 +316,6 @@ describe("updateBuild", () => {
         let current = await build
           .$query()
           .withGraphFetched("compareScreenshotBucket");
-        invariant(current.compareScreenshotBucket);
         expect(current.compareScreenshotBucket.complete).toBe(false);
         // The shard exists but isn't counted yet.
         expect(current.batchCount).toBe(0);
@@ -339,7 +332,6 @@ describe("updateBuild", () => {
         current = await build
           .$query()
           .withGraphFetched("compareScreenshotBucket");
-        invariant(current.compareScreenshotBucket);
         expect(current.compareScreenshotBucket.complete).toBe(false);
         expect(current.batchCount).toBe(1);
         expect(await countShards(build.id)).toBe(1);
@@ -355,7 +347,6 @@ describe("updateBuild", () => {
         const finalized = await build
           .$query()
           .withGraphFetched("compareScreenshotBucket");
-        invariant(finalized.compareScreenshotBucket);
         expect(finalized.compareScreenshotBucket.complete).toBe(true);
         // Two shards (3 requests), three screenshots.
         expect(finalized.batchCount).toBe(2);
@@ -399,7 +390,6 @@ describe("updateBuild", () => {
         const finalized = await build
           .$query()
           .withGraphFetched("compareScreenshotBucket");
-        invariant(finalized.compareScreenshotBucket);
         expect(finalized.compareScreenshotBucket.complete).toBe(true);
 
         // Retry of that request after the build is finalized must not 409.

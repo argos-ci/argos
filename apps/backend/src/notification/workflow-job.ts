@@ -18,8 +18,7 @@ export const notificationWorkflowJob = createModelJob(
 );
 
 async function processWorkflow(workflow: NotificationWorkflow) {
-  await workflow.$fetchGraph("recipients.user");
-  invariant(workflow.recipients, "recipients must be fetched");
+  const { recipients } = await workflow.$fetchGraph("recipients.user");
 
   const handler = notificationHandlers.find((h) => h.type === workflow.type);
   invariant(handler, `Notification handler not found: ${workflow.type}`);
@@ -39,15 +38,14 @@ async function processWorkflow(workflow: NotificationWorkflow) {
             })
             .whereIn(
               "userId",
-              workflow.recipients.map((recipient) => recipient.userId),
+              recipients.map((recipient) => recipient.userId),
             )
         ).map((preference) => preference.userId),
       )
     : new Set<string>();
 
-  const emailMessages = workflow.recipients
+  const emailMessages = recipients
     .map((recipient) => {
-      invariant(recipient.user, "user must be fetched");
       if (!recipient.user.email) {
         return null;
       }

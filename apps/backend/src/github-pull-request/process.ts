@@ -6,7 +6,6 @@ import {
   getOrCreateGhAccount,
 } from "@/database/services/github";
 import { getInstallationOctokit } from "@/github/client";
-import { unretryable } from "@/job-core/error";
 import logger from "@/logger";
 import { publishBranchMedia } from "@/media/publish";
 
@@ -16,23 +15,11 @@ import { fetchPullRequest, parsePullRequestData } from "./remote";
  * Fetch the pull request data from GitHub and update the database.
  */
 export async function processPullRequest(pullRequest: GithubPullRequest) {
-  await pullRequest.$fetchGraph(
+  const { githubRepository } = await pullRequest.$fetchGraph(
     "githubRepository.[repoInstallations.installation,githubAccount]",
   );
 
-  unretryable(
-    pullRequest.githubRepository,
-    "`githubRepository` relation not found",
-  );
-
-  unretryable(
-    pullRequest.githubRepository.githubAccount,
-    "`githubAccount` relation not found",
-  );
-
-  const installation = GithubRepository.pickBestInstallation(
-    pullRequest.githubRepository,
-  );
+  const installation = GithubRepository.pickBestInstallation(githubRepository);
 
   if (!installation) {
     logger.info(
@@ -57,8 +44,8 @@ export async function processPullRequest(pullRequest: GithubPullRequest) {
   }
 
   const pullRequestData = await fetchPullRequest(octokit, {
-    owner: pullRequest.githubRepository.githubAccount.login,
-    repo: pullRequest.githubRepository.name,
+    owner: githubRepository.githubAccount.login,
+    repo: githubRepository.name,
     pull_number: pullRequest.number,
   });
 

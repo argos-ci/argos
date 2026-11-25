@@ -1,6 +1,7 @@
 import type { AuthMethod } from "@argos/schemas/auth-method";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import type { WithGraphModel } from "objection";
 
 import type { Account, User } from "@/database/models";
 
@@ -8,26 +9,23 @@ import type { RestrictedScopeEntry, TokenTeamAuthMethod } from "./payload";
 import { getUnmetTeamAuthMethod } from "./team-auth-method";
 
 /**
- * What a user's token reaches, from the accounts it was issued for. Expects
- * each entry's `account` and the user's `teams` to be fetched.
+ * What a user's token reaches, from the accounts it was issued for.
  */
 export async function resolveTokenScope(
-  user: User,
-  entries: { account?: Account; authMethod: AuthMethod | null }[],
+  user: WithGraphModel<User, "teams">,
+  entries: { account: Account; authMethod: AuthMethod | null }[],
 ): Promise<{
   /** Accounts the token may act on. */
   scope: Account[];
   teamAuthMethods: TokenTeamAuthMethod[];
   restrictedScope: RestrictedScopeEntry[];
 }> {
-  invariant(user.teams, "user teams not fetched");
   const userTeams = new Map(user.teams.map((team) => [team.id, team]));
   const scope: Account[] = [];
   const teamAuthMethods: TokenTeamAuthMethod[] = [];
   const restrictedScope: RestrictedScopeEntry[] = [];
 
   for (const { account, authMethod } of entries) {
-    invariant(account, "scope account not fetched");
     switch (account.type) {
       case "user": {
         if (account.userId === user.id) {

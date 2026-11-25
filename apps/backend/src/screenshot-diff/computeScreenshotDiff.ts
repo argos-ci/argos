@@ -53,7 +53,6 @@ export async function computeScreenshotDiff(
   } = screenshotDiff;
   const { testId } = screenshotDiff;
 
-  invariant(build, "no build");
   invariant(headScreenshot, "no head screenshot");
   invariant(testId, "no testId on screenshotDiff");
 

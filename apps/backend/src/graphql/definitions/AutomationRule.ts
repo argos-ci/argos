@@ -1,6 +1,5 @@
 import { AutomationEventSchema } from "@argos/schemas/automation-event";
 import { assertNever } from "@argos/util/assertNever";
-import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 import { z } from "zod";
 
@@ -418,10 +417,6 @@ export const resolvers: IResolvers = {
               "The project must have at least one build to test this automation.",
             );
           }
-          invariant(
-            lastBuild.compareScreenshotBucket,
-            "compareScreenshotBucket relation not found",
-          );
 
           await testAutomation({
             actions,
@@ -451,12 +446,6 @@ export const resolvers: IResolvers = {
               "The project must have at least one build review to test this automation.",
             );
           }
-
-          invariant(lastBuildReview.build, "build relation not found");
-          invariant(
-            lastBuildReview.build.compareScreenshotBucket,
-            "compareScreenshotBucket relation not found",
-          );
 
           await testAutomation({
             actions,

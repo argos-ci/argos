@@ -1,7 +1,4 @@
-import { invariant } from "@argos/util/invariant";
-
 import { BuildNotification } from "@/database/models";
-import { UnretryableError } from "@/job-core";
 import { redisLock } from "@/util/redis";
 
 import { getAggregatedNotificationPayload } from "./aggregated";
@@ -45,20 +42,10 @@ export async function pushBuildNotification({
 export async function processBuildNotification(
   buildNotification: BuildNotification,
 ) {
-  await buildNotification.$fetchGraph(
+  const { build } = await buildNotification.$fetchGraph(
     `build.[project.[gitlabProject, githubRepository.[githubAccount,repoInstallations.installation], originRepository.installation, account], compareScreenshotBucket]`,
   );
-
-  const { build } = buildNotification;
-  invariant(build, "No build found", UnretryableError);
-
   const { project, compareScreenshotBucket } = build;
-  invariant(
-    compareScreenshotBucket,
-    "No compare screenshot bucket found",
-    UnretryableError,
-  );
-  invariant(project, "No project found", UnretryableError);
 
   // A build already in the pipeline when its project was deleted must not go on
   // writing a commit status and editing the pull request comment for it. The

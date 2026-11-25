@@ -186,9 +186,10 @@ export async function resolveAuthProject(
     if (project.name !== name) {
       continue;
     }
-    await project.$fetchGraph("account", { skipFetched: true });
-    invariant(project.account, "Project account not found");
-    if (project.account.slug === owner) {
+    const { account } = await project.$fetchGraph("account", {
+      skipFetched: true,
+    });
+    if (account.slug === owner) {
       return project;
     }
   }

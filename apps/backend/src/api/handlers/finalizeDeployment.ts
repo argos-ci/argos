@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
@@ -217,16 +216,16 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
 
     await registerDeploymentContent(files);
 
-    [deployment] = await Promise.all([
+    const [readyDeployment, projectWithAccount] = await Promise.all([
       // Update deployment status to ready
       deployment.$query().patchAndFetch({
         status: "ready",
       }),
       project.$fetchGraph("account"),
     ]);
+    deployment = readyDeployment;
 
-    const { account } = project;
-    invariant(account, "Account relation not fetched");
+    const { account } = projectWithAccount;
 
     const isProduction = deployment.environment === "production";
 
@@ -260,7 +259,11 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
         type: "success",
       }),
       githubDeploymentJob.push(...previousDeploymentIds),
-      trySendProjectEvent({ name: "deployment.ready", deployment, project }),
+      trySendProjectEvent({
+        name: "deployment.ready",
+        deployment,
+        project: projectWithAccount,
+      }),
     ]);
 
     res.send(serializeDeployment(deployment));

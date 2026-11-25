@@ -228,7 +228,6 @@ export async function handleGitHubEvents(
           payload.action,
         )
       ) {
-        invariant(payload.pull_request);
         await pr
           .$clone()
           .$query()

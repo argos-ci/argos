@@ -49,7 +49,6 @@ export const resolvers: IResolvers = {
         .where("oauthGrantId", grant.id)
         .withGraphFetched("account");
       return grantAccounts.map((entry) => {
-        invariant(entry.account);
         return entry.account;
       });
     },

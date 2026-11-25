@@ -595,7 +595,6 @@ const getOrCreateGitlabProject = async (props: {
   invariant(client, "Gitlab client not found");
 
   const glProject = await client.Projects.show(Number(props.gitlabProjectId));
-  invariant(glProject, "GitLab Project not found");
 
   if (!("default_branch" in glProject)) {
     throw badUserInput(
@@ -1296,10 +1295,7 @@ export const resolvers: IResolvers = {
       const project = await getAdminProject({
         id: args.input.projectId,
         auth: ctx.auth,
-        withGraphFetched: "account",
-      });
-
-      invariant(project.account, "account not fetched");
+      }).then((project) => project.$fetchGraph("account"));
 
       const installation = await GithubInstallation.query()
         .findOne({ githubId: args.input.installationId })
@@ -1348,10 +1344,8 @@ export const resolvers: IResolvers = {
       const project = await getAdminProject({
         id: args.input.projectId,
         auth: ctx.auth,
-        withGraphFetched: "account",
-      });
+      }).then((project) => project.$fetchGraph("account"));
 
-      invariant(project.account, "account not fetched");
       invariant(
         project.account.gitlabAccessToken,
         "Gitlab access token is missing",
@@ -1389,10 +1383,7 @@ export const resolvers: IResolvers = {
       const project = await getAdminProject({
         id: args.input.projectId,
         auth: ctx.auth,
-        withGraphFetched: "account",
-      });
-
-      invariant(project.account, "account not fetched");
+      }).then((project) => project.$fetchGraph("account"));
 
       const repository = await getAccountOriginRepository({
         account: project.account,

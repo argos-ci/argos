@@ -803,8 +803,7 @@ export const resolvers: IResolvers = {
       const account = await getAdminAccount({
         id: accountId,
         auth: ctx.auth,
-        withGraphFetched: "slackInstallation",
-      });
+      }).then((account) => account.$fetchGraph("slackInstallation"));
       if (!account.slackInstallation) {
         return account;
       }
