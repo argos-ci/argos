@@ -311,6 +311,13 @@ has to earn its place by protecting something the project actually depends on.
   `apps/backend/src/database/testing/workers.ts`). Nothing to create by hand:
   worker databases are built from `db/structure.sql` and rebuilt whenever it
   changes. The `test` database is left alone, it belongs to Playwright.
+- Integration workers are reused across test files, so a file runs with the
+  modules the previous one loaded. `vitest/vitest.e2e.config.mts` isolates the
+  files that leave state behind (module mocks, spies, fake timers,
+  `config.set`, closed shared clients…), found by matching their source. A test
+  that passes alone and fails in the full run is usually state some other file
+  left: add the pattern there, or reset the state in
+  `vitest/vitest.e2e.setup.mts`, as is done for factory sequences.
 - If `db:reset` reports `database "test" is being accessed by other users`:
 
   ```bash

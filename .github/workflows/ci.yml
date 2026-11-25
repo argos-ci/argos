@@ -66,11 +66,11 @@ jobs:
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-deps
 
+      # Codegen and the workspace packages: Storybook builds the frontend from
+      # its sources.
       - name: Setup
         id: setup
-        run: pnpm run build
-        env:
-          BUILD_MODE: production
+        run: pnpm exec -- turbo run build --filter=@argos/frontend^...
 
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
@@ -107,57 +107,24 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-    services:
-      redis:
-        image: redis:6-alpine
-        ports:
-          - 6380:6379
-        # Speed up initialization by disabling health checks
-        # Services run during the installation of the dependencies
-        # options: >-
-        #   --health-cmd "redis-cli ping"
-        #   --health-interval 10s
-        #   --health-timeout 5s
-        #   --health-retries 5
-
-      postgres:
-        image: postgres:18-alpine
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_HOST_AUTH_METHOD: trust
-        # Speed up initialization by disabling health checks
-        # Services run during the installation of the dependencies
-        # options: >-
-        #   --health-cmd "pg_isready"
-        #   --health-interval 10s
-        #   --health-timeout 5s
-        #   --health-retries 5
-
-      rabbit:
-        # Keep in sync with docker-compose.yml and production (Amazon MQ 4.2).
-        image: rabbitmq:4.2-alpine
-        ports:
-          - 5672:5672
-        # Speed up initialization by disabling health checks
-        # Services run during the installation of the dependencies
-        # options: >-
-        #   --health-cmd "rabbitmq-diagnostics -q ping"
-        #   --health-interval 10s
-        #   --health-timeout 5s
-        #   --health-retries 5
-
     steps:
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Start services
+        run: scripts/ci-services.sh start
+
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-deps
 
+      # Codegen and the workspace packages. Tests run the backend from its
+      # sources and build their own databases, so neither app is built and the
+      # `test` database is not created.
       - name: Setup
-        run: pnpm run setup
-        env:
-          BUILD_MODE: production
+        run: pnpm exec -- turbo run build --filter='./packages/*'
+
+      - name: Wait for services
+        run: scripts/ci-services.sh wait
 
       - name: Test
         run: pnpm run test:integration --shard=${{ matrix.shard }}/3
@@ -178,44 +145,6 @@ jobs:
       ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
       PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.65.1-jammy
 
-    services:
-      redis:
-        image: redis:6-alpine
-        ports:
-          - 6380:6379
-        # Speed up initialization by disabling health checks
-        # Services run during the installation of the dependencies
-        # options: >-
-        #   --health-cmd "redis-cli ping"
-        #   --health-interval 10s
-        #   --health-timeout 5s
-        #   --health-retries 5
-
-      postgres:
-        image: postgres:18-alpine
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_HOST_AUTH_METHOD: trust
-        # Speed up initialization by disabling health checks
-        # Services run during the installation of the dependencies
-        # options: >-
-        #   --health-cmd "pg_isready"
-        #   --health-interval 10s
-        #   --health-timeout 5s
-        #   --health-retries 5
-
-      # Named after the host in `AMQP_URL` below: the web server runs inside
-      # the Playwright container and reaches services by their label. Without
-      # it, anything that enqueues a job — submitting a build review, say —
-      # blocks forever on a broker that does not resolve, and the request that
-      # triggered it never answers.
-      rabbitmq:
-        # Keep in sync with docker-compose.yml and production (Amazon MQ 4.2).
-        image: rabbitmq:4.2-alpine
-        ports:
-          - 5672:5672
-
     steps:
       # A `docker://` step would pull the image before the job's first step,
       # holding everything up for half a minute. Pulled in the background, it
@@ -226,8 +155,14 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Start services
+        run: scripts/ci-services.sh start
+
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-deps
+
+      - name: Wait for services
+        run: scripts/ci-services.sh wait
 
       - name: Setup
         run: pnpm run setup
@@ -237,12 +172,16 @@ jobs:
       # The workspace and RUNNER_TEMP are mounted at their own paths, so the
       # GITHUB_* variables pointing into them — the event payload the Argos
       # reporter reads, for one — resolve inside the container too.
+      #
+      # The web server runs in the container and reaches the services by their
+      # container names. A broker that does not resolve blocks anything that
+      # enqueues a job (submitting a build review, say) forever, and the
+      # request that triggered it never answers.
       - name: Run Playwright tests
         env:
           REDIS_URL: redis://redis:6379/1
           DATABASE_URL: postgresql://postgres@postgres/test
           AMQP_URL: amqp://rabbitmq
-          NETWORK: ${{ job.services.postgres.network }}
           SHARD: ${{ matrix.shard }}
         run: |
           # Joins the background pull, or retries it if it failed.
@@ -254,7 +193,7 @@ jobs:
           # HOME=/root: Firefox fails on permissions otherwise
           # https://github.com/microsoft/playwright/issues/6500
           docker run --rm \
-            --network "$NETWORK" \
+            --network services \
             --volume "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             --volume "$RUNNER_TEMP:$RUNNER_TEMP" \
             --workdir "$GITHUB_WORKSPACE" \

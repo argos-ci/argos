@@ -1,8 +1,13 @@
+import { resetFactorySequences } from "../apps/backend/src/database/testing/sequences";
 import { WORKERS_ENV_VAR } from "./vitest.e2e.workers.mjs";
 
-// Runs before the test file is imported, and must not import anything reading
+// Runs before each test file is imported, and must not import anything reading
 // the configuration: the worker environment has to be applied before the
 // configuration module is evaluated.
+
+// A reused worker keeps the factories' counters from the files it ran before,
+// and tests assert on the values they produce.
+resetFactorySequences();
 
 const rawWorkersEnv = process.env[WORKERS_ENV_VAR];
 
