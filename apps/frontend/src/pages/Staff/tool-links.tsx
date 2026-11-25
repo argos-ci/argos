@@ -1,8 +1,8 @@
+import { BrandShield } from "@/ui/BrandShield";
 import { HeadlessLink } from "@/ui/Link";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { getAccountURL } from "../Account/AccountParams";
-import argosLogo from "./argos.svg";
 import stripeLogo from "./stripe.svg";
 
 /**
@@ -32,8 +32,9 @@ export function StripeCustomerLink(props: { stripeCustomerId: string | null }) {
       href={getStripeCustomerURL(stripeCustomerId)}
       target="_blank"
       label="Open customer in Stripe"
-      logo={stripeLogo}
-    />
+    >
+      <img src={stripeLogo} alt="" className="size-4 rounded-xs" />
+    </ToolTileLink>
   );
 }
 
@@ -42,22 +43,25 @@ export function ArgosTeamLink(props: { teamSlug: string }) {
     <ToolTileLink
       href={getAccountURL({ accountSlug: props.teamSlug })}
       label="Open team in Argos"
-      logo={argosLogo}
-    />
+    >
+      {/* A filled square like Stripe's, so the two logos read as one pair. The
+          violet is fixed rather than a theme token, as Stripe's brand color
+          is: the eye's dark pupil would vanish on the dark-mode violets. */}
+      <span className="flex size-4 items-center justify-center rounded-xs bg-[#ebe4ff]">
+        <BrandShield className="w-3" />
+      </span>
+    </ToolTileLink>
   );
 }
 
-/**
- * A tool's square logo linking to the team in that tool. Each logo carries its
- * own background, so every tile is the same filled square.
- */
+/** A tool's 16px square logo, linking to the team in that tool. */
 function ToolTileLink(props: {
   href: string;
   target?: "_blank";
   label: string;
-  logo: string;
+  children: React.ReactNode;
 }) {
-  const { href, target, label, logo } = props;
+  const { href, target, label, children } = props;
 
   return (
     <Tooltip content={label}>
@@ -72,7 +76,7 @@ function ToolTileLink(props: {
         // rather than re-tinting it the way a monochrome icon would.
         className="shrink-0 opacity-75 transition hover:opacity-100"
       >
-        <img src={logo} alt="" className="size-4 rounded-xs" />
+        {children}
       </HeadlessLink>
     </Tooltip>
   );
