@@ -226,7 +226,7 @@ export const typeDefs = gql`
     latestAutoApprovedBuild: Build
     "Latest build"
     latestBuild: Build
-    "Latest production deployment served by Argos"
+    "Latest production deployment"
     latestProductionDeployment: Deployment
     "Determine permissions of the current user"
     permissions: [ProjectPermission!]!
@@ -841,9 +841,6 @@ export const resolvers: IResolvers = {
       return ctx.loaders.LatestProjectBuild.load(project.id);
     },
     latestProductionDeployment: async (project, _args, ctx) => {
-      if (!project.deploymentEnabled) {
-        return null;
-      }
       return ctx.loaders.LatestProductionDeploymentByProject.load(project.id);
     },
     builds: async (project, { first, after, filters }) => {
