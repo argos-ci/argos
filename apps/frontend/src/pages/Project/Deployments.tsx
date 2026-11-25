@@ -53,7 +53,6 @@ const ProjectDeploymentsQuery = graphql(`
   ) {
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
-      deploymentEnabled
       repository {
         __typename
         id
@@ -441,7 +440,7 @@ function PageContent() {
     });
   });
 
-  if (!project || !deployments || !project.deploymentEnabled) {
+  if (!project || !deployments) {
     return <NotFound />;
   }
 

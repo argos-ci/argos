@@ -22,7 +22,6 @@ const ProjectQuery = graphql(`
       id
       permissions
       name
-      deploymentEnabled
       ignoreConfig {
         enabled
       }
@@ -44,7 +43,7 @@ function ProjectTabs(props: {
   children: React.ReactNode;
 }) {
   const { project, children } = props;
-  const { account, permissions, deploymentEnabled } = project;
+  const { account, permissions } = project;
   const ignoreEnabled = project.ignoreConfig.enabled;
   const isTeam = account.__typename === "Team";
   const showAutomationsTab =
@@ -61,7 +60,7 @@ function ProjectTabs(props: {
         {/* The ignore ledger is only meaningful while the feature is on; the
             page itself still explains itself if reached by a direct link. */}
         {ignoreEnabled && <TabLink href="ignored">Ignored</TabLink>}
-        {deploymentEnabled && <TabLink href="deployments">Deployments</TabLink>}
+        <TabLink href="deployments">Deployments</TabLink>
         {showAutomationsTab && (
           <TabLink href="automations">Automations</TabLink>
         )}
