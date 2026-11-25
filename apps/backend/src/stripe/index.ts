@@ -675,11 +675,16 @@ async function getAmountDue(
  */
 async function endStripeTrial(
   argosSubscription: Subscription,
+  trialingStripeSubscription: Stripe.Subscription,
 ): Promise<Subscription> {
   invariant(
     argosSubscription.stripeSubscriptionId,
     "not a stripe subscription",
   );
+  // The webhook that marks the payment method filled, which let usage get
+  // here, can land before the one that turns tax on: the invoice the trial
+  // opens now must not be the untaxed one.
+  await enablePendingAutomaticTax(trialingStripeSubscription);
   const stripeSubscription = await stripe.subscriptions.update(
     argosSubscription.stripeSubscriptionId,
     { trial_end: "now" },
@@ -770,7 +775,7 @@ export async function endTrialToUnlockUsage(
         // lock hold, budgeted for the Stripe calls only.
         const synced =
           stripeSubscription.status === "trialing"
-            ? await endStripeTrial(freshSubscription)
+            ? await endStripeTrial(freshSubscription, stripeSubscription)
             : await updateArgosSubscriptionFromStripe(
                 freshSubscription,
                 stripeSubscription,
@@ -779,7 +784,7 @@ export async function endTrialToUnlockUsage(
 
         return { unlocked: checkIsBillableStatus(synced.status), synced };
       },
-      // The task can run two Stripe calls, keep the timeout well clear of
+      // The task can run three Stripe calls, keep the timeout well clear of
       // third-party latency: past it, the lock rejects while the task keeps
       // running, and the conversion would be reported as a failure.
       { timeout: 60000 },
@@ -1028,16 +1033,29 @@ export async function getStripeProPlanOrThrow(): Promise<Plan> {
   return plan;
 }
 
+/**
+ * Every subscription of a customer that is not canceled, across pages: a
+ * customer reused for many teams' trials can have more than the ten of a
+ * single page.
+ */
+function listCustomerSubscriptions(
+  customerId: string,
+  params?: Omit<Stripe.SubscriptionListParams, "customer" | "limit">,
+): Promise<Stripe.Subscription[]> {
+  return stripe.subscriptions
+    .list({ ...params, customer: customerId, limit: 100 })
+    .autoPagingToArray({ limit: 10000 });
+}
+
 async function updateSubscriptionsFromCustomer(
   customerId: string,
   options?: { allowNotFound?: boolean },
 ): Promise<void> {
-  const stripeSubscriptions = await stripe.subscriptions.list({
-    customer: customerId,
+  const stripeSubscriptions = await listCustomerSubscriptions(customerId, {
     expand: ["data.customer"],
   });
 
-  for (const stripeSubscription of stripeSubscriptions.data) {
+  for (const stripeSubscription of stripeSubscriptions) {
     const argosSubscription =
       await getArgosSubscriptionFromStripeSubscriptionId(stripeSubscription.id);
     if (!argosSubscription) {
@@ -1446,10 +1464,8 @@ async function enablePendingAutomaticTax(
 async function enableCustomerPendingAutomaticTax(
   customerId: string,
 ): Promise<void> {
-  const stripeSubscriptions = await stripe.subscriptions.list({
-    customer: customerId,
-  });
-  await Promise.all(stripeSubscriptions.data.map(enablePendingAutomaticTax));
+  const stripeSubscriptions = await listCustomerSubscriptions(customerId);
+  await Promise.all(stripeSubscriptions.map(enablePendingAutomaticTax));
 }
 
 /**
@@ -1554,15 +1570,68 @@ export async function createStripeCheckoutSession(args: {
     // Tax locates the customer by, and a VAT number makes an EU sale a
     // reverse charge.
     billing_address_collection: "required",
-    tax_id_collection: { enabled: true },
-    ...(teamAccount.stripeCustomerId && {
-      customer: teamAccount.stripeCustomerId,
-      // Keep what was entered on the customer, which later invoices read.
-      // Stripe requires `name: "auto"` to collect a tax id for an existing
-      // customer.
-      customer_update: { address: "auto", name: "auto" },
-    }),
+    ...(teamAccount.stripeCustomerId
+      ? await getCheckoutCustomerParams({
+          customerId: teamAccount.stripeCustomerId,
+          accountId: teamAccount.id,
+          mode: "subscription",
+        })
+      : { tax_id_collection: { enabled: true } }),
   });
+}
+
+/**
+ * The checkout parameters that save what an existing customer enters (billing
+ * address, legal name, VAT number) on it, for its later invoices to read.
+ *
+ * Trials opened server side reuse their owner's customer, found by email, for
+ * every team the owner creates. On a customer that also bills someone else,
+ * nothing already there is overwritten, or the other team's invoices would
+ * carry this team's name and address. Stripe only collects a VAT number for
+ * an existing customer while overwriting its name, so that is left off too.
+ */
+async function getCheckoutCustomerParams(args: {
+  customerId: string;
+  accountId: string;
+  mode: "subscription" | "setup";
+}): Promise<
+  Pick<
+    Stripe.Checkout.SessionCreateParams,
+    "customer" | "customer_update" | "tax_id_collection"
+  >
+> {
+  const { customerId, accountId, mode } = args;
+  const [otherTeam, stripeSubscriptions] = await Promise.all([
+    Account.query()
+      .where({ stripeCustomerId: customerId })
+      .whereNotNull("teamId")
+      .whereNot("id", accountId)
+      .first(),
+    listCustomerSubscriptions(customerId),
+  ]);
+  const shared =
+    Boolean(otherTeam) ||
+    stripeSubscriptions.some(
+      (subscription) => subscription.metadata["accountId"] !== accountId,
+    );
+  if (!shared) {
+    return {
+      customer: customerId,
+      customer_update: { address: "auto", name: "auto" },
+      tax_id_collection: { enabled: true },
+    };
+  }
+  if (mode === "setup") {
+    return { customer: customerId };
+  }
+  // Automatic tax in a subscription checkout needs an address on the
+  // customer. Saving one where there is none overwrites nothing.
+  const customer = await stripe.customers.retrieve(customerId);
+  const hasAddress = !customer.deleted && Boolean(customer.address);
+  return {
+    customer: customerId,
+    ...(!hasAddress && { customer_update: { address: "auto" } }),
+  };
 }
 
 /**
@@ -1599,14 +1668,16 @@ export async function createStripeSetupSession(args: {
   );
   return stripe.checkout.sessions.create({
     mode: "setup",
-    customer:
-      typeof stripeSubscription.customer === "string"
-        ? stripeSubscription.customer
-        : stripeSubscription.customer.id,
+    ...(await getCheckoutCustomerParams({
+      customerId:
+        typeof stripeSubscription.customer === "string"
+          ? stripeSubscription.customer
+          : stripeSubscription.customer.id,
+      accountId: account.id,
+      mode: "setup",
+    })),
     currency: stripeSubscription.currency,
     billing_address_collection: "required",
-    tax_id_collection: { enabled: true },
-    customer_update: { address: "auto", name: "auto" },
     custom_text: {
       submit: { message: "Your card is charged when your trial ends." },
     },
