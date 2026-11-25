@@ -4,9 +4,9 @@ import { test as base, describe, expect } from "vitest";
 import {
   createGithubRepository,
   setupGithubServer,
-  stubWorkflowRunJobs,
+  stubWorkflowRunAttempt,
 } from "@/auth/tokenless/github-actions.test-util";
-import { Build, BuildShard } from "@/database/models";
+import { Build, BuildShard, ScreenshotBucket } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { finalizePartialBuild } from "./partial";
@@ -94,12 +94,6 @@ async function getRerunState(rerun: Build) {
   };
 }
 
-const firstAttemptJobs = [
-  { name: "test (1/3)", conclusion: "success", started_at: firstStart },
-  { name: "test (2/3)", conclusion: "failure", started_at: firstStart },
-  { name: "test (3/3)", conclusion: "success", started_at: firstStart },
-];
-
 const untouchedRerun = {
   partial: false,
   shardIndices: [2],
@@ -113,9 +107,9 @@ describe("finalizePartialBuild", () => {
   test("completes a rerun of the failed jobs with the shards of the previous attempt", async ({
     rerun,
   }) => {
-    stubWorkflowRunJobs(runId, {
-      1: firstAttemptJobs,
-      2: [
+    stubWorkflowRunAttempt(runId, 2, {
+      startedAt: rerunStart,
+      jobs: [
         { name: "test (1/3)", conclusion: "success", started_at: firstStart },
         { name: "test (2/3)", conclusion: "success", started_at: rerunStart },
         { name: "test (3/3)", conclusion: "success", started_at: firstStart },
@@ -135,9 +129,9 @@ describe("finalizePartialBuild", () => {
   test("leaves a rerun of all jobs that misses cancelled shards", async ({
     rerun,
   }) => {
-    stubWorkflowRunJobs(runId, {
-      1: firstAttemptJobs,
-      2: [
+    stubWorkflowRunAttempt(runId, 2, {
+      startedAt: rerunStart,
+      jobs: [
         { name: "test (1/3)", conclusion: "cancelled", started_at: rerunStart },
         { name: "test (2/3)", conclusion: "success", started_at: rerunStart },
         { name: "test (3/3)", conclusion: "cancelled", started_at: rerunStart },
@@ -149,8 +143,23 @@ describe("finalizePartialBuild", () => {
     expect(await getRerunState(rerun)).toEqual(untouchedRerun);
   });
 
+  test("leaves a rerun already finalized from the shards it got", async ({
+    rerun,
+  }) => {
+    await ScreenshotBucket.query()
+      .findById(rerun.compareScreenshotBucketId)
+      .patch({ complete: true });
+
+    await finalizePartialBuild(rerun.id);
+
+    expect(await getRerunState(rerun)).toEqual({
+      ...untouchedRerun,
+      complete: true,
+    });
+  });
+
   test("throws for the job to retry when GitHub fails", async ({ rerun }) => {
-    stubWorkflowRunJobs(runId, { 1: firstAttemptJobs, 2: { status: 502 } });
+    stubWorkflowRunAttempt(runId, 2, { status: 502 });
 
     await expect(finalizePartialBuild(rerun.id)).rejects.toThrow();
 

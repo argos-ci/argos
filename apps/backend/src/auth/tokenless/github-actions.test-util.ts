@@ -73,32 +73,30 @@ type WorkflowJob = {
 };
 
 /**
- * Answer the job listings of run `runId` from `attempts`, by attempt number:
- * its jobs, or the status GitHub fails with. Any other attempt is not found.
+ * Answer the lookups of attempt `attempt` of run `runId`: when it started and
+ * the jobs it lists, or the status GitHub fails with.
  */
-export function stubWorkflowRunJobs(
+export function stubWorkflowRunAttempt(
   runId: number,
-  attempts: Record<number, WorkflowJob[] | { status: number }>,
+  attempt: number,
+  answer: { startedAt: string; jobs: WorkflowJob[] } | { status: number },
 ) {
+  const url = `https://api.github.com/repos/:owner/:repo/actions/runs/${runId}/attempts/${attempt}`;
+  const fail = (status: number) =>
+    HttpResponse.json({ message: "Server Error" }, { status });
   githubServer.use(
-    http.get<{ attempt: string }>(
-      `https://api.github.com/repos/:owner/:repo/actions/runs/${runId}/attempts/:attempt/jobs`,
-      ({ params }) => {
-        const jobs = attempts[Number(params.attempt)];
-
-        if (!jobs) {
-          return HttpResponse.json({ message: "Not Found" }, { status: 404 });
-        }
-
-        if (!Array.isArray(jobs)) {
-          return HttpResponse.json(
-            { message: "Server Error" },
-            { status: jobs.status },
-          );
-        }
-
-        return HttpResponse.json({ total_count: jobs.length, jobs });
-      },
+    http.get(url, () =>
+      "status" in answer
+        ? fail(answer.status)
+        : HttpResponse.json({ run_started_at: answer.startedAt }),
+    ),
+    http.get(`${url}/jobs`, () =>
+      "status" in answer
+        ? fail(answer.status)
+        : HttpResponse.json({
+            total_count: answer.jobs.length,
+            jobs: answer.jobs,
+          }),
     ),
   );
 }

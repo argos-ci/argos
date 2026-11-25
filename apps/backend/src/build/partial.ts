@@ -1,5 +1,5 @@
 import { invariant } from "@argos/util/invariant";
-import type { TransactionOrKnex } from "objection";
+import { chunk } from "lodash-es";
 
 import { transaction } from "@/database";
 import {
@@ -7,17 +7,26 @@ import {
   BuildShard,
   GithubRepository,
   Screenshot,
+  ScreenshotBucket,
 } from "@/database/models";
 import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
 import { createJob } from "@/job-core";
+import { DEFAULT_RETRY_LADDER } from "@/job-core/backoff";
 
 import { finalizeBuild } from "./finalizeBuild";
 import { job as buildJob } from "./job";
 
 /**
+ * Postgres takes at most 65,535 bind parameters in a statement, and a copied
+ * screenshot takes 14.
+ */
+const SCREENSHOT_INSERT_BATCH_SIZE = 1000;
+
+/**
  * Check if the build comes from a partial rerun: a rerun of a GitHub Actions
- * workflow where only a subset of the jobs ran again. To find out, compare the
- * jobs of the run attempt with the jobs of the previous one.
+ * workflow where only a subset of the jobs ran again. The jobs it did not run
+ * again are listed in its run attempt with their original start, before the
+ * attempt started.
  */
 async function checkIsPartialBuild(build: Build): Promise<boolean> {
   const { runId, runAttempt } = build;
@@ -55,57 +64,69 @@ async function checkIsPartialBuild(build: Build): Promise<boolean> {
     return false;
   }
 
-  const getJobsForRunAttempt = async (attempt: number) => {
-    try {
-      return await octokit.actions.listJobsForWorkflowRunAttempt({
-        attempt_number: attempt,
-        owner: githubAccount.login,
-        repo: githubRepository.name,
-        run_id: Number(runId),
-        per_page: 30,
-      });
-    } catch (error) {
-      if (checkOctokitErrorStatus(404, error)) {
-        return null;
-      }
-
-      throw error;
-    }
+  const params = {
+    owner: githubAccount.login,
+    repo: githubRepository.name,
+    run_id: Number(runId),
+    attempt_number: runAttempt,
   };
 
-  const [previousRun, currentRun] = await Promise.all([
-    getJobsForRunAttempt(runAttempt - 1),
-    getJobsForRunAttempt(runAttempt),
-  ]);
+  try {
+    const { data: attempt } =
+      await octokit.actions.getWorkflowRunAttempt(params);
+    invariant(attempt.run_started_at, "Expected the run attempt to be started");
+    const attemptStartedAt = Date.parse(attempt.run_started_at);
 
-  if (!previousRun || !currentRun) {
+    for await (const { data: jobs } of octokit.paginate.iterator(
+      octokit.actions.listJobsForWorkflowRunAttempt,
+      { ...params, per_page: 100 },
+    )) {
+      const hasCarriedOverJob = jobs.some(
+        (job) =>
+          job.conclusion === "success" &&
+          Date.parse(job.started_at) < attemptStartedAt,
+      );
+      if (hasCarriedOverJob) {
+        return true;
+      }
+    }
+
     return false;
+  } catch (error) {
+    if (checkOctokitErrorStatus(404, error)) {
+      return false;
+    }
+
+    throw error;
   }
-
-  const previousRunJobs = previousRun.data.jobs;
-  const currentRunJobs = currentRun.data.jobs;
-
-  // If we find a similar job that has already succeeded in the previous run,
-  // it means the current run is a partial run.
-  return currentRunJobs.some((currentJob) => {
-    return previousRunJobs.some(
-      (previousJob) =>
-        previousJob.name === currentJob.name &&
-        previousJob.conclusion === "success" &&
-        previousJob.started_at === currentJob.started_at,
-    );
-  });
 }
 
 /**
- * Finalize the build of a partial rerun, by inserting the shards it did not
- * run again from the previous run attempt.
+ * Finalize the build of a partial rerun, by copying the shards it did not run
+ * again from the latest complete attempt before it.
  */
 export async function finalizePartialBuild(buildId: string) {
-  const build = await Build.query().findById(buildId).throwIfNotFound();
+  const build = await Build.query()
+    .findById(buildId)
+    .withGraphFetched("[shards, compareScreenshotBucket]")
+    .throwIfNotFound();
+
+  invariant(build.shards, "Relation `shards` should be fetched");
+  invariant(
+    build.compareScreenshotBucket,
+    "Relation `compareScreenshotBucket` should be fetched",
+  );
+
+  // Finalized from the shards it got, by `argos finalize` for instance.
+  if (build.compareScreenshotBucket.complete) {
+    return;
+  }
 
   const previousBuild = await Build.query()
+    .select("builds.*")
     .withGraphFetched("shards")
+    .joinRelated("compareScreenshotBucket")
+    .where("compareScreenshotBucket.complete", true)
     .where("builds.runId", build.runId)
     .where("builds.projectId", build.projectId)
     .where("builds.name", build.name)
@@ -118,18 +139,20 @@ export async function finalizePartialBuild(buildId: string) {
     return;
   }
 
-  const getMissingShards = async (trx?: TransactionOrKnex) => {
-    invariant(previousBuild.shards, "Shards should be fetched");
-    const shards = await BuildShard.query(trx)
-      .select("index")
-      .where("buildId", build.id);
-    const shardIndices = shards.map((shard) => shard.index);
-    return previousBuild.shards.filter(
-      (shard) => !shardIndices.includes(shard.index),
-    );
-  };
+  invariant(previousBuild.shards, "Relation `shards` should be fetched");
 
-  if ((await getMissingShards()).length === 0) {
+  // Older SDKs upload shards without `parallelIndex`: they cannot be matched.
+  const shards = [...build.shards, ...previousBuild.shards];
+  if (shards.some((shard) => shard.index === null)) {
+    return;
+  }
+
+  const shardIndices = new Set(build.shards.map((shard) => shard.index));
+  const missingShards = previousBuild.shards.filter(
+    (shard) => !shardIndices.has(shard.index),
+  );
+
+  if (missingShards.length === 0) {
     return;
   }
 
@@ -139,45 +162,35 @@ export async function finalizePartialBuild(buildId: string) {
   }
 
   const finalized = await transaction(async (trx) => {
-    // Two runs for the same build must not both insert the missing shards.
-    await Build.query(trx).findById(build.id).forUpdate();
-    const missingShards = await getMissingShards(trx);
+    // Locked so that two runs cannot both copy the shards.
+    const bucket = await ScreenshotBucket.query(trx)
+      .findById(build.compareScreenshotBucketId)
+      .forUpdate()
+      .throwIfNotFound();
 
-    if (missingShards.length === 0) {
+    if (bucket.complete) {
       return false;
     }
 
-    await BuildShard.fetchGraph(missingShards, "screenshots", {
-      transaction: trx,
-    });
-
-    const insertedShards = await BuildShard.query(trx)
-      .insert(
-        missingShards.map((shard) => {
-          return {
-            buildId: build.id,
-            index: shard.index,
-            metadata: shard.metadata,
-          };
-        }),
-      )
-      .returning("id");
-
-    const missingScreenshots = missingShards.flatMap((shard, index) => {
-      const insertedShard = insertedShards[index];
-      invariant(insertedShard, "Inserted shard should be found");
-      invariant(shard.screenshots, "Screenshots should be fetched");
-      return shard.screenshots.map((screenshot) => {
-        return {
-          ...Screenshot.partialClone(screenshot),
-          screenshotBucketId: build.compareScreenshotBucketId,
-          buildShardId: insertedShard.id,
-        };
+    for (const shard of missingShards) {
+      const copy = await BuildShard.query(trx).insert({
+        buildId: build.id,
+        index: shard.index,
+        metadata: shard.metadata,
       });
-    });
-
-    if (missingScreenshots.length > 0) {
-      await Screenshot.query(trx).insert(missingScreenshots);
+      const screenshots = await Screenshot.query(trx).where(
+        "buildShardId",
+        shard.id,
+      );
+      for (const batch of chunk(screenshots, SCREENSHOT_INSERT_BATCH_SIZE)) {
+        await Screenshot.query(trx).insert(
+          batch.map((screenshot) => ({
+            ...Screenshot.partialClone(screenshot),
+            screenshotBucketId: build.compareScreenshotBucketId,
+            buildShardId: copy.id,
+          })),
+        );
+      }
     }
 
     await Build.query(trx).findById(build.id).patch({ partial: true });
@@ -195,9 +208,19 @@ export async function finalizePartialBuild(buildId: string) {
  * partial, and a failing answer is retried instead of leaving the build
  * waiting for shards that would never come.
  */
-export const partialBuildJob = createJob<string>("partialBuild", {
-  perform: finalizePartialBuild,
-});
+export const partialBuildJob = createJob<string>(
+  "partialBuild",
+  { perform: finalizePartialBuild },
+  {
+    timeout: 60_000,
+    // The last attempts outlast the hourly reset of GitHub's rate limit.
+    retryLadder: [
+      ...DEFAULT_RETRY_LADDER,
+      { label: "30m", delay: 30 * 60 * 1000 },
+      { label: "1h", delay: 60 * 60 * 1000 },
+    ],
+  },
+);
 
 /**
  * Queue the builds of a GitHub Actions run attempt that may be partial reruns,
