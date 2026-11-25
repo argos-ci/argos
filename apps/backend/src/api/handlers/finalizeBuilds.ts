@@ -82,17 +82,11 @@ export const finalizeBuilds: CreateAPIHandler = ({ post }) => {
       return Promise.all(
         builds.map(async (build) => {
           invariant(build.compareScreenshotBucket);
-          const willFinalize = !build.compareScreenshotBucket.complete;
-
-          await Promise.all([
-            willFinalize ? finalizeBuildService({ build, trx }) : null,
-            // If the build was marked as partial, then it was obviously an error, we unmark it.
-            build.partial
-              ? Build.query(trx).where("id", build.id).patch({ partial: false })
-              : null,
-          ]);
-
-          return willFinalize;
+          if (build.compareScreenshotBucket.complete) {
+            return false;
+          }
+          await finalizeBuildService({ build, trx });
+          return true;
         }),
       );
     });

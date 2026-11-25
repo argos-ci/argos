@@ -355,13 +355,7 @@ async function completeParallelShard(params: {
     .select("batchCount");
 
   if (expectedTotal && expectedTotal === patchedBuild.batchCount) {
-    await Promise.all([
-      finalizeBuild({ build, trx }),
-      // If the build was marked as partial, then it was obviously an error, we unmark it.
-      build.partial
-        ? Build.query(trx).where("id", build.id).patch({ partial: false })
-        : null,
-    ]);
+    await finalizeBuild({ build, trx });
     return true;
   }
 

@@ -3,7 +3,6 @@ import { invariant } from "@argos/util/invariant";
 
 import type { AuthProjectSource } from "@/auth/payload";
 import { pushBuildNotification } from "@/build-notification";
-import { checkIsPartialBuild } from "@/build/partial";
 import { transaction } from "@/database";
 import {
   Build,
@@ -130,7 +129,7 @@ export async function createBuild(params: {
     );
   }
 
-  const [pullRequest, originPullRequest, mergeQueuePullRequests, isPartial] =
+  const [pullRequest, originPullRequest, mergeQueuePullRequests] =
     await Promise.all([
       (async () => {
         if (!params.prNumber) {
@@ -190,12 +189,6 @@ export async function createBuild(params: {
           ),
         );
       })(),
-      checkIsPartialBuild({
-        ciProvider: params.ciProvider ?? null,
-        project: params.project,
-        runAttempt: params.runAttempt ?? null,
-        runId: params.runId ?? null,
-      }),
     ]);
 
   const build = await redisLock.acquire(
@@ -234,7 +227,6 @@ export async function createBuild(params: {
           argosSdk: params.argosSdk,
           runId: params.runId,
           runAttempt: params.runAttempt,
-          partial: isPartial,
           type: params.skipped ? "skipped" : null,
           subset: params.subset,
           authSource: params.authSource,
