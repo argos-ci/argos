@@ -122,7 +122,7 @@ export function ImpactAnalysisSection(props: {
   const { build, repoUrl } = props;
   const analysis = build.impactAnalysis;
   const components = analysis?.affectedComponents ?? [];
-  // The journeys section shows every changed test, a single screen included.
+  // With journeys, the journeys section takes the place of the affected tests.
   const tests =
     build.journeys.length > 0 ? [] : (analysis?.affectedTests ?? []);
   const showComponents = components.length > 0;
