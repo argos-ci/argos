@@ -217,51 +217,50 @@ function formatReviewLabel(
   return `${emoji} ${verb} by ${reviewerListFormatter.format(names)}`;
 }
 
-function getBuildRows(input: {
+async function getBuildRows(input: {
   builds: Build[];
   hasMultipleProjects: boolean;
-  aggregateStatuses: Awaited<
-    ReturnType<typeof Build.getAggregatedBuildStatuses>
-  >;
-  reviewSummaries: Map<string, BuildReviewSummary>;
-  urls: string[];
 }) {
-  return input.builds
-    .filter((build) => {
-      invariant(build.project, "Relation `project` should be fetched");
-      return build.project.prCommentEnabled;
-    })
-    .map((build, index) => {
-      invariant(build.project, "Relation `project` should be fetched");
+  const builds = input.builds.filter((build) => {
+    invariant(build.project, "Relation `project` should be fetched");
+    return build.project.prCommentEnabled;
+  });
+  const [aggregateStatuses, urls, reviewSummaries] = await Promise.all([
+    Build.getAggregatedBuildStatuses(builds),
+    Promise.all(builds.map((build) => build.getUrl())),
+    getBuildReviewSummaries(builds),
+  ]);
+  return builds.map((build, index) => {
+    invariant(build.project, "Relation `project` should be fetched");
 
-      const url = input.urls[index];
-      invariant(url, "missing build URL");
+    const url = urls[index];
+    invariant(url, "missing build URL");
 
-      const status = input.aggregateStatuses[index];
-      invariant(status, "missing build status");
+    const status = aggregateStatuses[index];
+    invariant(status, "missing build status");
 
-      const stats = build.stats
-        ? getStatsMessage(build.stats, { isSubsetBuild: build.subset })
-        : null;
+    const stats = build.stats
+      ? getStatsMessage(build.stats, { isSubsetBuild: build.subset })
+      : null;
 
-      const label = getReviewAwareBuildLabel({
-        type: build.type,
-        status,
-        summary: input.reviewSummaries.get(build.id),
-      });
-      const review =
-        status === "changes-detected" && build.type !== "reference"
-          ? ` ([Review](${url}))`
-          : "";
-      const name = getBuildName({
-        build,
-        project: input.hasMultipleProjects ? build.project : null,
-      });
-
-      return `| **${name}** ([Inspect](${url})) | ${label}${review} | ${
-        stats || "-"
-      } | ${formatDate(build.updatedAt)} |`;
+    const label = getReviewAwareBuildLabel({
+      type: build.type,
+      status,
+      summary: reviewSummaries.get(build.id),
     });
+    const review =
+      status === "changes-detected" && build.type !== "reference"
+        ? ` ([Review](${url}))`
+        : "";
+    const name = getBuildName({
+      build,
+      project: input.hasMultipleProjects ? build.project : null,
+    });
+
+    return `| **${name}** ([Inspect](${url})) | ${label}${review} | ${
+      stats || "-"
+    } | ${formatDate(build.updatedAt)} |`;
+  });
 }
 
 function getDeploymentRows(input: {
@@ -338,18 +337,7 @@ export async function getCommentBody(props: {
       ...builds.map((build) => build.projectId),
       ...deployments.map((deployment) => deployment.projectId),
     ]).size > 1;
-  const [aggregateStatuses, urls, reviewSummaries] = await Promise.all([
-    Build.getAggregatedBuildStatuses(builds),
-    Promise.all(builds.map((build) => build.getUrl())),
-    getBuildReviewSummaries(builds),
-  ]);
-  const buildRows = getBuildRows({
-    builds,
-    hasMultipleProjects,
-    aggregateStatuses,
-    reviewSummaries,
-    urls,
-  });
+  const buildRows = await getBuildRows({ builds, hasMultipleProjects });
   const deploymentRows = getDeploymentRows({
     deployments,
     hasMultipleProjects,
