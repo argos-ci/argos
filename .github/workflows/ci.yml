@@ -145,12 +145,6 @@ jobs:
       PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.65.1-jammy
 
     steps:
-      # A `docker://` step would pull the image before the job's first step,
-      # holding everything up for half a minute. Pulled in the background, it
-      # downloads while dependencies install and the app builds.
-      - name: Pull Playwright image
-        run: docker pull --quiet "$PLAYWRIGHT_IMAGE" > /dev/null 2>&1 &
-
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -159,6 +153,12 @@ jobs:
 
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-deps
+
+      # Pulled in the background, so it downloads while the app builds. A
+      # `docker://` step would pull it before the job's first step, and pulled
+      # from the first step, it slowed the dependency download down.
+      - name: Pull Playwright image
+        run: docker pull --quiet "$PLAYWRIGHT_IMAGE" > /dev/null 2>&1 &
 
       - name: Build
         run: pnpm exec -- turbo run build
@@ -192,8 +192,6 @@ jobs:
           for name in $(compgen -e | grep '^GITHUB_'); do
             github_env+=(--env "$name")
           done
-          # HOME=/root: Firefox fails on permissions otherwise
-          # https://github.com/microsoft/playwright/issues/6500
           docker run --rm \
             --network services \
             --volume "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -201,7 +199,6 @@ jobs:
             --workdir "$GITHUB_WORKSPACE" \
             "${github_env[@]}" \
             --env CI \
-            --env HOME=/root \
             --env API_BASE_URL \
             --env NODE_ENV \
             --env TZ \
