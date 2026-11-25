@@ -162,8 +162,8 @@ export class Build extends Model {
   runId!: string | null;
   runAttempt!: number | null;
   /**
-   * This flag is set to true when a build is submitted from a partial retry in GitHub Actions,
-   * meaning not all test cases were executed.
+   * Set once a partial rerun in GitHub Actions got the shards it did not run
+   * again from the previous run attempt.
    */
   partial!: boolean | null;
   metadata!: BuildMetadata | null;

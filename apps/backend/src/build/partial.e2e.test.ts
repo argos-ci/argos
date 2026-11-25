@@ -9,7 +9,7 @@ import {
 import { Build, BuildShard } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { finalizePartialBuilds } from "./partial";
+import { finalizePartialBuild } from "./partial";
 
 const runId = 42;
 const firstStart = "2026-11-25T09:28:00Z";
@@ -94,18 +94,27 @@ async function getRerunState(rerun: Build) {
   };
 }
 
-describe("finalizePartialBuilds", () => {
+const firstAttemptJobs = [
+  { name: "test (1/3)", conclusion: "success", started_at: firstStart },
+  { name: "test (2/3)", conclusion: "failure", started_at: firstStart },
+  { name: "test (3/3)", conclusion: "success", started_at: firstStart },
+];
+
+const untouchedRerun = {
+  partial: false,
+  shardIndices: [2],
+  complete: false,
+  screenshotCount: 0,
+};
+
+describe("finalizePartialBuild", () => {
   setupGithubServer();
 
   test("completes a rerun of the failed jobs with the shards of the previous attempt", async ({
     rerun,
   }) => {
     stubWorkflowRunJobs(runId, {
-      1: [
-        { name: "test (1/3)", conclusion: "success", started_at: firstStart },
-        { name: "test (2/3)", conclusion: "failure", started_at: firstStart },
-        { name: "test (3/3)", conclusion: "success", started_at: firstStart },
-      ],
+      1: firstAttemptJobs,
       2: [
         { name: "test (1/3)", conclusion: "success", started_at: firstStart },
         { name: "test (2/3)", conclusion: "success", started_at: rerunStart },
@@ -113,7 +122,7 @@ describe("finalizePartialBuilds", () => {
       ],
     });
 
-    await finalizePartialBuilds({ runId: String(runId), runAttempt: 2 });
+    await finalizePartialBuild(rerun.id);
 
     expect(await getRerunState(rerun)).toEqual({
       partial: true,
@@ -127,11 +136,7 @@ describe("finalizePartialBuilds", () => {
     rerun,
   }) => {
     stubWorkflowRunJobs(runId, {
-      1: [
-        { name: "test (1/3)", conclusion: "success", started_at: firstStart },
-        { name: "test (2/3)", conclusion: "success", started_at: firstStart },
-        { name: "test (3/3)", conclusion: "success", started_at: firstStart },
-      ],
+      1: firstAttemptJobs,
       2: [
         { name: "test (1/3)", conclusion: "cancelled", started_at: rerunStart },
         { name: "test (2/3)", conclusion: "success", started_at: rerunStart },
@@ -139,13 +144,16 @@ describe("finalizePartialBuilds", () => {
       ],
     });
 
-    await finalizePartialBuilds({ runId: String(runId), runAttempt: 2 });
+    await finalizePartialBuild(rerun.id);
 
-    expect(await getRerunState(rerun)).toEqual({
-      partial: false,
-      shardIndices: [2],
-      complete: false,
-      screenshotCount: 0,
-    });
+    expect(await getRerunState(rerun)).toEqual(untouchedRerun);
+  });
+
+  test("throws for the job to retry when GitHub fails", async ({ rerun }) => {
+    stubWorkflowRunJobs(runId, { 1: firstAttemptJobs, 2: { status: 502 } });
+
+    await expect(finalizePartialBuild(rerun.id)).rejects.toThrow();
+
+    expect(await getRerunState(rerun)).toEqual(untouchedRerun);
   });
 });

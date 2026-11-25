@@ -73,12 +73,12 @@ type WorkflowJob = {
 };
 
 /**
- * Answer the job listings of run `runId` from `attempts`, by attempt number.
- * Any other attempt is not found.
+ * Answer the job listings of run `runId` from `attempts`, by attempt number:
+ * its jobs, or the status GitHub fails with. Any other attempt is not found.
  */
 export function stubWorkflowRunJobs(
   runId: number,
-  attempts: Record<number, WorkflowJob[]>,
+  attempts: Record<number, WorkflowJob[] | { status: number }>,
 ) {
   githubServer.use(
     http.get<{ attempt: string }>(
@@ -88,6 +88,13 @@ export function stubWorkflowRunJobs(
 
         if (!jobs) {
           return HttpResponse.json({ message: "Not Found" }, { status: 404 });
+        }
+
+        if (!Array.isArray(jobs)) {
+          return HttpResponse.json(
+            { message: "Server Error" },
+            { status: jobs.status },
+          );
         }
 
         return HttpResponse.json({ total_count: jobs.length, jobs });

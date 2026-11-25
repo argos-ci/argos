@@ -3,6 +3,7 @@ import { checkExpiringSamlCertificates } from "@/auth/saml-certificate-expiratio
 import { job as automationActionRunJob } from "@/automation/job";
 import { job as buildJob } from "@/build";
 import { job as buildNotificationJob } from "@/build-notification";
+import { partialBuildJob } from "@/build/partial";
 import config from "@/config";
 import {
   enqueueMonthlyReports,
@@ -136,6 +137,7 @@ createJobWorker(
   notificationWorkflowJob,
   originInstallationSyncJob,
   originPullRequestJob,
+  partialBuildJob,
   synchronizeJob,
   screenshotDiffJob,
   monthlyReportJob,
