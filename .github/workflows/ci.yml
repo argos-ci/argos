@@ -117,9 +117,8 @@ jobs:
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-deps
 
-      # Codegen and the workspace packages. Tests run the backend from its
-      # sources and build their own databases, so neither app is built and the
-      # `test` database is not created.
+      # Codegen and the workspace packages: tests run the backend from its
+      # sources.
       - name: Setup
         run: pnpm exec -- turbo run build --filter='./packages/*'
 
@@ -161,13 +160,16 @@ jobs:
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-deps
 
+      - name: Build
+        run: pnpm exec -- turbo run build
+        env:
+          BUILD_MODE: production
+
       - name: Wait for services
         run: scripts/ci-services.sh wait
 
-      - name: Setup
-        run: pnpm run setup
-        env:
-          BUILD_MODE: production
+      - name: Create database
+        run: pnpm --filter @argos/backend run setup
 
       # The workspace and RUNNER_TEMP are mounted at their own paths, so the
       # GITHUB_* variables pointing into them — the event payload the Argos

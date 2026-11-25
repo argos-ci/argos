@@ -18,9 +18,12 @@ LOG="${RUNNER_TEMP:-/tmp}/ci-services.log"
 start() {
   docker network create services > /dev/null
   {
+    # Without durability: tests commit for every row a factory creates and
+    # every truncation, and each commit waited on the disk.
     docker run --detach --name postgres --network services \
       --publish 5432:5432 --env POSTGRES_HOST_AUTH_METHOD=trust \
-      postgres:18-alpine &
+      postgres:18-alpine \
+      -c fsync=off -c synchronous_commit=off -c full_page_writes=off &
     docker run --detach --name redis --network services \
       --publish 6380:6379 \
       redis:6-alpine &
@@ -32,25 +35,28 @@ start() {
   } > "$LOG" 2>&1 &
 }
 
-ready() {
-  # On 127.0.0.1 rather than the socket: the image's init script first starts
-  # a temporary server listening on the socket only, then restarts it.
-  docker exec postgres pg_isready --quiet --host 127.0.0.1 &&
-    docker exec redis redis-cli ping &&
-    docker exec rabbitmq rabbitmq-diagnostics --quiet check_port_listener 5672
-}
-
-wait_ready() {
-  local deadline=$((SECONDS + 90))
-  until ready > /dev/null 2>&1; do
-    if ((SECONDS > deadline)); then
+# wait_for <container> <command...>
+wait_for() {
+  until docker exec "$@" > /dev/null 2>&1; do
+    if ((SECONDS > 90)); then
       cat "$LOG"
       docker ps --all
       echo "Services did not start within 90 seconds." >&2
       exit 1
     fi
-    sleep 1
+    sleep 0.2
   done
+}
+
+wait_ready() {
+  # On 127.0.0.1 rather than the socket: the image's init script first starts
+  # a temporary server listening on the socket only, then restarts it.
+  wait_for postgres pg_isready --quiet --host 127.0.0.1
+  wait_for redis redis-cli ping
+  # Not `rabbitmq-diagnostics`: run as root before the broker is up, it
+  # creates the Erlang cookie owned by root, and the broker exits.
+  wait_for rabbitmq nc -z 127.0.0.1 5672
+  echo "Services ready after waiting ${SECONDS}s."
 }
 
 case "${1:-}" in

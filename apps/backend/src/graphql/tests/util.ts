@@ -5,7 +5,7 @@ import express, { RequestHandler } from "express";
 import type { AuthSessionPayload } from "@/auth/payload";
 import type { Account, User } from "@/database/models";
 
-let startPromise: Promise<void> | null = null;
+import { startApolloServer } from "../apollo";
 
 /** Who a mocked request comes from, on a session opened by an email login unless set. */
 export type MockedViewer = {
@@ -36,8 +36,7 @@ export async function createApolloServerApp<Context extends BaseContext>(
     next();
   }) as express.RequestHandler);
 
-  startPromise ??= apolloServer.start();
-  await startPromise;
+  await startApolloServer(apolloServer);
 
   app.use("/graphql", express.json(), getMiddleware());
 

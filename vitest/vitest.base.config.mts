@@ -1,5 +1,13 @@
 import { defineConfig } from "vitest/config";
 
+/** @public */
+export const EXCLUDE = [
+  "./tests",
+  "**/node_modules",
+  "**/dist",
+  "**/.claude/**",
+];
+
 export default defineConfig({
   resolve: {
     tsconfigPaths: true,
@@ -11,6 +19,6 @@ export default defineConfig({
   },
   test: {
     globalSetup: "./vitest/vitest.global-setup.mts",
-    exclude: ["./tests", "**/node_modules", "**/dist", "**/.claude/**"],
+    exclude: EXCLUDE,
   },
 });

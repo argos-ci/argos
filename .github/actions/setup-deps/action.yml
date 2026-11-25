@@ -17,13 +17,14 @@ runs:
           infra/node_modules
         key: node-modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'patches/**') }}
 
-    # Installs pnpm's own binary and the Node.js version in `.nvmrc`. Node.js 25
-    # and later no longer ship Corepack, and installing it from npm took five
-    # seconds.
+    # Installs pnpm's own binary and the Node.js version in `.nvmrc`. Its store
+    # cache stays off: on a miss every job saves its own 366 MB copy, and the
+    # node_modules cache already covers an unchanged lockfile. Naming the
+    # lockfile saves it starting pnpm to find one.
     - name: Install pnpm and Node.js
       uses: pnpm/setup@731dfb6463bbd11c11fd0ee11fe00ed0e36d48a1 # v3.2.0
       with:
-        cache: ${{ steps.node-modules.outputs.cache-hit != 'true' }}
+        cache-dependency-path: pnpm-lock.yaml
         install: ${{ steps.node-modules.outputs.cache-hit != 'true' }}
         require-lockfile: true
 
