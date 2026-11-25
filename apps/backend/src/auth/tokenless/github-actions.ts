@@ -1,6 +1,5 @@
 import { invariant } from "@argos/util/invariant";
 import type { WithGraphModel } from "objection";
-import pRetry from "p-retry";
 import z from "zod";
 
 import {
@@ -148,25 +147,19 @@ const inProgressRunStore = redisCache.createStore({
       );
     }
 
-    const githubRun = await pRetry(
-      async () => {
-        try {
-          const result = await octokit.actions.getWorkflowRun({
-            owner: lookup.owner,
-            repo: lookup.repository,
-            run_id: lookup.runId,
-            filter: "latest",
-          });
-          return result;
-        } catch (error) {
-          if (checkOctokitErrorStatus(404, error)) {
-            return null;
-          }
-          throw error;
+    const githubRun = await octokit.actions
+      .getWorkflowRun({
+        owner: lookup.owner,
+        repo: lookup.repository,
+        run_id: lookup.runId,
+        filter: "latest",
+      })
+      .catch((error: unknown) => {
+        if (checkOctokitErrorStatus(404, error)) {
+          return null;
         }
-      },
-      { retries: 3 },
-    );
+        throw error;
+      });
 
     if (!githubRun) {
       throw boom(404, `GitHub run not found (token: "${lookup.bearerToken}")`);
