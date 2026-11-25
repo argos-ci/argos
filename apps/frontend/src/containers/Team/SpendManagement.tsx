@@ -29,6 +29,8 @@ import { Separator } from "@/ui/Separator";
 import { SwitchField } from "@/ui/Switch";
 import { formatCurrency } from "@/util/intl";
 
+import { TeamBillingPopover } from "./TeamOwnersPopover";
+
 const _AccountFragment = graphql(`
   fragment TeamSpendManagement_Account on Account {
     id
@@ -246,6 +248,15 @@ function SpendManagementForm(props: {
               </>
             ) : null}
           </div>
+          {canManageBilling ? null : (
+            <p className="text-low mt-4 text-sm">
+              Only{" "}
+              <TeamBillingPopover account={{ slug: account.slug, permissions }}>
+                team owners and billing members
+              </TeamBillingPopover>{" "}
+              can change the spend limit.
+            </p>
+          )}
         </CardBody>
         <FormCardFooter control={form.control} isSuccessful={isSuccessful}>
           Learn more about{" "}

@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 
 import { useAssertAuthAccount } from "@/containers/Auth";
 import { DocumentType, graphql } from "@/gql";
@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/ui/Card";
 import { DialogTrigger, useDialogValueState } from "@/ui/Dialog";
+import { Link } from "@/ui/Link";
 import { List, ListRowLoader } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
 import { Tab, TabList, tabListScrollClassName, TabPanel, Tabs } from "@/ui/Tab";
@@ -78,6 +79,7 @@ export function TeamMembers(props: {
     team.plan?.fineGrainedAccessControlIncluded,
   );
   const teamName = team.name || team.slug;
+  const [tab, setTab] = useState<string | null>("members");
 
   return (
     <Card>
@@ -86,7 +88,7 @@ export function TeamMembers(props: {
         <CardParagraph>
           Add members to your team to give them access to your projects.
         </CardParagraph>
-        <Tabs defaultValue="members">
+        <Tabs value={tab} onValueChange={setTab}>
           <TabList className={tabListScrollClassName}>
             <Tab value="members">Members</Tab>
             {team.ssoGithubAccount ? (
@@ -154,9 +156,18 @@ export function TeamMembers(props: {
             </DialogTrigger>
           </>
         ) : (
-          <>
-            <div>Only a owners can invite people in the team.</div>
-          </>
+          <div>
+            Only{" "}
+            <Link
+              href={`/${team.slug}/settings/members?role=${TeamUserLevel.Owner}`}
+              // The role filter belongs to the Members tab: from another tab
+              // the link would only change the URL.
+              onClick={() => setTab("members")}
+            >
+              team owners
+            </Link>{" "}
+            can invite people.
+          </div>
         )}
       </CardFooter>
     </Card>
