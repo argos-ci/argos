@@ -24,6 +24,7 @@ const AGENTS: AgentDefinition[] = [
   { id: "claude-code", displayName: "Claude Code" },
   { id: "claude", displayName: "Claude" },
   { id: "openai-codex", displayName: "OpenAI Codex" },
+  { id: "chatgpt", displayName: "ChatGPT" },
   { id: "cursor", displayName: "Cursor" },
   { id: "vscode", displayName: "Visual Studio Code" },
   { id: "windsurf", displayName: "Windsurf" },

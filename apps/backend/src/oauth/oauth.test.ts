@@ -122,6 +122,20 @@ describe("known-apps verification", () => {
     ).toBe("cursor");
   });
 
+  it("tells a ChatGPT connector from Codex", () => {
+    expect(
+      resolveKnownApp({
+        redirectUris: ["https://chatgpt.com/connector_platform_oauth_redirect"],
+      })?.id,
+    ).toBe("chatgpt");
+    expect(
+      resolveKnownApp({
+        clientUri: "https://openai.com/codex",
+        redirectUris: ["http://127.0.0.1:1455/callback"],
+      })?.id,
+    ).toBe("openai-codex");
+  });
+
   it("does not verify from an unknown host or name alone", () => {
     expect(resolveKnownApp({ clientUri: "https://evil.example" })).toBeNull();
     expect(resolveKnownApp({})).toBeNull();

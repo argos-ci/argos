@@ -22,6 +22,14 @@ export type XMcpExtension = {
   name?: string;
   /** Override the tool description (defaults to summary + description). */
   description?: string;
+  /**
+   * Mark a non-`DELETE` tool as destructive (`DELETE` always is). Set it when
+   * the operation revokes access, cancels something, or sends something that
+   * cannot be recalled. Updates and toggles are not destructive. The Claude
+   * and ChatGPT directories check every tool's annotations against what it
+   * does.
+   */
+  destructive?: boolean;
 };
 
 type EligibilityFields = {
