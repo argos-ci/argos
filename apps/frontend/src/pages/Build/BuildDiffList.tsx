@@ -231,8 +231,12 @@ function getRows(
       const last = index === diffs.length - 1;
 
       // A journey is walked screen by screen, so it shows no stacks either.
+      // Searched, a screen shows what matched rather than its step.
       if (journeyMode) {
-        rows.push(memoCreateListItemRow({ diff, first, last }));
+        const result = searchMode
+          ? (results.find((r) => r.item === diff) ?? null)
+          : null;
+        rows.push(memoCreateListItemRow({ diff, first, last, result }));
         return;
       }
 
