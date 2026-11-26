@@ -259,6 +259,17 @@ async function getBuildRows(input: {
   });
 }
 
+/**
+ * An external deployment's URL comes from the API: an unbalanced parenthesis
+ * would end the link early, and a pipe would split the table row.
+ */
+function escapeMarkdownTableUrl(url: string): string {
+  return url.replace(
+    /[()|]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+}
+
 function getDeploymentRows(input: {
   deployments: WithGraphModel<Deployment, "[project, aliases]">[];
   hasMultipleProjects: boolean;
@@ -272,11 +283,11 @@ function getDeploymentRows(input: {
       });
 
       const url = getDeploymentPreferredUrl({
-        slug: deployment.slug,
+        url: deployment.url,
         aliases: deployment.aliases,
       });
 
-      return `| **${name}** ([Open](${url})) | ${getDeploymentLabel(
+      return `| **${name}** ([Open](${escapeMarkdownTableUrl(url)})) | ${getDeploymentLabel(
         deployment,
       )} | ${deployment.branch} | ${formatDate(deployment.updatedAt)} |`;
     });
@@ -313,6 +324,12 @@ export async function getCommentBody(props: {
       .withGraphFetched("[project,aliases]")
       .where("deployments.commitSha", commit)
       .whereNull("project.deletedAt")
+      // With hosting off, Argos no longer serves the deployments it hosts.
+      .where((query) =>
+        query
+          .whereNotNull("deployments.externalUrl")
+          .orWhere("project.deploymentEnabled", true),
+      )
       .orderBy([
         { column: "deployments.projectId", order: "desc" },
         { column: "deployments.environment", order: "desc" },

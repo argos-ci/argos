@@ -110,7 +110,8 @@ export const ProjectSchema = z
         "Whether builds from forked pull requests can be uploaded without a token.",
     }),
     deploymentEnabled: z.boolean().meta({
-      description: "Whether deployments are served for this project.",
+      description:
+        "Whether Argos serves the deployments it hosts for this project. Deployments hosted elsewhere are not affected.",
     }),
     githubDeploymentEnabled: z.boolean().meta({
       description:

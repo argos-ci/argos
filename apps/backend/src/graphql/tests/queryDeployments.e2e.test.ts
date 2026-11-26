@@ -124,4 +124,58 @@ describe("GraphQL queryDeployments", () => {
       ],
     });
   });
+
+  it("lists only deployments hosted elsewhere when Argos hosting is off", async () => {
+    await project.$query().patch({ deploymentEnabled: false });
+    await factory.Deployment.create({
+      projectId: project.id,
+      slug: "deployment-hosted",
+    });
+    const externalDeployment = await factory.Deployment.create({
+      projectId: project.id,
+      slug: null,
+      externalUrl: "https://web-git-feature.vercel.app/",
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: userAccount.user!,
+        account: userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `{
+          project(
+            accountSlug: "${teamAccount.slug}",
+            projectName: "${project.name}",
+          ) {
+            deployments(first: 10, after: 0) {
+              pageInfo {
+                totalCount
+              }
+              edges {
+                id
+                url
+              }
+            }
+          }
+        }`,
+      });
+
+    expectNoGraphQLError(res);
+    expect(res.status).toBe(200);
+    expect(res.body.data.project.deployments).toEqual({
+      pageInfo: { totalCount: 1 },
+      edges: [
+        {
+          id: formatDeploymentId(externalDeployment.id),
+          url: "https://web-git-feature.vercel.app/",
+        },
+      ],
+    });
+  });
 });

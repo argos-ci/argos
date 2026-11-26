@@ -876,6 +876,8 @@ staffTest("staff cancellations", async ({ page, plan, user }, testInfo) => {
   await expect(acmeSwitch).toBeChecked();
   await page.reload();
   await page.getByRole("searchbox").fill(prefix);
+  // Until the search applies, the page lists the teams other tests cancel too.
+  await expect(page.getByText(/^Showing 7 of \d+ teams$/)).toBeVisible();
   await expect(
     page
       .getByRole("row", { name: /Acme/ })

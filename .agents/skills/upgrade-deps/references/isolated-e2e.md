@@ -14,7 +14,7 @@ pnpm build                         # specs run against apps/frontend/dist
 export PG_DATABASE=deps_e2e NODE_ENV=test PORT=3187 SERVER_URL=http://localhost:3187
 pnpm run --filter @argos/backend db:create
 pnpm run --filter @argos/backend db:load
-pnpm exec playwright install chromium firefox   # after a @playwright/test bump
+pnpm exec playwright install chromium   # after a @playwright/test bump
 ```
 
 Write this config to a scratch directory, outside the repository, replacing
@@ -53,7 +53,7 @@ With the variables above still exported:
 
 ```bash
 npx playwright test --config <scratch>/pw.isolated.config.mts \
-  --project=chromium --project=firefox -g "<test title>" \
+  --project=chromium -g "<test title>" \
   --repeat-each=5 --workers=1
 ```
 

@@ -142,6 +142,49 @@ describe("getCommentBody", () => {
     expect(body).not.toContain(deployment.url);
   });
 
+  test("links a deployment hosted elsewhere on its own URL", async ({
+    project,
+  }) => {
+    await factory.Deployment.create({
+      projectId: project.id,
+      commitSha: commit,
+      slug: null,
+      externalUrl: "https://docs.example.com/a)|b",
+      branch: "feature/comment",
+      updatedAt: "2026-05-07T12:05:00.000Z",
+    });
+
+    const body = await getCommentBody({ commit });
+
+    // Escaped so the link and the table row stay whole.
+    expect(body).toContain(
+      "| **preview** ([Open](https://docs.example.com/a%29%7Cb)) | Ready | feature/comment | May 7, 2026, 12:05 PM |",
+    );
+  });
+
+  test("leaves out the deployments Argos no longer hosts", async ({
+    project,
+  }) => {
+    await project.$query().patch({ deploymentEnabled: false });
+    await factory.Deployment.create({
+      projectId: project.id,
+      commitSha: commit,
+      slug: null,
+      externalUrl: "https://docs-git-feature.vercel.app/",
+      createdAt: "2026-05-07T12:00:00.000Z",
+    });
+    const hostedDeployment = await createDeployment({
+      projectId: project.id,
+      slug: "hosted-deployment",
+      createdAt: "2026-05-07T12:10:00.000Z",
+    });
+
+    const body = await getCommentBody({ commit });
+
+    expect(body).toContain("([Open](https://docs-git-feature.vercel.app/))");
+    expect(body).not.toContain(hostedDeployment.url);
+  });
+
   test("uses the latest deployment per project and environment", async ({
     project,
   }) => {

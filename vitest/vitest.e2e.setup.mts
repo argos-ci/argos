@@ -1,8 +1,21 @@
+import { afterAll, vi } from "vitest";
+
+import { resetFactorySequences } from "../apps/backend/src/database/testing/sequences";
 import { WORKERS_ENV_VAR } from "./vitest.e2e.workers.mjs";
 
-// Runs before the test file is imported, and must not import anything reading
+// Runs before each test file is imported, and must not import anything reading
 // the configuration: the worker environment has to be applied before the
 // configuration module is evaluated.
+
+// Files share workers, see `vitest.e2e.config.mts`. Tests assert on the values
+// factory counters produce, and a file must not inherit the timers or stubs of
+// the one before.
+resetFactorySequences();
+afterAll(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 
 const rawWorkersEnv = process.env[WORKERS_ENV_VAR];
 

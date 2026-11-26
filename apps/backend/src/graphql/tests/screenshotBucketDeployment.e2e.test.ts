@@ -95,6 +95,67 @@ describe("GraphQL Build.deployment", () => {
     });
   });
 
+  it("returns only a deployment hosted elsewhere when deployments are off", async () => {
+    await project.$query().patch({ deploymentEnabled: false });
+    const commitSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const compareScreenshotBucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      commit: commitSha,
+    });
+    await factory.Build.create({
+      projectId: project.id,
+      compareScreenshotBucketId: compareScreenshotBucket.id,
+    });
+
+    const externalDeployment = await factory.Deployment.create({
+      projectId: project.id,
+      commitSha,
+      slug: null,
+      externalUrl: "https://web-git-feature.vercel.app/",
+      createdAt: "2026-04-10T10:00:00.000Z",
+    });
+    // Newer, but Argos no longer serves it.
+    await factory.Deployment.create({
+      projectId: project.id,
+      commitSha,
+      slug: "deployment-hosted",
+      createdAt: "2026-04-11T10:00:00.000Z",
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: userAccount.user!,
+        account: userAccount,
+      },
+    );
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `{
+          project(accountSlug: "${userAccount.slug}", projectName: "${project.name}") {
+            build(number: 1) {
+              deployment {
+                id
+                url
+                external
+              }
+            }
+          }
+        }`,
+      });
+
+    expectNoGraphQLError(res);
+    expect(res.status).toBe(200);
+    expect(res.body.data.project.build.deployment).toEqual({
+      id: formatDeploymentId(externalDeployment.id),
+      url: "https://web-git-feature.vercel.app/",
+      external: true,
+    });
+  });
+
   it("returns the latest deployment matching any build commit sha", async () => {
     const screenshotCommitSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const prHeadCommitSha = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";

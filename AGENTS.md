@@ -334,6 +334,13 @@ has to earn its place by protecting something the project actually depends on.
   `apps/backend/src/database/testing/workers.ts`). Nothing to create by hand:
   worker databases are built from `db/structure.sql` and rebuilt whenever it
   changes. The `test` database is left alone, it belongs to Playwright.
+- Integration workers are reused across test files, so a file runs with the
+  modules the previous one loaded. `vitest/vitest.e2e.config.mts` isolates the
+  files that leave state behind, found by matching their source. A test that
+  passes alone and fails in the full run is usually state some other file
+  left: reset it in `vitest/vitest.e2e.setup.mts` (as is done for factory
+  sequences, timers and stubs), or add a pattern when only a fresh module
+  graph undoes it.
 - If `db:reset` reports `database "test" is being accessed by other users`:
 
   ```bash
@@ -355,6 +362,10 @@ Specs live in `tests/*.spec.ts` and run against the **built** app.
   `packages/*` must be built too or module resolution fails.
 - The `setup` project truncates the DB; each test seeds its own data via the
   `loggedTest` fixtures (real session cookie), so keep seeded data isolated.
+- CI splits the tests between shards by duration, not count:
+  `tests/shard-balancer.ts` reads `tests/durations.json`, where a test missing
+  counts as the median. After adding or reworking slow specs, refresh it with
+  `UPDATE_E2E_DURATIONS=1 NODE_ENV=test pnpm test:e2e`.
 - Take screenshots with the `screenshot()` helper in `tests/util.ts`. Content
   marked `data-visual-test="transparent"` (e.g. `<Time>`) is neutralized
   automatically; use the helper's `replacements` for other unstable text.
