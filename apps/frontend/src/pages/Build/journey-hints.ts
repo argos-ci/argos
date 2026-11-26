@@ -59,3 +59,12 @@ export function getJourneyRunHints(
   }
   return hints;
 }
+
+/** The screenshot diffs of a journey, in every variant. */
+export function getJourneyDiffIds(journey: {
+  variants: readonly { diffIds: readonly (string | null)[] }[];
+}): string[] {
+  return journey.variants.flatMap((variant) =>
+    variant.diffIds.filter((diffId) => diffId !== null),
+  );
+}

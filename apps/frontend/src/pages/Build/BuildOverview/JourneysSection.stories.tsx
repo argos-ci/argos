@@ -1,11 +1,8 @@
 import type { ComponentProps } from "react";
+import { invariant } from "@argos/util/invariant";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import {
-  BuildType,
-  ScreenshotDiffStatus,
-  ScreenshotMetadataColorScheme,
-} from "@/gql/graphql";
+import { BuildType, ScreenshotMetadataColorScheme } from "@/gql/graphql";
 
 import { EvaluationStatus } from "../EvaluationStatus";
 import { getJourneyAnchor, JourneysSectionView } from "./JourneysSection";
@@ -13,7 +10,7 @@ import { getJourneyAnchor, JourneysSectionView } from "./JourneysSection";
 type Props = ComponentProps<typeof JourneysSectionView>;
 type Build = Props["build"];
 type Journey = Build["journeys"][number];
-type JourneyDiff = Journey["steps"][number]["diffs"][number];
+type Cover = Journey["variants"][number]["cover"];
 
 type Viewport = { width: number; height: number };
 
@@ -34,50 +31,24 @@ function getScreenImage(name: string, viewport: Viewport, changed: boolean) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-let nextId = 0;
-
-function screen(input: {
-  name: string;
-  variantKey?: string;
-  viewport: Viewport;
-  changed?: boolean;
-  colorScheme?: ScreenshotMetadataColorScheme;
-}): JourneyDiff {
-  nextId++;
-  const changed = input.changed ?? false;
-  const metadata = {
-    __typename: "ScreenshotMetadata" as const,
-    colorScheme: input.colorScheme ?? ScreenshotMetadataColorScheme.Light,
-    browser: {
-      __typename: "ScreenshotMetadataBrowser" as const,
-      name: "chromium",
-    },
-    viewport: {
-      __typename: "ScreenshotMetadataViewport" as const,
-      ...input.viewport,
-    },
-  };
+/** The screenshot a card shows. */
+function cover(
+  id: string,
+  name: string,
+  viewport: Viewport,
+  changed: boolean,
+): Cover {
   const screenshot = {
     __typename: "Screenshot" as const,
-    id: `screenshot-${nextId}`,
-    url: getScreenImage(
-      input.name.split("/").at(-1) ?? input.name,
-      input.viewport,
-      changed,
-    ),
+    id: `screenshot-${id}`,
+    url: getScreenImage(name, viewport, changed),
     contentType: "image/svg+xml",
-    metadata,
   };
   return {
     __typename: "ScreenshotDiff",
-    id: `diff-${nextId}`,
-    name: input.name,
-    variantKey: input.variantKey ?? input.name,
-    status: changed
-      ? ScreenshotDiffStatus.Changed
-      : ScreenshotDiffStatus.Unchanged,
+    id,
     compareScreenshot: screenshot,
-    baseScreenshot: { ...screenshot, id: `base-${nextId}` },
+    baseScreenshot: { ...screenshot, id: `base-${id}` },
   };
 }
 
@@ -91,42 +62,53 @@ function journey(input: {
   title: string;
   /** `describe` blocks between the file and the title. */
   describe?: string[];
-  project: string;
   viewport: Viewport;
   /** The screens, the changed ones marked with a `*`. */
   screens: string[];
 }): Journey {
+  const steps = input.screens.map((name) => ({
+    key: name.replace("*", ""),
+    diffId: `${input.id}-${name.replace("*", "")}`,
+    changed: name.endsWith("*"),
+  }));
+  const [first] = steps;
+  invariant(first, "a journey has a screen");
+  const shown = steps.find((step) => step.changed) ?? first;
   return {
     __typename: "BuildJourney",
     id: input.id,
     prefix: [input.file, ...(input.describe ?? [])].join(" › "),
     title: input.title,
     browser: "chromium",
-    viewport: {
-      __typename: "ScreenshotMetadataViewport",
-      ...input.viewport,
-    },
+    viewport: { __typename: "ScreenshotMetadataViewport", ...input.viewport },
     location: {
       __typename: "ScreenshotMetadataLocation",
       file: `e2e/${input.file}`,
       line: 12,
       column: 3,
     },
-    steps: input.screens.map((name) => {
-      const key = name.replace("*", "");
-      return {
-        __typename: "BuildJourneyStep",
-        key,
-        diffs: [
-          screen({
-            name: `${input.project}/${key}.png`,
-            variantKey: key,
-            viewport: input.viewport,
-            changed: name.endsWith("*"),
-          }),
-        ],
-      };
-    }),
+    stepKeys: steps.map((step) => step.key),
+    variants: [
+      {
+        __typename: "BuildJourneyVariant",
+        browser: "chromium",
+        colorScheme: ScreenshotMetadataColorScheme.Light,
+        viewport: {
+          __typename: "ScreenshotMetadataViewport",
+          ...input.viewport,
+        },
+        diffIds: steps.map((step) => step.diffId),
+        changedDiffIds: steps
+          .filter((step) => step.changed)
+          .map((step) => step.diffId),
+        cover: cover(
+          shown.diffId,
+          shown.key.split("/").at(-1) ?? shown.key,
+          input.viewport,
+          shown.changed,
+        ),
+      },
+    ],
   };
 }
 
@@ -141,7 +123,6 @@ const checkoutDesktop = journey({
   id: "c0ffee01",
   file: "checkout.spec.ts",
   title: "complete a purchase",
-  project: "desktop",
   viewport: DESKTOP,
   screens: CHECKOUT_SCREENS,
 });
@@ -150,7 +131,6 @@ const checkoutMobile = journey({
   id: "c0ffee02",
   file: "checkout.spec.ts",
   title: "complete a purchase",
-  project: "mobile",
   viewport: MOBILE,
   screens: [
     "checkout/cart",
@@ -164,7 +144,6 @@ const searchDesktop = journey({
   id: "c0ffee03",
   file: "search.spec.ts",
   title: "finds a product",
-  project: "desktop",
   viewport: DESKTOP,
   screens: ["search/results", "search/product*"],
 });
@@ -173,7 +152,6 @@ const signupDesktop = journey({
   id: "c0ffee04",
   file: "signup.spec.ts",
   title: "create an account",
-  project: "desktop",
   viewport: DESKTOP,
   screens: ["signup/form", "signup/welcome"],
 });
@@ -181,7 +159,6 @@ const signupDesktop = journey({
 function build(journeys: Journey[], overrides?: Partial<Build>): Build {
   return {
     __typename: "Build",
-    subset: false,
     branch: "feat/apple-pay",
     type: BuildType.Check,
     mergeQueue: false,
@@ -204,11 +181,7 @@ function marks(ids: string[], status: EvaluationStatus) {
 
 function getChangedDiffIds(journeys: Journey[]): string[] {
   return journeys.flatMap((journey) =>
-    journey.steps.flatMap((step) =>
-      step.diffs
-        .filter((diff) => diff.status === ScreenshotDiffStatus.Changed)
-        .map((diff) => diff.id),
-    ),
+    journey.variants.flatMap((variant) => variant.changedDiffIds),
   );
 }
 
@@ -304,7 +277,6 @@ const longJourney = journey({
   describe: ["organization owners", "with a yearly plan"],
   title:
     "downloads every invoice of the past year from the billing page and checks their totals",
-  project: "desktop",
   viewport: DESKTOP,
   screens: [
     "billing/index*",

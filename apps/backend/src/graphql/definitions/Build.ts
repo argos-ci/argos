@@ -187,16 +187,26 @@ export const typeDefs = gql`
     browser: String
     "Viewport the run took its screenshots at"
     viewport: ScreenshotMetadataViewport
-    "Screens of the journey, in capture order"
-    steps: [BuildJourneyStep!]!
+    "Screens of the journey in capture order, by the variant key their screenshots share"
+    stepKeys: [String!]!
+    "The journey at each viewport or color scheme it captured, in the order a review walks them"
+    variants: [BuildJourneyVariant!]!
   }
 
-  "A screen of a journey"
-  type BuildJourneyStep {
-    "Variant key shared by the screenshots of the screen"
-    key: String!
-    "Screenshots of the screen, a variant each (viewport, color scheme…)"
-    diffs: [ScreenshotDiff!]!
+  "A journey at one viewport or color scheme"
+  type BuildJourneyVariant {
+    "Viewport its screens were captured at"
+    viewport: ScreenshotMetadataViewport
+    "Browser its screens were captured in"
+    browser: String
+    "Color scheme its screens were captured in"
+    colorScheme: ScreenshotMetadataColorScheme
+    "Its screenshot diff of each step, in the order of stepKeys: null for a step it did not capture"
+    diffIds: [ID]!
+    "Its screenshot diffs that wait for a review"
+    changedDiffIds: [ID!]!
+    "The screenshot diff that stands for it: the first that changed, or the first"
+    cover: ScreenshotDiff!
   }
 
   "Whether a build is eligible to be used as a baseline, with the reasons when it is not."
@@ -622,16 +632,11 @@ export const resolvers: IResolvers = {
       };
     },
   },
-  BuildJourneyStep: {
-    diffs: async (step, _args, ctx) => {
-      const diffs = await ctx.loaders.ScreenshotDiff.loadMany(step.diffIds);
-      return diffs.map((diff) => {
-        invariant(
-          diff && !(diff instanceof Error),
-          "Screenshot diff not found",
-        );
-        return diff;
-      });
+  BuildJourneyVariant: {
+    cover: async (variant, _args, ctx) => {
+      const diff = await ctx.loaders.ScreenshotDiff.load(variant.coverDiffId);
+      invariant(diff, "Screenshot diff not found");
+      return diff;
     },
   },
 };

@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { getStepLabel, walkJourneySteps } from "@argos/schemas/journey";
+import { getStepLabel } from "@argos/schemas/journey";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import {
@@ -30,7 +30,11 @@ import {
   useBuildParams,
   type BuildParams,
 } from "./BuildParams";
-import { getJourneyRunHints, getJourneyTestKey } from "./journey-hints";
+import {
+  getJourneyDiffIds,
+  getJourneyRunHints,
+  getJourneyTestKey,
+} from "./journey-hints";
 import { getTestsInReviewOrder, listJourneyTestFiles } from "./journey-order";
 import {
   getJourneyRunLabel,
@@ -58,15 +62,20 @@ function getJourneyURL(
 ): string {
   // Runs may name their screens apart (`desktop/cart`, `mobile/cart`): the
   // last part of the name is the screen.
-  const step = stepKey
-    ? (journey.steps.find((step) => step.key === stepKey) ??
-      journey.steps.find(
-        (step) => getStepLabel(step.key) === getStepLabel(stepKey),
-      ))
-    : null;
-  const [diff] = step ? step.diffs : walkJourneySteps(journey.steps);
-  invariant(diff, "a journey has a screen");
-  return serializeJourneySearch(getBuildURL({ ...params, diffId: diff.id }), {
+  const stepIndex = stepKey
+    ? journey.stepKeys.findIndex(
+        (key) => key === stepKey || getStepLabel(key) === getStepLabel(stepKey),
+      )
+    : -1;
+  // Without a screen to keep, the walk's first: the first variant's first.
+  const diffId =
+    stepIndex === -1
+      ? getJourneyDiffIds(journey)[0]
+      : journey.variants
+          .map((variant) => variant.diffIds[stepIndex])
+          .find((diffId) => diffId);
+  invariant(diffId, "a journey has a screen");
+  return serializeJourneySearch(getBuildURL({ ...params, diffId }), {
     journey: new Set([journey.id]),
   });
 }
@@ -138,8 +147,8 @@ export function JourneyWalkHeaderView(props: {
   const { journeys, walkedJourneys, active, statusContext, params } = props;
   const journey =
     walkedJourneys.find((journey) =>
-      journey.steps.some((step) =>
-        step.diffs.some((diff) => diff.id === active?.diffId),
+      journey.variants.some((variant) =>
+        variant.diffIds.some((diffId) => diffId === active?.diffId),
       ),
     ) ?? walkedJourneys[0];
   if (!journey) {
@@ -155,10 +164,15 @@ export function JourneyWalkHeaderView(props: {
     getJourneyURL(params, pickRun(target.journeys, journey));
   const previous = tests[index - 1];
   const next = tests[index + 1];
+  const activeStepIndex = active
+    ? journey.variants
+        .map((variant) => variant.diffIds.indexOf(active.diffId))
+        .find((index) => index !== -1)
+    : undefined;
   const activeStepKey =
-    journey.steps.find((step) =>
-      step.diffs.some((diff) => diff.id === active?.diffId),
-    )?.key ?? null;
+    activeStepIndex === undefined
+      ? null
+      : (journey.stepKeys[activeStepIndex] ?? null);
   return (
     <section
       aria-label="Journey"

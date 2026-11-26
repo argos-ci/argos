@@ -50,7 +50,7 @@ const config: CodegenConfig = {
             "../../database/models/index.js#AutomationActionRun",
           Build: "../../database/models/index.js#Build",
           BuildJourney: "../../build/journeys.js#BuildJourney",
-          BuildJourneyStep: "../../build/journeys.js#BuildJourneyStep",
+          BuildJourneyVariant: "../../build/journeys.js#BuildJourneyVariant",
           BuildReview: "../../database/models/index.js#BuildReview",
           Comment: "../../database/models/index.js#Comment",
           CommentAnchor: "../../database/models/index.js#CommentAnchor",

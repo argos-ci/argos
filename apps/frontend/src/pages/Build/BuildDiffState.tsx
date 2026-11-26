@@ -20,7 +20,6 @@ import {
   groupJourneys,
   resolveJourneyIdentity,
   resolveTestIdentity,
-  walkJourneySteps,
   type JourneyIdentity,
 } from "@argos/schemas/journey";
 import { invariant } from "@argos/util/invariant";
@@ -49,6 +48,7 @@ import {
 } from "./BuildParams";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
+import { getJourneyDiffIds } from "./journey-hints";
 import { FilterStateContext } from "./metadata/filters/FilterState";
 import {
   diffMatchesFilters,
@@ -857,14 +857,10 @@ const _BuildDiffStateFragment = graphql(`
       location {
         file
       }
-      steps {
-        key
-        diffs {
-          id
-          name
-          variantKey
-          status
-        }
+      stepKeys
+      variants {
+        diffIds
+        changedDiffIds
       }
     }
   }
@@ -1127,9 +1123,7 @@ export function BuildDiffProvider(props: {
       new Map(
         journeys.map((journey) => [
           journey.id,
-          new Set(
-            journey.steps.flatMap((step) => step.diffs.map((diff) => diff.id)),
-          ),
+          new Set(getJourneyDiffIds(journey)),
         ]),
       ),
     [journeys],
@@ -1148,16 +1142,19 @@ export function BuildDiffProvider(props: {
     const walkOrder = new Map<string, number>();
     const journeyStepLabels = new Map<string, string>();
     for (const journey of walkedJourneys) {
-      journey.steps.forEach((step, index) => {
-        for (const diff of step.diffs) {
+      // The server lists the variants in walk order, each step by step.
+      for (const variant of journey.variants) {
+        variant.diffIds.forEach((diffId, index) => {
+          const stepKey = journey.stepKeys[index];
+          if (!diffId || !stepKey) {
+            return;
+          }
           journeyStepLabels.set(
-            diff.id,
-            `${index + 1} · ${getStepLabel(step.key)}`,
+            diffId,
+            `${index + 1} · ${getStepLabel(stepKey)}`,
           );
-        }
-      });
-      for (const diff of walkJourneySteps(journey.steps)) {
-        walkOrder.set(diff.id, walkOrder.size);
+          walkOrder.set(diffId, walkOrder.size);
+        });
       }
     }
     return { walkOrder, journeyStepLabels };

@@ -5,7 +5,7 @@ import { createSerializer, parseAsString, useQueryState } from "nuqs";
 import { parseAsSetOf } from "@/util/search-params";
 
 import type { BuildJourney, Diff } from "../../BuildDiffState";
-import { getJourneyRunHints } from "../../journey-hints";
+import { getJourneyDiffIds, getJourneyRunHints } from "../../journey-hints";
 import { getBrowserLabel } from "../browser/browserLabels";
 import {
   getMetadataCategoryDefinition,
@@ -176,7 +176,8 @@ function getFilters(
   }
 
   const runHints = getJourneyRunHints(journeys);
-  for (const { id, title, steps } of journeys) {
+  for (const journey of journeys) {
+    const { id, title } = journey;
     const hint = runHints.get(id);
     const label = [
       title,
@@ -192,7 +193,7 @@ function getFilters(
     });
     filterByKey.set(filter.key, {
       ...filter,
-      count: steps.reduce((count, step) => count + step.diffs.length, 0),
+      count: getJourneyDiffIds(journey).length,
     });
   }
 

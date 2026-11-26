@@ -7,8 +7,6 @@ import {
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { lowTextColorClassNames } from "@/util/colors";
 
-import { useBuildDiffState } from "./BuildDiffState";
-import { checkDiffNeedsAttention } from "./BuildJourneyDrawer";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
 import {
@@ -91,7 +89,6 @@ export type JourneyStatus =
 
 /** What it takes to say where a journey's review stands. */
 export type JourneyStatusContext = {
-  isSubsetBuild: boolean;
   /** The viewer's marks in the review under way, by diff id. */
   statuses: Record<string, EvaluationStatus>;
 };
@@ -99,24 +96,21 @@ export type JourneyStatusContext = {
 const NO_STATUSES: Record<string, EvaluationStatus> = {};
 
 export function useJourneyStatusContext(): JourneyStatusContext {
-  const { isSubsetBuild } = useBuildDiffState();
   const statuses = useBuildReviewState()?.diffStatuses ?? NO_STATUSES;
-  return { isSubsetBuild, statuses };
+  return { statuses };
 }
 
+/** Where the review of a journey stands, from its screens waiting for one. */
 export function getJourneyStatus(
-  diffs: readonly { id: string; status: ScreenshotDiffStatus }[],
+  changedDiffIds: readonly string[],
   context: JourneyStatusContext,
 ): JourneyStatus {
-  const changed = diffs.filter((diff) =>
-    checkDiffNeedsAttention(diff, context),
-  );
-  if (changed.length === 0) {
+  if (changedDiffIds.length === 0) {
     return ScreenshotDiffStatus.Unchanged;
   }
   let rejected = false;
-  for (const diff of changed) {
-    const status = context.statuses[diff.id];
+  for (const diffId of changedDiffIds) {
+    const status = context.statuses[diffId];
     if (status === EvaluationStatus.Rejected) {
       rejected = true;
     } else if (status !== EvaluationStatus.Accepted) {
@@ -151,9 +145,7 @@ export function JourneyStatusIcon(props: {
 
 type ReviewedJourney = TestJourney & {
   viewport: { width: number } | null;
-  steps: readonly {
-    diffs: readonly { id: string; status: ScreenshotDiffStatus }[];
-  }[];
+  variants: readonly { changedDiffIds: readonly string[] }[];
 };
 
 export type ListedJourneyTest<J extends ReviewedJourney> = JourneyTest<J> & {
@@ -171,8 +163,8 @@ export function getJourneyTestFiles<J extends ReviewedJourney>(
 ): JourneyTestGroups<ListedJourneyTest<J>> {
   const tests = groupJourneysByTest(journeys).map(
     (test): ListedJourneyTest<J> => {
-      const diffs = test.journeys.flatMap((journey) =>
-        journey.steps.flatMap((step) => step.diffs),
+      const changedDiffIds = test.journeys.flatMap((journey) =>
+        journey.variants.flatMap((variant) => variant.changedDiffIds),
       );
       return {
         ...test,
@@ -181,10 +173,8 @@ export function getJourneyTestFiles<J extends ReviewedJourney>(
           (a, b) =>
             (a.viewport?.width ?? Infinity) - (b.viewport?.width ?? Infinity),
         ),
-        status: getJourneyStatus(diffs, context),
-        changedCount: diffs.filter((diff) =>
-          checkDiffNeedsAttention(diff, context),
-        ).length,
+        status: getJourneyStatus(changedDiffIds, context),
+        changedCount: changedDiffIds.length,
       };
     },
   );

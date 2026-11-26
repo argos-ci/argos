@@ -12,7 +12,6 @@ import {
   disableHotkeys,
   useBuildHotkey,
 } from "@/containers/Build/BuildHotkeys";
-import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -87,15 +86,6 @@ function useFocusFollowsActiveStep(
       strip.querySelector<HTMLElement>("[aria-current='step']")?.focus();
     }
   }, [stripRef, activeStepKey]);
-}
-
-/** Whether the strip marks the step of `diff` with a dot. */
-export function checkDiffNeedsAttention(
-  diff: { status: ScreenshotDiffStatus },
-  context: { isSubsetBuild: boolean },
-): boolean {
-  const group = getDiffStatusGroup(diff.status, context);
-  return ATTENTION_STATUSES.some((status) => status === group);
 }
 
 /**
