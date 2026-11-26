@@ -87,6 +87,13 @@ function HostingCard(props: {
         projectId: project.id,
         deploymentEnabled: data.deploymentEnabled,
       },
+      update: (cache) => {
+        // Hosting decides which deployments a project shows, so the lists
+        // cached under the previous setting are wrong.
+        const id = cache.identify({ __typename: "Project", id: project.id });
+        cache.evict({ id, fieldName: "deployments" });
+        cache.evict({ id, fieldName: "latestProductionDeployment" });
+      },
     });
     form.reset(data);
   };
