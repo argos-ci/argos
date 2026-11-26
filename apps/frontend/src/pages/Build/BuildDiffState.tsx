@@ -1305,6 +1305,55 @@ export function BuildDiffProvider(props: {
     }
   });
 
+  // A journey picked from the filters, or a link to a screenshot it does not
+  // have, starts the walk on its first screen: the screenshot shown before is
+  // not in the list anymore.
+  const walkStart = journeyMode ? (groups[0]?.diffs[0] ?? null) : null;
+  const [firstWalkedId] = walkOrder.keys();
+  const firstWalkedLoaded = Boolean(
+    firstWalkedId && indices.byId[firstWalkedId],
+  );
+  const walkKey = walkedJourneys.map((journey) => journey.id).join(",");
+  // Checked once per change of the walked journeys, not on each navigation:
+  // a link to another journey changes the screenshot a render before the
+  // journey filter follows it from the URL, and in that render the new
+  // screenshot is not in the walk yet.
+  const walkStartCheckRef = useRef({ walkKey: "", pending: false });
+  useEffect(() => {
+    const check = walkStartCheckRef.current;
+    if (check.walkKey !== walkKey) {
+      check.walkKey = walkKey;
+      check.pending = Boolean(walkKey);
+    }
+    if (!check.pending || !walkStart) {
+      return;
+    }
+    const shownId = params.diffId;
+    if (shownId && walkOrder.has(shownId)) {
+      check.pending = false;
+      return;
+    }
+    // The pages of the list come in one after the other: the screenshot of
+    // the URL, or the journey's first screen, may be in one still to come.
+    if (
+      !complete &&
+      ((shownId && !indices.byId[shownId]) || !firstWalkedLoaded)
+    ) {
+      return;
+    }
+    check.pending = false;
+    setActiveDiff(walkStart, true);
+  }, [
+    walkKey,
+    walkStart,
+    params.diffId,
+    walkOrder,
+    indices,
+    complete,
+    firstWalkedLoaded,
+    setActiveDiff,
+  ]);
+
   const setGrouping = useEventCallback((next: SnapshotGrouping) => {
     setGroupingPreference(next);
     if (!activeDiff) {

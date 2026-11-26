@@ -421,6 +421,10 @@ loggedTest(
       exact: true,
     });
     await expect(journeyHeader).toContainText("complete a purchase");
+    // The walk starts on the journey's first screen, wherever the review was.
+    await expect(
+      page.getByRole("heading", { name: "desktop/checkout/cart.png" }),
+    ).toBeVisible();
     // The overview's order: the most changed first, the unchanged one last.
     await expect(journeyHeader).toContainText("Journey 1 of 3");
 
