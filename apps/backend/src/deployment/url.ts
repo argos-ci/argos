@@ -12,18 +12,23 @@ export function getDeploymentUrl(slug: string) {
 type AliasLike = Pick<DeploymentAlias, "type" | "alias">;
 
 /**
+ * Whether a hostname is the deployments base domain or one of its subdomains,
+ * where Argos serves deployments.
+ */
+export function checkIsDeploymentsHostname(hostname: string): boolean {
+  const baseDomain = config.get("deployments.baseDomain").toLowerCase();
+  const value = hostname.toLowerCase();
+  return value === baseDomain || value.endsWith(`.${baseDomain}`);
+}
+
+/**
  * Whether an alias is a customer's own hostname rather than one of ours.
  *
  * `validateCustomDomain` refuses anything under the deployments base domain, so
  * not being under it is what makes an alias the customer's.
  */
 export function checkIsCustomDomainAlias(alias: AliasLike): boolean {
-  if (alias.type !== "domain") {
-    return false;
-  }
-  const baseDomain = config.get("deployments.baseDomain").toLowerCase();
-  const value = alias.alias.toLowerCase();
-  return value !== baseDomain && !value.endsWith(`.${baseDomain}`);
+  return alias.type === "domain" && !checkIsDeploymentsHostname(alias.alias);
 }
 
 /**

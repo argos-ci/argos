@@ -1,7 +1,4 @@
-import {
-  DeploymentEnvironmentSchema,
-  type DeploymentEnvironment,
-} from "@argos/schemas/deployment";
+import { DeploymentEnvironmentSchema } from "@argos/schemas/deployment";
 import { invariant } from "@argos/util/invariant";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
@@ -11,13 +8,17 @@ import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import config from "@/config";
-import type { Project } from "@/database/models";
 import { Deployment } from "@/database/models/Deployment";
 import { pushDeploymentNotification } from "@/deployment-notification";
 import {
   getDeploymentContentKey,
   getExistingHashes,
 } from "@/deployment/content";
+import { getEnvironmentFromBranch } from "@/deployment/environment";
+import {
+  createExternalDeployment,
+  ExternalDeploymentUrlSchema,
+} from "@/deployment/external";
 import { generateDeploymentSlug } from "@/deployment/slug";
 import { trySendProjectEvent } from "@/event/send";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
@@ -66,7 +67,7 @@ const RequestBodySchema = z.object({
     description:
       "The files Argos hosts and serves. Required unless `url` is set.",
   }),
-  url: z.httpUrl({ normalize: true }).max(2048).optional().meta({
+  url: ExternalDeploymentUrlSchema.optional().meta({
     description:
       "The URL of a deployment hosted elsewhere, such as a Vercel or Netlify preview. The deployment is created `ready`, and the builds of the same commit link their screenshots to it. Required unless `files` is set.",
   }),
@@ -226,7 +227,6 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
     ]);
 
     const deploymentData = {
-      projectId: project.id,
       environment,
       branch,
       commitSha: body.commit,
@@ -236,31 +236,11 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
     };
 
     if (url) {
-      const deployment = await Deployment.query().insertAndFetch({
+      const deployment = await createExternalDeployment({
         ...deploymentData,
-        status: "ready",
-        externalUrl: url,
-        slug: null,
+        project: projectWithAccount,
+        url,
       });
-
-      await Promise.all([
-        pushDeploymentNotification({
-          deploymentId: deployment.id,
-          type: "success",
-        }),
-        trySendProjectEvent({
-          name: "deployment.created",
-          deployment,
-          project: projectWithAccount,
-        }).then(() =>
-          trySendProjectEvent({
-            name: "deployment.ready",
-            deployment,
-            project: projectWithAccount,
-          }),
-        ),
-      ]);
-
       res.status(201).send({ deploymentId: deployment.id, uploadFiles: [] });
       return;
     }
@@ -270,6 +250,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
     // Create the deployment row in PostgreSQL
     const deployment = await Deployment.query().insertAndFetch({
       ...deploymentData,
+      projectId: project.id,
       status: "pending",
       slug: generateDeploymentSlug({
         accountSlug: projectWithAccount.account.slug,
@@ -337,16 +318,3 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
     });
   });
 };
-
-/**
- * Get the default environment from the branch.
- */
-async function getEnvironmentFromBranch(args: {
-  project: Project;
-  branch: string;
-}): Promise<DeploymentEnvironment> {
-  const { project, branch } = args;
-  const isProductionBranch =
-    await project.$getDeploymentProductionBranchMatcher();
-  return isProductionBranch(branch) ? "production" : "preview";
-}
