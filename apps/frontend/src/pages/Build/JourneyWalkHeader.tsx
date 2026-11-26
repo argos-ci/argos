@@ -39,6 +39,7 @@ import {
   getTestContext,
   JourneyStatusIcon,
   useJourneyStatusContext,
+  type JourneyStatusContext,
 } from "./journey-tests";
 import { getBrowserLabel } from "./metadata/browser/browserLabels";
 import { serializeJourneySearch } from "./metadata/filters/util";
@@ -99,10 +100,46 @@ export function JourneyWalkHeader() {
   const statusContext = useJourneyStatusContext();
   const params = useBuildParams();
   invariant(params, "a journey is walked on a build page");
+  const metadata = activeDiff ? resolveDiffMetadata(activeDiff) : null;
+  return (
+    <JourneyWalkHeaderView
+      journeys={journeys}
+      walkedJourneys={walkedJourneys}
+      active={
+        activeDiff
+          ? {
+              diffId: activeDiff.id,
+              viewport: metadata?.viewport ?? null,
+              browser: metadata?.browser?.name ?? null,
+            }
+          : null
+      }
+      statusContext={statusContext}
+      params={params}
+    />
+  );
+}
+
+/** The screenshot the review shows, as the walk header reads it. */
+type ActiveScreen = {
+  diffId: string;
+  viewport: { width: number; height: number } | null;
+  browser: string | null;
+};
+
+/** The walk header, given what it reads from the build page. */
+export function JourneyWalkHeaderView(props: {
+  journeys: BuildJourney[];
+  walkedJourneys: BuildJourney[];
+  active: ActiveScreen | null;
+  statusContext: JourneyStatusContext;
+  params: BuildParams;
+}) {
+  const { journeys, walkedJourneys, active, statusContext, params } = props;
   const journey =
     walkedJourneys.find((journey) =>
       journey.steps.some((step) =>
-        step.diffs.some((diff) => diff.id === activeDiff?.id),
+        step.diffs.some((diff) => diff.id === active?.diffId),
       ),
     ) ?? walkedJourneys[0];
   if (!journey) {
@@ -120,7 +157,7 @@ export function JourneyWalkHeader() {
   const next = tests[index + 1];
   const activeStepKey =
     journey.steps.find((step) =>
-      step.diffs.some((diff) => diff.id === activeDiff?.id),
+      step.diffs.some((diff) => diff.id === active?.diffId),
     )?.key ?? null;
   return (
     <section
@@ -204,7 +241,7 @@ export function JourneyWalkHeader() {
           getURL={(run) => getJourneyURL(params, run, activeStepKey)}
         />
       ) : (
-        <RunLine journey={journey} />
+        <RunLine journey={journey} active={active} />
       )}
     </section>
   );
@@ -288,12 +325,13 @@ function RunSwitch(props: {
  * several sizes (Argos's `viewports` option): the one walked is the active
  * screen's.
  */
-function RunLine(props: { journey: BuildJourney }) {
-  const { journey } = props;
-  const { activeDiff } = useBuildDiffState();
-  const metadata = activeDiff ? resolveDiffMetadata(activeDiff) : null;
-  const viewport = metadata?.viewport ?? journey.viewport;
-  const browser = metadata?.browser?.name ?? journey.browser;
+function RunLine(props: {
+  journey: BuildJourney;
+  active: ActiveScreen | null;
+}) {
+  const { journey, active } = props;
+  const viewport = active?.viewport ?? journey.viewport;
+  const browser = active?.browser ?? journey.browser;
   const ViewportIcon = viewport
     ? viewportIcons[getViewportIconKind(viewport.width)]
     : null;

@@ -347,6 +347,13 @@ export function getJourneyAnchor(journeyId: string): string {
   return `journey-${journeyId}`;
 }
 
+/** What the journeys section reads from the build page around it. */
+type JourneyPageContext = {
+  params: BuildParams;
+  /** The viewer's marks in the review under way, by diff id. */
+  statuses: Record<string, EvaluationStatus>;
+};
+
 /**
  * The build's end-to-end tests that walk several screens, by file, each run
  * as a card. A run opens the build on its first screen with the journey
@@ -360,8 +367,24 @@ export function JourneysSection(props: {
   build: Build;
   repoUrl: string | null;
 }) {
-  const { build, repoUrl } = props;
+  const params = useBuildParams();
+  invariant(params, "journeys are shown on a build page");
+  const statuses = useReviewStatuses();
   const { hash } = useLocation();
+  return (
+    <JourneysSectionView {...props} page={{ params, statuses }} hash={hash} />
+  );
+}
+
+/** The journeys section, given what it reads from the build page. */
+export function JourneysSectionView(props: {
+  build: Build;
+  repoUrl: string | null;
+  page: JourneyPageContext;
+  /** The URL's hash: a journey the review comes back from is shown first. */
+  hash: string;
+}) {
+  const { build, repoUrl, page, hash } = props;
   const headingId = useId();
   const groups = groupTestsForReview(
     getJourneyTests(build.journeys, { isSubsetBuild: build.subset }),
@@ -384,6 +407,7 @@ export function JourneysSection(props: {
     checkIsWalked,
     reviewBlocker: getBuildReviewBlocker(build),
     repo: { repoUrl, branch: build.branch },
+    page,
   };
   return (
     <>
@@ -480,6 +504,7 @@ function JourneyFileList(props: {
   checkIsWalked: (test: JourneyTest) => boolean;
   reviewBlocker: ReviewBlocker;
   repo: RepositoryContext;
+  page: JourneyPageContext;
   className?: string;
 }) {
   const { files, ...itemProps } = props;
@@ -498,9 +523,9 @@ function JourneyFileCard(props: {
   checkIsWalked: (test: JourneyTest) => boolean;
   reviewBlocker: ReviewBlocker;
   repo: RepositoryContext;
+  page: JourneyPageContext;
 }) {
-  const { file, checkIsWalked, reviewBlocker, repo } = props;
-  const statuses = useReviewStatuses();
+  const { file, checkIsWalked, reviewBlocker, repo, page } = props;
   const href = file.path
     ? getRepositoryFileURL({ file: file.path, ...repo })
     : null;
@@ -538,7 +563,7 @@ function JourneyFileCard(props: {
           <div className="ml-auto shrink-0">
             <ReviewProgressBadge
               scale="xs"
-              progression={getFileReviewProgression(file, statuses)}
+              progression={getFileReviewProgression(file, page.statuses)}
             />
           </div>
         )}
@@ -551,6 +576,7 @@ function JourneyFileCard(props: {
             context={getTestContext(test, file)}
             scrollIntoView={checkIsWalked(test)}
             reviewBlocker={reviewBlocker}
+            page={page}
           />
         ))}
       </ul>
@@ -616,17 +642,16 @@ function JourneyTestItem(props: {
   /** Whether the review comes back from walking it, to show it first. */
   scrollIntoView: boolean;
   reviewBlocker: ReviewBlocker;
+  page: JourneyPageContext;
 }) {
-  const { test, context, scrollIntoView, reviewBlocker } = props;
+  const { test, context, scrollIntoView, reviewBlocker, page } = props;
   const ref = useRef<HTMLLIElement>(null);
   useEffect(() => {
     if (scrollIntoView) {
       ref.current?.scrollIntoView({ block: "center" });
     }
   }, [scrollIntoView]);
-  const params = useBuildParams();
-  invariant(params, "a journey is rendered on a build page");
-  const mark = getReviewMark(getChangedDiffs(test.runs), useReviewStatuses());
+  const mark = getReviewMark(getChangedDiffs(test.runs), page.statuses);
   const changedScreens = getChangedScreens(test);
   const namedScreens = changedScreens.slice(0, MAX_CHANGED_SCREEN_NAMES);
   return (
@@ -643,7 +668,11 @@ function JourneyTestItem(props: {
           {namedScreens.map((screen) => (
             <HeadlessLink
               key={`${screen.journey.id}:${screen.key}`}
-              href={getJourneyScreenURL(params, screen.journey, screen.diff)}
+              href={getJourneyScreenURL(
+                page.params,
+                screen.journey,
+                screen.diff,
+              )}
               aria-label={`Screen ${screen.index + 1}, ${screen.name}, changed`}
               className="border-thin bg-app hover:bg-hover focus-ring text-xxs max-w-full truncate rounded-full px-1.5 transition"
             >
@@ -657,7 +686,7 @@ function JourneyTestItem(props: {
           ) : null}
         </div>
       ) : null}
-      <JourneyLineup test={test} reviewBlocker={reviewBlocker} />
+      <JourneyLineup test={test} reviewBlocker={reviewBlocker} page={page} />
     </li>
   );
 }
@@ -698,8 +727,9 @@ function getRunLabel(run: JourneyRun, test: JourneyTest): string {
 function JourneyLineup(props: {
   test: JourneyTest;
   reviewBlocker: ReviewBlocker;
+  page: JourneyPageContext;
 }) {
-  const { test, reviewBlocker } = props;
+  const { test, reviewBlocker, page } = props;
   return (
     <ul className="mt-3 grid gap-4 sm:grid-cols-2">
       {test.runs.map((run) => (
@@ -708,6 +738,7 @@ function JourneyLineup(props: {
           run={run}
           test={test}
           reviewBlocker={reviewBlocker}
+          page={page}
         />
       ))}
     </ul>
@@ -750,10 +781,9 @@ function JourneyRunItem(props: {
   run: JourneyRun;
   test: JourneyTest;
   reviewBlocker: ReviewBlocker;
+  page: JourneyPageContext;
 }) {
-  const { run, test, reviewBlocker } = props;
-  const params = useBuildParams();
-  invariant(params, "a journey is rendered on a build page");
+  const { run, test, reviewBlocker, page } = props;
   const { journey, screens, viewport, browser, colorScheme } = run;
   const [firstScreen] = screens;
   invariant(firstScreen, "a journey has at least one screen");
@@ -762,7 +792,7 @@ function JourneyRunItem(props: {
   // changed nothing shows how it starts.
   const changed = screens.filter((screen) => screen.changed);
   const [shownScreen = firstScreen] = changed;
-  const reviewStatuses = useReviewStatuses();
+  const reviewStatuses = page.statuses;
   const mark = getReviewMark(
     changed.map((screen) => screen.diff),
     reviewStatuses,
@@ -787,7 +817,7 @@ function JourneyRunItem(props: {
     <li className="isolate">
       {/* The whole card walks the journey from its start. */}
       <HeadlessLink
-        href={getJourneyScreenURL(params, journey, firstScreen.diff)}
+        href={getJourneyScreenURL(page.params, journey, firstScreen.diff)}
         aria-label={`Walk “${test.title}”${label ? ` at ${label}` : ""}`}
         className="group/item block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-(--ring-color-default)"
       >

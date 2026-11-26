@@ -170,6 +170,34 @@ export const OpenWithSubtitles: Story = {
 };
 
 /**
+ * `wrap`: rows named by a sentence, a test title, where the end is what tells
+ * two rows apart, run on two lines instead of being cut.
+ */
+export const OpenWithWrappedRows: Story = {
+  parameters: openOverlayParameters,
+  render: () => (
+    <OverlayStage>
+      <MenuRoot defaultOpen>
+        <MenuTrigger>
+          <Button variant="secondary">Journeys</Button>
+        </MenuTrigger>
+        <Menu aria-label="Journeys">
+          <MenuItem wrap checked subtitle="375×812, 1280×720 · 3 changed">
+            downloads every invoice of the past year from the billing page
+          </MenuItem>
+          <MenuItem wrap subtitle="1280×720 · 1 changed">
+            downloads every invoice of the past year and sends them by email
+          </MenuItem>
+          <MenuItem wrap subtitle="1280×720 · No changes">
+            creates an account
+          </MenuItem>
+        </Menu>
+      </MenuRoot>
+    </OverlayStage>
+  ),
+};
+
+/**
  * `checked` reads as a trailing glyph, or as a highlighted row.
  *
  * The glyph menu carries shortcuts too, which is the shape that shows what the
