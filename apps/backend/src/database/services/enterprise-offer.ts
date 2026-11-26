@@ -31,12 +31,44 @@ function getThreshold(currency: Subscription["currency"]): number {
     : ENTERPRISE_OFFER_THRESHOLD_USD;
 }
 
+/**
+ * What the Pro plan charges per screenshot past its quota, as the pricing page
+ * lists it, the same in dollars and euros. Change them with the pricing page:
+ * a subscription billed below either one is read as negotiated.
+ */
+const PRO_LIST_PRICES = {
+  screenshot: 0.004,
+  storybookScreenshot: 0.0015,
+};
+
+/**
+ * Whether the subscription is on Pro at its list prices. A team billed below
+ * them has a negotiated deal: it already talked to sales, and offering it a
+ * better price than Pro would read as if it had not.
+ */
+function checkIsListPricedPro(subscription: Subscription): boolean {
+  if (!subscription.plan || !Plan.checkIsProPlan(subscription.plan)) {
+    return false;
+  }
+  const screenshotPrice = subscription.additionalScreenshotPrice;
+  // A Storybook screenshot without a price of its own is billed as any other.
+  const storybookScreenshotPrice =
+    subscription.additionalStorybookScreenshotPrice ?? screenshotPrice;
+  return (
+    (screenshotPrice === null ||
+      screenshotPrice >= PRO_LIST_PRICES.screenshot) &&
+    (storybookScreenshotPrice === null ||
+      storybookScreenshotPrice >= PRO_LIST_PRICES.storybookScreenshot)
+  );
+}
+
 type EnterpriseOfferClaim = { claimedAt: string };
 
 /**
- * Whether the Billing page offers the team an Enterprise plan: it is on Pro
- * and its running or its previous billing period reached the threshold. The
- * previous one keeps the offer up while a new period starts again from zero.
+ * Whether the Billing page offers the team an Enterprise plan: it is on Pro at
+ * list prices and its running or its previous billing period reached the
+ * threshold. The previous one keeps the offer up while a new period starts
+ * again from zero.
  */
 export async function getIsEnterpriseOfferShown(
   account: Account,
@@ -45,7 +77,7 @@ export async function getIsEnterpriseOfferShown(
   const subscription = await account
     .$getSubscriptionManager()
     .getActiveSubscription();
-  if (!subscription?.plan || !Plan.checkIsProPlan(subscription.plan)) {
+  if (!subscription || !checkIsListPricedPro(subscription)) {
     return false;
   }
   const billings = await getAccountBillings([account]);
@@ -62,10 +94,10 @@ export async function getIsEnterpriseOfferShown(
 }
 
 /**
- * Claim the Enterprise offer email for a team on Pro whose running billing
- * period just reached the threshold, so it is sent while the team can still
- * switch, not with the invoice. Claiming records the date on the account, so
- * the email is sent once per account, ever.
+ * Claim the Enterprise offer email for a team on Pro at list prices whose
+ * running billing period just reached the threshold, so it is sent while the
+ * team can still switch, not with the invoice. Claiming records the date on
+ * the account, so the email is sent once per account, ever.
  *
  * The period is priced as `getAccountBillings` prices it for the Billing card,
  * from the usage the build job or the media upload already counted: the email
@@ -88,7 +120,7 @@ export async function claimEnterpriseOffer(
   const manager = account.$getSubscriptionManager();
   const subscription = await manager.getActiveSubscription();
   const plan = subscription?.plan;
-  if (!subscription || !plan || !Plan.checkIsProPlan(plan)) {
+  if (!subscription || !plan || !checkIsListPricedPro(subscription)) {
     return null;
   }
 

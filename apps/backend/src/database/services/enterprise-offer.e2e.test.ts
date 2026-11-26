@@ -146,6 +146,32 @@ describe("claimEnterpriseOffer", () => {
   );
 
   withProTeam(
+    "leaves out a team with a negotiated screenshot price",
+    async ({ account, subscription, project }) => {
+      await subscription.$query().patch({ additionalScreenshotPrice: 0.002 });
+      // 700,000 screenshots past the quota at $0.002, plus the $100 plan.
+      await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        screenshotCount: 700_000,
+      });
+      await expect(claim(account)).resolves.toBeNull();
+      await expect(getIsEnterpriseOfferShown(account)).resolves.toBe(false);
+    },
+  );
+
+  withProTeam(
+    "leaves out a team with a negotiated Storybook screenshot price",
+    async ({ account, subscription, project }) => {
+      await subscription
+        .$query()
+        .patch({ additionalStorybookScreenshotPrice: 0.001 });
+      await bill(project, 1500);
+      await expect(claim(account)).resolves.toBeNull();
+      await expect(getIsEnterpriseOfferShown(account)).resolves.toBe(false);
+    },
+  );
+
+  withProTeam(
     "compares a team billed in euros at the revenue rate",
     async ({ account, subscription, project }) => {
       // $1,500 is €1,282.50 at the fixed rate.
