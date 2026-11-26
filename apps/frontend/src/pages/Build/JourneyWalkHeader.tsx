@@ -17,6 +17,7 @@ import {
   MenuHeading,
   MenuItem,
   MenuRoot,
+  MenuSeparator,
   MenuTrigger,
 } from "@/ui/menu-kit";
 import { Tooltip } from "@/ui/Tooltip";
@@ -30,6 +31,7 @@ import {
   type BuildParams,
 } from "./BuildParams";
 import { getJourneyRunHints, getJourneyTestKey } from "./journey-hints";
+import { getTestsInReviewOrder, listJourneyTestFiles } from "./journey-order";
 import {
   getJourneyRunLabel,
   getJourneyTestFiles,
@@ -106,8 +108,8 @@ export function JourneyWalkHeader() {
   if (!journey) {
     return null;
   }
-  const files = getJourneyTestFiles(journeys, statusContext);
-  const tests = files.flatMap((file) => file.tests);
+  const groups = getJourneyTestFiles(journeys, statusContext);
+  const tests = getTestsInReviewOrder(groups);
   const testKey = getJourneyTestKey(journey);
   const index = tests.findIndex((test) => test.key === testKey);
   const test = tests[index];
@@ -161,8 +163,9 @@ export function JourneyWalkHeader() {
             </button>
           </MenuTrigger>
           <Menu aria-label="Journeys" search="Search journeys…">
-            {files.map((file) => (
-              <Fragment key={file.key}>
+            {listJourneyTestFiles(groups).map(({ key, file, separated }) => (
+              <Fragment key={key}>
+                {separated ? <MenuSeparator /> : null}
                 <MenuHeading>{file.path ?? file.name}</MenuHeading>
                 {file.tests.map((item) => {
                   const context = getTestContext(item, file);

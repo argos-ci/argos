@@ -2,6 +2,7 @@ import { Fragment } from "react";
 
 import { Menu, MenuHeading, MenuItem, MenuSeparator } from "@/ui/menu-kit";
 
+import { listJourneyTestFiles } from "../../journey-order";
 import {
   getJourneyTestFiles,
   getJourneyTestSummary,
@@ -33,8 +34,11 @@ function getJourneyFilterItems(props: {
   const { filterGroup, state, statusContext } = props;
   const selectedKeys = state.active.intersection(filterGroup.filterKeys);
   const otherKeys = state.active.difference(filterGroup.filterKeys);
-  return getJourneyTestFiles(state.journeys, statusContext).map((file) => (
-    <Fragment key={file.key}>
+  return listJourneyTestFiles(
+    getJourneyTestFiles(state.journeys, statusContext),
+  ).map(({ key, file, separated }) => (
+    <Fragment key={key}>
+      {separated ? <MenuSeparator /> : null}
       <MenuHeading>{file.path ?? file.name}</MenuHeading>
       {file.tests.map((test) => {
         const keys = new Set(

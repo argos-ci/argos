@@ -31,11 +31,8 @@ import { getBuildReviewBlocker } from "../BuildReviewability";
 import { useBuildReviewState } from "../BuildReviewState";
 import { EvaluationStatus } from "../EvaluationStatus";
 import { getJourneyTestKey } from "../journey-hints";
-import {
-  getTestContext,
-  groupTestsByFile,
-  type JourneyFile,
-} from "../journey-tests";
+import { groupTestsForReview, type JourneyFile } from "../journey-order";
+import { getTestContext } from "../journey-tests";
 import { BrowserIcon } from "../metadata/browser/BrowserIcon";
 import { getBrowserLabel } from "../metadata/browser/browserLabels";
 import { serializeJourneySearch } from "../metadata/filters/util";
@@ -199,7 +196,7 @@ function getJourneyRuns(
   });
 }
 
-/** The tests of the build, their runs together, the most changed first. */
+/** The tests of the build, their runs together. */
 function getJourneyTests(
   journeys: Journey[],
   context: { isSubsetBuild: boolean },
@@ -229,9 +226,7 @@ function getJourneyTests(
       showBrowser: new Set(runs.map((run) => run.browser)).size > 1,
       showColorScheme: new Set(runs.map((run) => run.colorScheme)).size > 1,
     };
-  }).sort(
-    (a, b) => b.changedCount - a.changedCount || a.key.localeCompare(b.key),
-  );
+  });
 }
 
 function plural(count: number, word: string): string {
@@ -365,19 +360,21 @@ export function JourneysSection(props: {
   const { build, repoUrl } = props;
   const { hash } = useLocation();
   const headingId = useId();
-  const tests = getJourneyTests(build.journeys, {
-    isSubsetBuild: build.subset,
-  });
+  const groups = groupTestsForReview(
+    getJourneyTests(build.journeys, { isSubsetBuild: build.subset }),
+  );
+  const unchangedCount = groups.unchanged.reduce(
+    (count, file) => count + file.tests.length,
+    0,
+  );
   const checkIsWalked = (test: JourneyTest) =>
     test.runs.some((run) => `#${getJourneyAnchor(run.journey.id)}` === hash);
-  const changed = tests.filter((test) => test.changedCount > 0);
-  const unchanged = tests.filter((test) => test.changedCount === 0);
   // Folded even when nothing changed: open, the list would read as journeys
   // to review. Open when the review comes back from one of them.
   const [showUnchanged, setShowUnchanged] = useState(() =>
-    unchanged.some(checkIsWalked),
+    groups.unchanged.some((file) => file.tests.some(checkIsWalked)),
   );
-  if (tests.length === 0) {
+  if (groups.changed.length === 0 && groups.unchanged.length === 0) {
     return null;
   }
   const listProps = {
@@ -387,7 +384,7 @@ export function JourneysSection(props: {
   };
   return (
     <>
-      {changed.length > 0 ? (
+      {groups.changed.length > 0 ? (
         <section aria-labelledby={headingId} className="flex flex-col">
           <h2
             id={headingId}
@@ -404,7 +401,7 @@ export function JourneysSection(props: {
             order.
           </p>
           <JourneyFileList
-            files={groupTestsByFile(changed)}
+            files={groups.changed}
             className="mt-4"
             {...listProps}
           />
@@ -412,7 +409,7 @@ export function JourneysSection(props: {
       ) : null}
       {/* Muted, with the status after the title as on the journeys' cards,
           and saying why it is folded. */}
-      {unchanged.length > 0 ? (
+      {unchangedCount > 0 ? (
         <Details
           open={showUnchanged}
           onToggle={(event) => setShowUnchanged(event.currentTarget.open)}
@@ -429,7 +426,7 @@ export function JourneysSection(props: {
                 />
               </h2>
               <span className="ml-auto flex items-center gap-2 text-sm tabular-nums">
-                {plural(unchanged.length, "journey")}
+                {plural(unchangedCount, "journey")}
                 <ChevronDownIcon className="size-4 shrink-0 transition [details[open]>summary_&]:rotate-180" />
               </span>
             </span>
@@ -439,7 +436,7 @@ export function JourneysSection(props: {
           </summary>
           {showUnchanged ? (
             <JourneyFileList
-              files={groupTestsByFile(unchanged)}
+              files={groups.unchanged}
               className="mt-4"
               {...listProps}
             />

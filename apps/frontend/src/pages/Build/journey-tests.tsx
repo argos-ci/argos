@@ -16,9 +16,13 @@ import {
   getJourneyTestKey,
   type JourneyRunHint,
 } from "./journey-hints";
+import {
+  groupTestsForReview,
+  type JourneyFile,
+  type JourneyTestGroups,
+} from "./journey-order";
 import { getBrowserLabel } from "./metadata/browser/browserLabels";
 import { formatViewport } from "./metadata/viewports/util";
-import { getRepositoryPath } from "./sidebar/metadata/LocationChip";
 
 type TestJourney = {
   prefix: string;
@@ -53,42 +57,6 @@ function groupJourneysByTest<J extends TestJourney>(
     test.journeys.push(journey);
   }
   return Array.from(tests.values());
-}
-
-export type JourneyFile<T> = {
-  key: string;
-  /** The file's path in the repository, when the test has a location. */
-  path: string | null;
-  /** The folders before the file name in that path. */
-  dir: string | null;
-  /** The file name, or the title path when the test has no location. */
-  name: string;
-  tests: T[];
-};
-
-/**
- * `tests` by the file that holds them, the files in the order their first
- * test comes in: the most changed first, when `tests` is sorted that way.
- */
-export function groupTestsByFile<T extends Omit<TestJourney, "title">>(
-  tests: readonly T[],
-): JourneyFile<T>[] {
-  const files = new Map<string, JourneyFile<T>>();
-  for (const test of tests) {
-    const path = test.location ? getRepositoryPath(test.location.file) : null;
-    const key = path ?? test.prefix;
-    const nameStart = path ? path.lastIndexOf("/") + 1 : 0;
-    const file: JourneyFile<T> = files.get(key) ?? {
-      key,
-      path,
-      dir: path && nameStart > 0 ? path.slice(0, nameStart) : null,
-      name: path ? path.slice(nameStart) : test.prefix,
-      tests: [],
-    };
-    files.set(key, file);
-    file.tests.push(test);
-  }
-  return Array.from(files.values());
 }
 
 /**
@@ -194,13 +162,13 @@ export type ListedJourneyTest<J extends ReviewedJourney> = JourneyTest<J> & {
 };
 
 /**
- * The tests of `journeys` in the overview's order, by file: the most changed
- * first, unchanged ones last, each with where its review stands.
+ * The tests of `journeys` in the overview's order, by file, each with where
+ * its review stands.
  */
 export function getJourneyTestFiles<J extends ReviewedJourney>(
   journeys: readonly J[],
   context: Parameters<typeof getJourneyStatus>[1],
-): JourneyFile<ListedJourneyTest<J>>[] {
+): JourneyTestGroups<ListedJourneyTest<J>> {
   const tests = groupJourneysByTest(journeys).map(
     (test): ListedJourneyTest<J> => {
       const diffs = test.journeys.flatMap((journey) =>
@@ -220,10 +188,7 @@ export function getJourneyTestFiles<J extends ReviewedJourney>(
       };
     },
   );
-  tests.sort(
-    (a, b) => b.changedCount - a.changedCount || a.key.localeCompare(b.key),
-  );
-  return groupTestsByFile(tests);
+  return groupTestsForReview(tests);
 }
 
 /**

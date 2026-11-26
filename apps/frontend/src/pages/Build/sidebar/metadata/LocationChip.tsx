@@ -2,6 +2,8 @@ import type { ScreenshotMetadataLocation } from "@/gql/graphql";
 import { Chip, ChipLink, type ChipProps } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 
+import { getRepositoryPath } from "./repository-path";
+
 export interface LocationChipProps extends Pick<
   ChipProps,
   "icon" | "scale" | "className" | "children" | "color"
@@ -11,14 +13,6 @@ export interface LocationChipProps extends Pick<
   branch: string | null | undefined;
   /** Tooltip shown on hover. Omit to render the link without a tooltip. */
   tooltip?: string;
-}
-
-/**
- * A test file's path in the repository. A GitHub Action running in a
- * container reports it under the workspace mount.
- */
-export function getRepositoryPath(file: string): string {
-  return file.replace(/^\/github\/workspace\//, "");
 }
 
 /** Where `file` reads in the repository, when the build knows it. */
