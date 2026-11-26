@@ -24,7 +24,10 @@ OpenAPI document and dispatched through the existing API stack:
    with their Zod schemas; the SDK converts them to JSON Schema for
    `tools/list` and validates arguments and structured results. Tools receive
    the arguments as the client sent them, not the Zod output: dispatch
-   re-serializes them for the API, which parses them itself.
+   re-serializes them for the API, which parses them itself. Every argument
+   of the advertised input schema has a `type` (`input-schema.ts`): Zod
+   writes a schema with a component id as a `$ref` and a union as a bare
+   `anyOf`, and the Claude connectors directory flags both.
 3. **Dispatch** (`dispatch.ts`) — a tool call becomes an HTTP request to a
    private loopback server running the `openAPIRouter`, forwarding the
    caller's bearer. Validation, authentication, **scope enforcement**,
@@ -42,7 +45,8 @@ that snapshot, which is the only MCP touchpoint in review.
 
 ### Annotations
 
-`readOnlyHint` is true for `GET`. `destructiveHint` is true for `DELETE`, and
+`title` is the operation summary. `readOnlyHint` is true for `GET`.
+`destructiveHint` is true for `DELETE`, and
 for an operation flagged with `"x-mcp": { destructive: true }`: one that
 revokes access, cancels something, or sends something that cannot be recalled
 (reset the invite link, dismiss a review, transfer a project, send invites).

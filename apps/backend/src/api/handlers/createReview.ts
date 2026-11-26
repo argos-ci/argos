@@ -21,6 +21,7 @@ import {
   BuildReviewSchema,
   serializeBuildReview,
 } from "../schema/primitives/buildReview";
+import { CommentBodyInputSchema } from "../schema/primitives/comment";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import {
   forbidden,
@@ -49,9 +50,7 @@ const CreateReviewBodySchema = z.object({
     description:
       'Deprecated: use `event` instead. Overall review conclusion for the build: "APPROVE" or "REQUEST_CHANGES".',
   }),
-  body: z
-    .unknown()
-    .optional()
+  body: CommentBodyInputSchema.optional()
     .refine(
       (value) =>
         value === undefined ||
