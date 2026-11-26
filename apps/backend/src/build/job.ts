@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import * as Sentry from "@sentry/node";
 
 import { pushBuildNotification } from "@/build-notification";
 import { Build, Project, ScreenshotDiff } from "@/database/models";
@@ -16,6 +17,7 @@ import { redisLock } from "@/util/redis";
 
 import { concludeBuild } from "./concludeBuild";
 import { createBuildDiffs } from "./createBuildDiffs";
+import { inferDeployment } from "./inferDeployment";
 
 /**
  * Pushes the diffs to the screenshot-diff job queue.
@@ -144,7 +146,14 @@ export async function performBuild(build: Build) {
     }),
   ]);
 
-  await Promise.all([updateUsage(project), syncStaleGitlabProject(project)]);
+  await Promise.all([
+    updateUsage(project),
+    syncStaleGitlabProject(project),
+    // Retrying the build for it would redo everything else.
+    inferDeployment({ build, project }).catch((error) => {
+      Sentry.captureException(error);
+    }),
+  ]);
 }
 
 export const job = createModelJob("build", Build, performBuild, {
