@@ -9,6 +9,7 @@ import request from "supertest";
 import { test as base, describe, expect, vi } from "vitest";
 import { z } from "zod";
 
+import config from "@/config";
 import {
   Account,
   Build,
@@ -265,6 +266,20 @@ describe("MCP server", () => {
       .expect(200);
     expect(res.body.issuer).toMatch(/^https?:\/\//);
     expect(res.body.token_endpoint).toBe(`${res.body.issuer}/oauth/token`);
+  });
+
+  test("serves the OpenAI domain verification token as plain text", async () => {
+    await request(app).get("/.well-known/openai-apps-challenge").expect(404);
+    config.set("mcp.openaiAppsChallenge", "challenge-token");
+    try {
+      const res = await request(app)
+        .get("/.well-known/openai-apps-challenge")
+        .expect(200);
+      expect(res.headers["content-type"]).toMatch(/^text\/plain/);
+      expect(res.text).toBe("challenge-token");
+    } finally {
+      config.set("mcp.openaiAppsChallenge", "");
+    }
   });
 
   test("redirects humans to the documentation", async () => {

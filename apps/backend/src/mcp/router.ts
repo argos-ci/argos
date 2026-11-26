@@ -9,6 +9,8 @@
  *   MCP clients at the Authorization Server (the OAuth discovery handshake).
  * - `GET /.well-known/mcp/server-card.json` — SEP-1649 Server Card for
  *   pre-connection discovery.
+ * - `GET /.well-known/openai-apps-challenge` — OpenAI's domain verification
+ *   token, when `MCP_OPENAI_APPS_CHALLENGE` is set.
  *
  * Requests are authenticated with a personal access token or an OAuth access
  * token. Unauthenticated requests get a `401` with a `WWW-Authenticate` header
@@ -84,6 +86,17 @@ router.get("/.well-known/oauth-authorization-server", (_req, res) => {
 // transport and OAuth entry point.
 router.get("/.well-known/mcp/server-card.json", (_req, res) => {
   res.json(getServerCard());
+});
+
+// OpenAI checks that we own the MCP domain before reviewing the ChatGPT
+// plugin: it expects the exact token, as plain text, and nothing else.
+router.get("/.well-known/openai-apps-challenge", (_req, res) => {
+  const token = config.get("mcp.openaiAppsChallenge");
+  if (!token) {
+    res.sendStatus(404);
+    return;
+  }
+  res.type("text/plain").send(token);
 });
 
 // Humans and non-MCP clients land here (the MCP protocol only POSTs).

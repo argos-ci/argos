@@ -198,6 +198,12 @@ export function createConfig() {
         default: "https://mcp.argos-ci.dev:4001",
         env: "MCP_BASE_URL",
       },
+      openaiAppsChallenge: {
+        doc: "Domain verification token from the OpenAI plugin submission portal, served at /.well-known/openai-apps-challenge",
+        format: String,
+        default: "",
+        env: "MCP_OPENAI_APPS_CHALLENGE",
+      },
     },
     api: {
       baseUrl: {
