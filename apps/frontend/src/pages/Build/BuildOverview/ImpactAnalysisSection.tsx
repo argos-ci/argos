@@ -6,6 +6,7 @@ import { Button } from "@/ui/Button";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Truncable } from "@/ui/Truncable";
 
+import { getJourneyTestKey } from "../journey-hints";
 import { LocationChip } from "../sidebar/metadata/LocationChip";
 
 const _BuildFragment = graphql(`
@@ -13,6 +14,8 @@ const _BuildFragment = graphql(`
     branch
     journeys {
       id
+      prefix
+      title
     }
     impactAnalysis {
       affectedComponents {
@@ -112,8 +115,8 @@ function AffectedItemsSection(props: {
 
 /**
  * Surfaces the entities most impacted by the build's changes: Storybook
- * components when available, otherwise end-to-end tests, unless the journeys
- * section shows them. Renders nothing when neither is present.
+ * components when available, otherwise end-to-end tests, but those the
+ * journeys section shows. Renders nothing when neither is present.
  */
 export function ImpactAnalysisSection(props: {
   build: Build;
@@ -122,9 +125,11 @@ export function ImpactAnalysisSection(props: {
   const { build, repoUrl } = props;
   const analysis = build.impactAnalysis;
   const components = analysis?.affectedComponents ?? [];
-  // With journeys, the journeys section takes the place of the affected tests.
-  const tests =
-    build.journeys.length > 0 ? [] : (analysis?.affectedTests ?? []);
+  // Affected tests go by their title path, the key a journey's test has.
+  const journeyTests = new Set(build.journeys.map(getJourneyTestKey));
+  const tests = (analysis?.affectedTests ?? []).filter(
+    (test) => !journeyTests.has(test.name),
+  );
   const showComponents = components.length > 0;
   const showTests = !showComponents && tests.length > 0;
 

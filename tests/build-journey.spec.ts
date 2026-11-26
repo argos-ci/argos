@@ -258,6 +258,12 @@ loggedTest(
       }),
     ).toBeVisible();
     await expect(walkLink("shows the home page")).toHaveCount(0);
+    // A test of a single screen is no journey: the affected tests name it,
+    // and only it, the journeys being named above.
+    const affectedTests = page.getByRole("list").filter({
+      has: page.getByText("home.spec.ts › shows the home page"),
+    });
+    await expect(affectedTests.getByRole("listitem")).toHaveCount(1);
 
     // Opening the unchanged journeys scrolled the page: the capture starts at
     // the section's heading.
