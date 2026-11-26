@@ -183,10 +183,6 @@ export const typeDefs = gql`
     title: String!
     "Source location of the test"
     location: ScreenshotMetadataLocation
-    "Browser the run took its screenshots in"
-    browser: String
-    "Viewport the run took its screenshots at"
-    viewport: ScreenshotMetadataViewport
     "Screens of the journey in capture order, by the variant key their screenshots share"
     stepKeys: [String!]!
     "The journey at each viewport or color scheme it captured, in the order a review walks them"
@@ -564,7 +560,13 @@ export const resolvers: IResolvers = {
       }
       return getBuildImpactAnalysis(build);
     },
-    journeys: async (build) => getBuildJourneys(build),
+    journeys: async (build) => {
+      // Until the build concludes, its diffs are still being computed.
+      if (!build.conclusion) {
+        return [];
+      }
+      return getBuildJourneys(build);
+    },
     storybook: async (build, _args, ctx) => {
       const compareBucket = await getCompareScreenshotBucket(ctx, build);
       return compareBucket.storybookScreenshotCount > 0;

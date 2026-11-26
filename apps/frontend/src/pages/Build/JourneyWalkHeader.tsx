@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { useMemo } from "react";
 import { getStepLabel } from "@argos/schemas/journey";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
@@ -12,44 +12,33 @@ import {
 } from "lucide-react";
 
 import { HeadlessLink } from "@/ui/Link";
-import {
-  Menu,
-  MenuHeading,
-  MenuItem,
-  MenuRoot,
-  MenuSeparator,
-  MenuTrigger,
-} from "@/ui/menu-kit";
+import { Menu, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { useBuildDiffState, type BuildJourney } from "./BuildDiffState";
 import { getJourneyAnchor } from "./BuildOverview/JourneysSection";
 import {
   getBuildOverviewURL,
-  getBuildURL,
   useBuildParams,
   type BuildParams,
 } from "./BuildParams";
+import type { EvaluationStatus } from "./EvaluationStatus";
 import {
-  getJourneyDiffIds,
+  checkIsJourneyDiff,
   getJourneyRunHints,
   getJourneyTestKey,
+  getRunCapture,
 } from "./journey-hints";
-import { getTestsInReviewOrder, listJourneyTestFiles } from "./journey-order";
+import { getTestsInReviewOrder } from "./journey-order";
 import {
   getJourneyRunLabel,
   getJourneyTestFiles,
-  getJourneyTestSummary,
-  getTestContext,
-  JourneyStatusIcon,
-  useJourneyStatusContext,
-  type JourneyStatusContext,
+  getJourneyTestMenuItems,
+  useReviewStatuses,
 } from "./journey-tests";
-import { getBrowserLabel } from "./metadata/browser/browserLabels";
-import { serializeJourneySearch } from "./metadata/filters/util";
+import { getJourneyScreenURL } from "./metadata/filters/util";
 import { getViewportIconKind, viewportIcons } from "./metadata/metadataIcons";
 import { resolveDiffMetadata } from "./metadata/utils";
-import { formatViewport } from "./metadata/viewports/util";
 
 /**
  * Where walking `journey` starts, or picks up at the screen of `stepKey` when
@@ -60,24 +49,31 @@ function getJourneyURL(
   journey: BuildJourney,
   stepKey?: string | null,
 ): string {
-  // Runs may name their screens apart (`desktop/cart`, `mobile/cart`): the
-  // last part of the name is the screen.
-  const stepIndex = stepKey
-    ? journey.stepKeys.findIndex(
-        (key) => key === stepKey || getStepLabel(key) === getStepLabel(stepKey),
-      )
-    : -1;
-  // Without a screen to keep, the walk's first: the first variant's first.
-  const diffId =
-    stepIndex === -1
-      ? getJourneyDiffIds(journey)[0]
-      : journey.variants
-          .map((variant) => variant.diffIds[stepIndex])
-          .find((diffId) => diffId);
+  const diffId = (() => {
+    if (stepKey) {
+      // Runs may name their screens apart (`desktop/cart`, `mobile/cart`):
+      // the last part of the name is the screen.
+      const exactIndex = journey.stepKeys.indexOf(stepKey);
+      const stepIndex =
+        exactIndex === -1
+          ? journey.stepKeys.findIndex(
+              (key) => getStepLabel(key) === getStepLabel(stepKey),
+            )
+          : exactIndex;
+      const diffId =
+        stepIndex === -1
+          ? null
+          : journey.variants
+              .map((variant) => variant.diffIds[stepIndex])
+              .find(Boolean);
+      if (diffId) {
+        return diffId;
+      }
+    }
+    return journey.variants.flatMap((variant) => variant.diffIds).find(Boolean);
+  })();
   invariant(diffId, "a journey has a screen");
-  return serializeJourneySearch(getBuildURL({ ...params, diffId }), {
-    journey: new Set([journey.id]),
-  });
+  return getJourneyScreenURL(params, journey.id, diffId);
 }
 
 /**
@@ -87,13 +83,16 @@ function getJourneyURL(
 function pickRun(runs: BuildJourney[], current: BuildJourney): BuildJourney {
   const [first] = runs;
   invariant(first, "a test has a run");
+  const capture = getRunCapture(current);
   return (
-    runs.find(
-      (run) =>
-        run.browser === current.browser &&
-        run.viewport?.width === current.viewport?.width &&
-        run.viewport?.height === current.viewport?.height,
-    ) ?? first
+    runs.find((run) => {
+      const other = getRunCapture(run);
+      return (
+        other.browser === capture.browser &&
+        other.viewport?.width === capture.viewport?.width &&
+        other.viewport?.height === capture.viewport?.height
+      );
+    }) ?? first
   );
 }
 
@@ -106,7 +105,7 @@ function pickRun(runs: BuildJourney[], current: BuildJourney): BuildJourney {
  */
 export function JourneyWalkHeader() {
   const { walkedJourneys, activeDiff, journeys } = useBuildDiffState();
-  const statusContext = useJourneyStatusContext();
+  const statuses = useReviewStatuses();
   const params = useBuildParams();
   invariant(params, "a journey is walked on a build page");
   const metadata = activeDiff ? resolveDiffMetadata(activeDiff) : null;
@@ -123,7 +122,7 @@ export function JourneyWalkHeader() {
             }
           : null
       }
-      statusContext={statusContext}
+      statuses={statuses}
       params={params}
     />
   );
@@ -136,27 +135,40 @@ type ActiveScreen = {
   browser: string | null;
 };
 
-/** The walk header, given what it reads from the build page. */
 export function JourneyWalkHeaderView(props: {
   journeys: BuildJourney[];
   walkedJourneys: BuildJourney[];
   active: ActiveScreen | null;
-  statusContext: JourneyStatusContext;
+  /** The viewer's marks in the review under way, by diff id. */
+  statuses: Record<string, EvaluationStatus>;
   params: BuildParams;
 }) {
-  const { journeys, walkedJourneys, active, statusContext, params } = props;
+  const { journeys, walkedJourneys, active, statuses, params } = props;
+  const groups = useMemo(
+    () => getJourneyTestFiles(journeys, statuses),
+    [journeys, statuses],
+  );
   const journey =
-    walkedJourneys.find((journey) =>
-      journey.variants.some((variant) =>
-        variant.diffIds.some((diffId) => diffId === active?.diffId),
-      ),
+    walkedJourneys.find(
+      (journey) => active && checkIsJourneyDiff(journey, active.diffId),
     ) ?? walkedJourneys[0];
+  const testKey = journey ? getJourneyTestKey(journey) : null;
+  // The rows of every test, built again only when the walk moves to another
+  // journey: a step of the walk leaves them as they are.
+  const menuItems = useMemo(
+    () =>
+      journey
+        ? getJourneyTestMenuItems(groups, (item) => ({
+            href: getJourneyURL(params, pickRun(item.journeys, journey)),
+            checked: item.key === testKey,
+          }))
+        : null,
+    [groups, journey, params, testKey],
+  );
   if (!journey) {
     return null;
   }
-  const groups = getJourneyTestFiles(journeys, statusContext);
   const tests = getTestsInReviewOrder(groups);
-  const testKey = getJourneyTestKey(journey);
   const index = tests.findIndex((test) => test.key === testKey);
   const test = tests[index];
   invariant(test, "a walked journey is one of the build's");
@@ -214,37 +226,7 @@ export function JourneyWalkHeaderView(props: {
             </button>
           </MenuTrigger>
           <Menu aria-label="Journeys" search="Search journeys…">
-            {listJourneyTestFiles(groups).map(({ key, file, separated }) => (
-              <Fragment key={key}>
-                {separated ? <MenuSeparator /> : null}
-                <MenuHeading>{file.path ?? file.name}</MenuHeading>
-                {file.tests.map((item) => {
-                  const context = getTestContext(item, file);
-                  return (
-                    <MenuItem
-                      key={item.key}
-                      href={getTestURL(item)}
-                      wrap
-                      checked={item.key === testKey}
-                      textValue={[context, item.title]
-                        .filter(Boolean)
-                        .join(" › ")}
-                      keywords={[file.path ?? file.name]}
-                      subtitle={getJourneyTestSummary(item)}
-                    >
-                      {context ? (
-                        <span className="text-low">{context} › </span>
-                      ) : null}
-                      {item.title}
-                      <JourneyStatusIcon
-                        status={item.status}
-                        className="ml-1.5 inline size-3.5 align-[-0.125em]"
-                      />
-                    </MenuItem>
-                  );
-                })}
-              </Fragment>
-            ))}
+            {menuItems}
           </Menu>
         </MenuRoot>
       </h2>
@@ -308,8 +290,9 @@ function RunSwitch(props: {
     <nav aria-label="Runs" className="flex flex-wrap gap-1">
       {runs.map((run) => {
         const isCurrent = run.id === current.id;
-        const ViewportIcon = run.viewport
-          ? viewportIcons[getViewportIconKind(run.viewport.width)]
+        const { viewport } = getRunCapture(run);
+        const ViewportIcon = viewport
+          ? viewportIcons[getViewportIconKind(viewport.width)]
           : null;
         return (
           <HeadlessLink
@@ -344,22 +327,22 @@ function RunLine(props: {
   active: ActiveScreen | null;
 }) {
   const { journey, active } = props;
-  const viewport = active?.viewport ?? journey.viewport;
-  const browser = active?.browser ?? journey.browser;
+  const capture = getRunCapture(journey);
+  const viewport = active?.viewport ?? capture.viewport;
+  const label = getJourneyRunLabel({
+    viewport,
+    browser: active?.browser ?? capture.browser,
+  });
+  if (!label) {
+    return null;
+  }
   const ViewportIcon = viewport
     ? viewportIcons[getViewportIconKind(viewport.width)]
     : null;
-  const run = [
-    viewport ? formatViewport(viewport) : null,
-    browser ? getBrowserLabel(browser) : null,
-  ].filter(Boolean);
-  if (run.length === 0) {
-    return null;
-  }
   return (
     <div className="text-low flex items-center gap-1.5 text-xs tabular-nums">
       {ViewportIcon ? <ViewportIcon className="size-3.5 shrink-0" /> : null}
-      {run.join(" · ")}
+      {label}
     </div>
   );
 }

@@ -201,24 +201,3 @@ export function groupWalkableJourneys<T extends { variantKey: string }>(
       !checkIsStoryJourney(journey, getMetadata),
   );
 }
-
-/**
- * The screenshots of `steps` in the order a review walks them: one variant at
- * a time, step by step. A variant is walked whole before the next one, so the
- * screens follow each other on one viewport and scheme, the way someone
- * clicking through the app would see them.
- */
-export function walkJourneySteps<
-  T extends { name: string; variantKey: string },
->(steps: readonly { diffs: readonly T[] }[]): T[] {
-  const variants = new Map<string, T[]>();
-  for (const step of steps) {
-    for (const item of step.diffs) {
-      const signature = getVariantSignature(item);
-      const variant = variants.get(signature) ?? [];
-      variants.set(signature, variant);
-      variant.push(item);
-    }
-  }
-  return Array.from(variants.values()).flat();
-}

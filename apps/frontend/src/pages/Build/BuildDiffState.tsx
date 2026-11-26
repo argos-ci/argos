@@ -48,10 +48,9 @@ import {
 } from "./BuildParams";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
-import { getJourneyDiffIds } from "./journey-hints";
 import { FilterStateContext } from "./metadata/filters/FilterState";
 import {
-  diffMatchesFilters,
+  createFilterMatcher,
   FilterCategory,
   getFilterKey,
   serializeJourneySearch,
@@ -253,6 +252,8 @@ type ScrollRequest = {
 type BuildDiffContextValue = {
   diffs: Diff[];
   allDiffs: Diff[];
+  /** The loaded screenshots of each journey, by journey key. */
+  journeyDiffsByKey: ReadonlyMap<string, Diff[]>;
   grouping: SnapshotGrouping;
   /** Regroups the list, keeping the active diff open and in view. */
   setGrouping: (grouping: SnapshotGrouping) => void;
@@ -849,16 +850,16 @@ const _BuildDiffStateFragment = graphql(`
       id
       prefix
       title
-      browser
-      viewport {
-        width
-        height
-      }
       location {
         file
       }
       stepKeys
       variants {
+        browser
+        viewport {
+          width
+          height
+        }
         diffIds
         changedDiffIds
       }
@@ -933,26 +934,37 @@ export type ActiveDiffJourney = {
  * the ones that did.
  */
 export function useActiveDiffJourney(): ActiveDiffJourney | null {
-  const { activeDiff, allDiffs } = useBuildDiffState();
+  const { activeDiff, journeyDiffsByKey } = useBuildDiffState();
   return useMemo(
-    () => (activeDiff ? getDiffJourney(activeDiff, allDiffs) : null),
-    [activeDiff, allDiffs],
+    () => (activeDiff ? getDiffJourney(activeDiff, journeyDiffsByKey) : null),
+    [activeDiff, journeyDiffsByKey],
   );
+}
+
+/** The loaded screenshots of each journey, by journey key. */
+function groupDiffsByJourneyKey(diffs: Diff[]): Map<string, Diff[]> {
+  const byKey = new Map<string, Diff[]>();
+  for (const diff of diffs) {
+    const key = resolveJourneyIdentity(resolveDiffMetadata(diff))?.key;
+    if (key) {
+      const journeyDiffs = byKey.get(key) ?? [];
+      byKey.set(key, journeyDiffs);
+      journeyDiffs.push(diff);
+    }
+  }
+  return byKey;
 }
 
 function getDiffJourney(
   activeDiff: Diff,
-  allDiffs: Diff[],
+  journeyDiffsByKey: ReadonlyMap<string, Diff[]>,
 ): ActiveDiffJourney | null {
   const identity = resolveJourneyIdentity(resolveDiffMetadata(activeDiff));
   if (!identity) {
     return null;
   }
   const [journey] = groupJourneys(
-    allDiffs.filter(
-      (diff) =>
-        resolveJourneyIdentity(resolveDiffMetadata(diff))?.key === identity.key,
-    ),
+    journeyDiffsByKey.get(identity.key) ?? [],
     resolveDiffMetadata,
   );
   if (!journey || !checkIsMultiStepJourney(journey)) {
@@ -1000,7 +1012,8 @@ export function useGetNextDiffThroughJourney(
   getListNextDiff: () => Diff | null,
 ) {
   const { visible, listResumeRef } = useJourneyDrawerState();
-  const { activeDiff, allDiffs, diffs, isStackCollapsed } = useBuildDiffState();
+  const { activeDiff, journeyDiffsByKey, diffs, isStackCollapsed } =
+    useBuildDiffState();
   return useEventCallback((): Diff | null => {
     const listNextDiff = getListNextDiff();
     if (!activeDiff) {
@@ -1015,7 +1028,9 @@ export function useGetNextDiffThroughJourney(
       (markedGroup === null || diff.group !== markedGroup) &&
       diffs.includes(diff) &&
       predicate(diff);
-    const journey = visible ? getDiffJourney(activeDiff, allDiffs) : null;
+    const journey = visible
+      ? getDiffJourney(activeDiff, journeyDiffsByKey)
+      : null;
     if (journey) {
       const { steps, stepIndex } = journey;
       const stepDiff = [
@@ -1116,18 +1131,12 @@ export function BuildDiffProvider(props: {
     [searchMode, searcher, deferredSearch],
   );
 
+  const journeyDiffsByKey = useMemo(
+    () => groupDiffsByJourneyKey(screenshotDiffs),
+    [screenshotDiffs],
+  );
   const journeys = build?.journeys ?? NO_JOURNEYS;
   const filterState = useCreateFilterState(screenshotDiffs, journeys);
-  const journeyDiffIds = useMemo(
-    () =>
-      new Map(
-        journeys.map((journey) => [
-          journey.id,
-          new Set(getJourneyDiffIds(journey)),
-        ]),
-      ),
-    [journeys],
-  );
   const walkedJourneys = useMemo(
     () =>
       journeys.filter((journey) =>
@@ -1165,18 +1174,12 @@ export function BuildDiffProvider(props: {
       ? results.map((result) => result.item)
       : screenshotDiffs;
     if (filterState.active.size > 0) {
-      diffs = diffs.filter((diff) =>
-        diffMatchesFilters(diff, filterState.active, { journeyDiffIds }),
+      diffs = diffs.filter(
+        createFilterMatcher(filterState.active, { walkedDiffIds: walkOrder }),
       );
     }
     return diffs;
-  }, [
-    screenshotDiffs,
-    results,
-    searchMode,
-    filterState.active,
-    journeyDiffIds,
-  ]);
+  }, [screenshotDiffs, results, searchMode, filterState.active, walkOrder]);
 
   const [initialDiffIdParam] = useState(params.diffId);
   const initialDiffId = initialDiffIdParam ?? firstDiffId;
@@ -1435,6 +1438,7 @@ export function BuildDiffProvider(props: {
       groups,
       diffs: sortedDiffs,
       allDiffs: screenshotDiffs,
+      journeyDiffsByKey,
       expanded,
       toggleGroup,
       isStackCollapsed,
@@ -1463,6 +1467,7 @@ export function BuildDiffProvider(props: {
       groups,
       sortedDiffs,
       screenshotDiffs,
+      journeyDiffsByKey,
       expanded,
       toggleGroup,
       isStackCollapsed,

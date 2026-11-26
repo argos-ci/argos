@@ -26,6 +26,7 @@ import {
 import memoize from "memoize";
 
 import {
+  DiffStatusIcon,
   getDiffGroupDefinition,
   type DiffGroupName,
 } from "@/containers/Build/BuildDiffGroup";
@@ -35,6 +36,7 @@ import {
   DiffCardFooterText,
   DiffImage,
   getDiffDimensions,
+  getReviewDiffCardVariant,
   ListItemButton,
   type DiffCardProps,
 } from "@/containers/Build/BuildDiffListPrimitives";
@@ -54,7 +56,6 @@ import { Tooltip } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
-import { lowTextColorClassNames } from "@/util/colors";
 
 import {
   Diff,
@@ -216,7 +217,7 @@ function getRows(
     // Listed by test, similar diffs are not stacked: they mostly come from
     // other tests.
     const stackSizes = new Map<string, number>();
-    if (!searchMode && group.type === "status") {
+    if (!searchMode && !journeyMode && group.type === "status") {
       for (const diff of group.diffs) {
         if (diff.group) {
           stackSizes.set(diff.group, (stackSizes.get(diff.group) ?? 0) + 1);
@@ -230,20 +231,13 @@ function getRows(
       const first = index === 0;
       const last = index === diffs.length - 1;
 
-      // A journey is walked screen by screen, so it shows no stacks either.
-      // Searched, a screen shows what matched rather than its step.
-      if (journeyMode) {
+      // Searching, or walking a journey screen by screen, nothing is stacked.
+      // A searched row shows what matched.
+      if (searchMode || journeyMode) {
         const result = searchMode
           ? (results.find((r) => r.item === diff) ?? null)
           : null;
-        rows.push(memoCreateListItemRow({ diff, first, last, result }));
-        return;
-      }
-
-      // In search mode, we don't show groups.
-      if (searchMode) {
-        const result = results.find((r) => r.item === diff) ?? null;
-        if (result) {
+        if (!searchMode || result) {
           rows.push(memoCreateListItemRow({ diff, first, last, result }));
         }
         return;
@@ -445,15 +439,6 @@ function ShowSubItemToggle(props: {
         {props.count - 1} similar
       </Button>
     </HotkeyTooltip>
-  );
-}
-
-function DiffStatusIcon(props: { group: DiffGroupName }) {
-  const def = getDiffGroupDefinition(props.group);
-  return (
-    <def.icon
-      className={clsx("size-3 shrink-0", lowTextColorClassNames[def.color])}
-    />
   );
 }
 
@@ -665,20 +650,9 @@ function StatusDiffCard(
     status: EvaluationStatus | null;
   },
 ) {
-  const variant = (() => {
-    switch (props.status) {
-      case EvaluationStatus.Accepted:
-        return "success" as const;
-      case EvaluationStatus.Rejected:
-        return "danger" as const;
-      case EvaluationStatus.Pending:
-      case null:
-        return "primary" as const;
-      default:
-        assertNever(props.status);
-    }
-  })();
-  return <DiffCard {...props} variant={variant} />;
+  return (
+    <DiffCard {...props} variant={getReviewDiffCardVariant(props.status)} />
+  );
 }
 
 function useInViewportIndices(

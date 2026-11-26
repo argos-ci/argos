@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import {
   getVariantSignature,
   groupWalkableJourneys,
-  walkJourneySteps,
   type Journey,
   type JourneyMetadata,
 } from "@argos/schemas/journey";
@@ -10,7 +9,7 @@ import { checkStatusNeedsReview } from "@argos/schemas/screenshot-diff-status";
 import { invariant } from "@argos/util/invariant";
 import { raw } from "objection";
 
-import { Screenshot, ScreenshotDiff, type Build } from "@/database/models";
+import { ScreenshotDiff, type Build } from "@/database/models";
 import { getVariantKey } from "@/graphql/services/variant-key";
 
 import { parseLocation } from "./impact-analysis";
@@ -43,8 +42,6 @@ export type BuildJourney = {
   prefix: string;
   title: string;
   location: { file: string; line: number; column: number } | null;
-  browser: string | null;
-  viewport: Viewport | null;
   /** The journey's screens in capture order, by the key their variants share. */
   stepKeys: string[];
   variants: BuildJourneyVariant[];
@@ -63,6 +60,8 @@ type JourneyRow = ScreenshotDiff & {
   testFile: string | null;
   testLine: string | null;
   testColumn: string | null;
+  testRetry: string | null;
+  testRetries: string | null;
 };
 
 // The build page reads a removed screenshot's metadata on its baseline, and
@@ -84,9 +83,14 @@ function getJourneyMetadata(row: JourneyRow): JourneyMetadata {
   };
 }
 
-function parseViewport(row: JourneyRow | undefined): Viewport | null {
-  const width = Number(row?.viewportWidth ?? NaN);
-  const height = Number(row?.viewportHeight ?? NaN);
+function parseNumber(value: string | null): number | null {
+  const number = Number(value ?? NaN);
+  return Number.isFinite(number) ? number : null;
+}
+
+function parseViewport(row: JourneyRow): Viewport | null {
+  const width = Number(row.viewportWidth ?? NaN);
+  const height = Number(row.viewportHeight ?? NaN);
   return Number.isFinite(width) && Number.isFinite(height)
     ? { width, height }
     : null;
@@ -105,6 +109,8 @@ type JourneyItem = {
   row: JourneyRow;
   name: string;
   variantKey: string;
+  /** What tells the variants of a step apart. */
+  signature: string;
   metadata: JourneyMetadata;
 };
 
@@ -119,13 +125,17 @@ function getVariants(
   steps: Journey<JourneyItem>["steps"],
   checkNeedsReview: (item: JourneyItem) => boolean,
 ): BuildJourneyVariant[] {
-  const signatures = new Set(walkJourneySteps(steps).map(getVariantSignature));
-  return Array.from(signatures, (signature) => {
-    const byStep = steps.map(
-      (step) =>
-        step.diffs.find((item) => getVariantSignature(item) === signature) ??
-        null,
-    );
+  const variants = new Map<string, (JourneyItem | null)[]>();
+  steps.forEach((step, index) => {
+    for (const item of step.diffs) {
+      const byStep =
+        variants.get(item.signature) ??
+        steps.map((): JourneyItem | null => null);
+      variants.set(item.signature, byStep);
+      byStep[index] = item;
+    }
+  });
+  return Array.from(variants.values(), (byStep) => {
     const items = byStep.filter((item) => item !== null);
     const [first] = items;
     invariant(first, "a variant has a screen");
@@ -142,53 +152,43 @@ function getVariants(
   });
 }
 
+function getLocation(steps: Journey<JourneyItem>["steps"]) {
+  for (const step of steps) {
+    for (const item of step.diffs) {
+      const location = parseLocation(item.row);
+      if (location) {
+        return location;
+      }
+    }
+  }
+  return null;
+}
+
 function toBuildJourney(
   { identity, steps }: Journey<JourneyItem>,
   checkNeedsReview: (item: JourneyItem) => boolean,
 ): BuildJourney {
-  const runRows = steps.flatMap((step) => step.diffs.map((item) => item.row));
-  const [firstRow] = runRows;
   return {
     id: getJourneyId(identity.key),
     prefix: identity.prefix,
     title: identity.title,
-    location:
-      runRows.map(parseLocation).find((location) => location !== null) ?? null,
-    browser: firstRow?.browser ?? null,
-    viewport: parseViewport(firstRow),
+    location: getLocation(steps),
     stepKeys: steps.map((step) => step.key),
     variants: getVariants(steps, checkNeedsReview),
   };
 }
 
-/**
- * The status of each row, as the API gives it. Only an added screenshot's
- * reads the screenshot itself: its name and retries tell a failure apart.
- */
-async function getDiffStatuses(
-  rows: JourneyRow[],
-): Promise<Map<string, string>> {
-  const addedIds = rows.flatMap((row) =>
+function getStatus(row: JourneyRow) {
+  return ScreenshotDiff.getDiffStatus(
+    row,
     row.compareScreenshotId && !row.baseScreenshotId
-      ? [row.compareScreenshotId]
-      : [],
+      ? {
+          name: row.name,
+          retry: parseNumber(row.testRetry),
+          retries: parseNumber(row.testRetries),
+        }
+      : null,
   );
-  const added =
-    addedIds.length > 0 ? await Screenshot.query().findByIds(addedIds) : [];
-  const addedById = new Map(
-    added.map((screenshot) => [screenshot.id, screenshot]),
-  );
-  const statuses = await Promise.all(
-    rows.map(async (row) => {
-      const status = await row.$getDiffStatus(async (id) => {
-        const screenshot = addedById.get(id);
-        invariant(screenshot, "Screenshot not found");
-        return screenshot;
-      });
-      return [row.id, status] as const;
-    }),
-  );
-  return new Map(statuses);
 }
 
 /** The journeys of a build, with their steps in capture order. */
@@ -199,6 +199,9 @@ export async function getBuildJourneys(build: Build): Promise<BuildJourney[]> {
     // A file attached to a screenshot (an ARIA snapshot) is listed under it,
     // it is not a screen of its own.
     .whereNull("compareScreenshot.parentName")
+    // Only end-to-end tests make journeys; an empty story id is no story.
+    .whereRaw(`${METADATA}->'test'->'titlePath' IS NOT NULL`)
+    .whereRaw(`nullif(${METADATA}->'story'->>'id', '') IS NULL`)
     .select(
       "screenshot_diffs.id",
       "screenshot_diffs.baseScreenshotId",
@@ -219,26 +222,29 @@ export async function getBuildJourneys(build: Build): Promise<BuildJourney[]> {
       raw(`${METADATA}->'test'->'location'->>'file'`).as("testFile"),
       raw(`${METADATA}->'test'->'location'->>'line'`).as("testLine"),
       raw(`${METADATA}->'test'->'location'->>'column'`).as("testColumn"),
+      raw(`"compareScreenshot"."metadata"->'test'->>'retry'`).as("testRetry"),
+      raw(`"compareScreenshot"."metadata"->'test'->>'retries'`).as(
+        "testRetries",
+      ),
     )
     .orderBy("screenshot_diffs.id")
     .castTo<JourneyRow[]>();
 
-  const items = rows.map((row): JourneyItem => ({
-    row,
-    name: row.name,
-    variantKey: getVariantKey(row.name),
-    metadata: getJourneyMetadata(row),
-  }));
-  const journeys = groupWalkableJourneys(items, (item) => item.metadata);
-  const statuses = await getDiffStatuses(
-    journeys.flatMap((journey) =>
-      journey.steps.flatMap((step) => step.diffs.map((item) => item.row)),
-    ),
+  const items = rows.map((row): JourneyItem => {
+    const variantKey = getVariantKey(row.name);
+    return {
+      row,
+      name: row.name,
+      variantKey,
+      signature: getVariantSignature({ name: row.name, variantKey }),
+      metadata: getJourneyMetadata(row),
+    };
+  });
+  const checkNeedsReview = (item: JourneyItem) =>
+    checkStatusNeedsReview(getStatus(item.row), {
+      isSubsetBuild: build.subset,
+    });
+  return groupWalkableJourneys(items, (item) => item.metadata).map((journey) =>
+    toBuildJourney(journey, checkNeedsReview),
   );
-  const checkNeedsReview = (item: JourneyItem) => {
-    const status = statuses.get(item.row.id);
-    invariant(status, "every screen of a journey has a status");
-    return checkStatusNeedsReview(status, { isSubsetBuild: build.subset });
-  };
-  return journeys.map((journey) => toBuildJourney(journey, checkNeedsReview));
 }

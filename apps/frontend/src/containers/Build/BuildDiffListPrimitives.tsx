@@ -8,6 +8,7 @@ import { useLayoutShiftClipUrl } from "@/containers/Build/layoutShift";
 import { useOverlayStyle } from "@/containers/Build/OverlayStyle";
 import { graphql, type DocumentType } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
+import { EvaluationStatus } from "@/pages/Build/EvaluationStatus";
 import { ImageKitPicture, ImageKitPictureProps } from "@/ui/ImageKitPicture";
 import { Truncable, type TruncableProps } from "@/ui/Truncable";
 import { checkIsImageContentType } from "@/util/content-type";
@@ -182,6 +183,23 @@ export interface DiffCardProps {
   variant: "success" | "danger" | "primary" | "neutral";
   className?: string;
   children: React.ReactNode;
+}
+
+/** The card color of a diff the viewer marked, or did not mark yet. */
+export function getReviewDiffCardVariant(
+  status: EvaluationStatus | null,
+): DiffCardProps["variant"] {
+  switch (status) {
+    case EvaluationStatus.Accepted:
+      return "success";
+    case EvaluationStatus.Rejected:
+      return "danger";
+    case EvaluationStatus.Pending:
+    case null:
+      return "primary";
+    default:
+      assertNever(status);
+  }
 }
 
 export function DiffCard(props: DiffCardProps) {

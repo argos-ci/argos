@@ -8,7 +8,6 @@ import {
   groupWalkableJourneys,
   resolveJourneyIdentity,
   resolveTestIdentity,
-  walkJourneySteps,
   type JourneyMetadata,
 } from "./journey";
 
@@ -208,29 +207,6 @@ describe("#groupWalkableJourneys", () => {
         key: "checkout.spec.ts › purchase#checkout",
         steps: ["checkout/cart", "checkout/payment"],
       },
-    ]);
-  });
-});
-
-describe("#walkJourneySteps", () => {
-  it("walks one variant at a time, step by step", () => {
-    const [journey] = groupWalkableJourneys(
-      [
-        screen("checkout/payment dark", "checkout/payment", checkout(1)),
-        screen("checkout/cart light", "checkout/cart", checkout(0)),
-        screen("checkout/payment light", "checkout/payment", checkout(1)),
-        screen("checkout/cart dark", "checkout/cart", checkout(0)),
-      ],
-      (item) => item.metadata,
-    );
-    expect(journey).toBeDefined();
-    expect(
-      walkJourneySteps(journey?.steps ?? []).map((item) => item.name),
-    ).toEqual([
-      "checkout/cart light",
-      "checkout/payment light",
-      "checkout/cart dark",
-      "checkout/payment dark",
     ]);
   });
 });

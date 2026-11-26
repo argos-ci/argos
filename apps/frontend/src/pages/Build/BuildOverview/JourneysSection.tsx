@@ -1,16 +1,19 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { getStepLabel } from "@argos/schemas/journey";
-import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { ChevronDownIcon, FileCodeIcon, WaypointsIcon } from "lucide-react";
 import { useLocation } from "react-router";
 
 import {
+  DiffStatusIcon,
   getDiffGroupDefinition,
   type DiffGroupName,
 } from "@/containers/Build/BuildDiffGroup";
-import { DiffCard } from "@/containers/Build/BuildDiffListPrimitives";
+import {
+  DiffCard,
+  getReviewDiffCardVariant,
+} from "@/containers/Build/BuildDiffListPrimitives";
 import { DocumentType, graphql } from "@/gql";
 import {
   BuildType,
@@ -25,16 +28,21 @@ import { buildTypeDescriptors } from "@/util/build";
 import { lowTextColorClassNames } from "@/util/colors";
 import { capitalize } from "@/util/string";
 
-import { getBuildURL, useBuildParams, type BuildParams } from "../BuildParams";
+import { useBuildParams, type BuildParams } from "../BuildParams";
 import { getBuildReviewBlocker } from "../BuildReviewability";
-import { useBuildReviewState } from "../BuildReviewState";
 import { EvaluationStatus } from "../EvaluationStatus";
-import { getJourneyTestKey } from "../journey-hints";
-import { groupTestsForReview, type JourneyFile } from "../journey-order";
-import { getTestContext } from "../journey-tests";
+import type { JourneyFile, JourneyTestGroups } from "../journey-order";
+import {
+  getJourneyStatus,
+  getJourneyTestFiles,
+  getTestContext,
+  JOURNEY_STATUS_LABELS,
+  useReviewStatuses,
+  type ListedJourneyTest,
+} from "../journey-tests";
 import { BrowserIcon } from "../metadata/browser/BrowserIcon";
 import { getBrowserLabel } from "../metadata/browser/browserLabels";
-import { serializeJourneySearch } from "../metadata/filters/util";
+import { getJourneyScreenURL } from "../metadata/filters/util";
 import {
   colorSchemeIcons,
   getViewportIconKind,
@@ -50,15 +58,8 @@ const _JourneyFragment = graphql(`
     id
     prefix
     title
-    browser
-    viewport {
-      width
-      height
-    }
     location {
       file
-      line
-      column
     }
     stepKeys
     variants {
@@ -113,19 +114,14 @@ type JourneyRun = {
   browser: string | null;
   colorScheme: ScreenshotMetadataColorScheme | null;
   screens: JourneyScreen[];
-  changedCount: number;
+  changedDiffIds: string[];
   /** The screen its card shows: the first that changed, or the first. */
   cover: JourneyCover;
 };
 
-type JourneyTest = {
-  key: string;
-  prefix: string;
-  title: string;
-  location: Journey["location"];
+type JourneyTest = Omit<ListedJourneyTest<Journey>, "journeys"> & {
   /** Smallest viewport first. */
   runs: JourneyRun[];
-  changedCount: number;
   /** What tells the runs apart, besides their viewport. */
   showBrowser: boolean;
   showColorScheme: boolean;
@@ -159,44 +155,51 @@ function getJourneyRuns(journey: Journey): JourneyRun[] {
     return {
       key: `${journey.id}:${variantIndex}`,
       journey,
-      viewport: variant.viewport ?? journey.viewport,
-      browser: variant.browser ?? journey.browser,
+      viewport: variant.viewport,
+      browser: variant.browser,
       colorScheme: variant.colorScheme,
       screens,
-      changedCount: changed.size,
+      changedDiffIds: variant.changedDiffIds,
       cover: variant.cover,
     };
   });
 }
 
-/** The tests of the build, their runs together. */
-function getJourneyTests(journeys: Journey[]): JourneyTest[] {
-  const runsByTest = new Map<string, JourneyRun[]>();
-  for (const journey of journeys) {
-    const key = getJourneyTestKey(journey);
-    const runs = runsByTest.get(key) ?? [];
-    runsByTest.set(key, runs);
-    runs.push(...getJourneyRuns(journey));
-  }
-  return Array.from(runsByTest, ([key, runs]): JourneyTest => {
-    const [firstRun] = runs;
-    invariant(firstRun, "a test has at least one run");
-    const { journey } = firstRun;
-    return {
-      key,
-      prefix: journey.prefix,
-      title: journey.title,
-      location: journey.location,
-      runs: runs.toSorted(
+/**
+ * The tests in the order the walk header and the filter list them, each run
+ * of a test as a card.
+ */
+function getJourneyTestGroups(
+  journeys: Journey[],
+  statuses: Record<string, EvaluationStatus>,
+): JourneyTestGroups<JourneyTest> {
+  const files = getJourneyTestFiles(journeys, statuses);
+  const toTest = ({
+    journeys,
+    ...test
+  }: ListedJourneyTest<Journey>): JourneyTest => {
+    const runs = journeys
+      .flatMap(getJourneyRuns)
+      .toSorted(
         (a, b) =>
           (a.viewport?.width ?? Infinity) - (b.viewport?.width ?? Infinity) ||
           a.key.localeCompare(b.key),
-      ),
-      changedCount: runs.reduce((count, run) => count + run.changedCount, 0),
+      );
+    return {
+      ...test,
+      runs,
       showBrowser: new Set(runs.map((run) => run.browser)).size > 1,
       showColorScheme: new Set(runs.map((run) => run.colorScheme)).size > 1,
     };
+  };
+  const toFile = (file: JourneyFile<ListedJourneyTest<Journey>>) => ({
+    ...file,
+    tests: file.tests.map(toTest),
   });
+  return {
+    changed: files.changed.map(toFile),
+    unchanged: files.unchanged.map(toFile),
+  };
 }
 
 function plural(count: number, word: string): string {
@@ -204,13 +207,6 @@ function plural(count: number, word: string): string {
 }
 
 type ReviewMarkValue = EvaluationStatus.Accepted | EvaluationStatus.Rejected;
-
-const NO_REVIEW_STATUSES: Record<string, EvaluationStatus> = {};
-
-/** The viewer's marks in the review under way, by diff id. */
-function useReviewStatuses() {
-  return useBuildReviewState()?.diffStatuses ?? NO_REVIEW_STATUSES;
-}
 
 /**
  * Whether the viewer has marked every screen of `diffIds` in the review
@@ -220,27 +216,15 @@ function getReviewMark(
   diffIds: string[],
   statuses: Record<string, EvaluationStatus>,
 ): ReviewMarkValue | null {
-  if (diffIds.length === 0) {
-    return null;
-  }
-  let rejected = false;
-  for (const diffId of diffIds) {
-    const status = statuses[diffId];
-    if (status === EvaluationStatus.Rejected) {
-      rejected = true;
-    } else if (status !== EvaluationStatus.Accepted) {
-      return null;
-    }
-  }
-  return rejected ? EvaluationStatus.Rejected : EvaluationStatus.Accepted;
+  const status = getJourneyStatus(diffIds, statuses);
+  return status === EvaluationStatus.Accepted ||
+    status === EvaluationStatus.Rejected
+    ? status
+    : null;
 }
 
 function getChangedDiffIds(runs: JourneyRun[]): string[] {
-  return runs.flatMap((run) =>
-    run.screens
-      .filter((screen) => screen.changed)
-      .map((screen) => screen.diffId),
-  );
+  return runs.flatMap((run) => run.changedDiffIds);
 }
 
 /** An icon that says what it means on hover, for whoever does not know it. */
@@ -271,13 +255,9 @@ function StatusMark(props: {
   description: string;
   className?: string;
 }) {
-  const { icon: Icon, color } = getDiffGroupDefinition(props.group);
   return (
-    <ExplainedIcon
-      description={props.description}
-      className={clsx(lowTextColorClassNames[color], props.className)}
-    >
-      <Icon className="size-3.5" />
+    <ExplainedIcon description={props.description} className={props.className}>
+      <DiffStatusIcon group={props.group} className="size-3.5" />
     </ExplainedIcon>
   );
 }
@@ -301,11 +281,7 @@ function ReviewMark(props: { mark: ReviewMarkValue; className?: string }) {
   return (
     <StatusMark
       group={props.mark}
-      description={
-        props.mark === EvaluationStatus.Rejected
-          ? "Reviewed, with a rejected screen"
-          : "Reviewed, every screen accepted"
-      }
+      description={JOURNEY_STATUS_LABELS[props.mark]}
       className={props.className}
     />
   );
@@ -345,7 +321,6 @@ export function JourneysSection(props: {
   );
 }
 
-/** The journeys section, given what it reads from the build page. */
 export function JourneysSectionView(props: {
   build: Build;
   repoUrl: string | null;
@@ -355,7 +330,10 @@ export function JourneysSectionView(props: {
 }) {
   const { build, repoUrl, page, hash } = props;
   const headingId = useId();
-  const groups = groupTestsForReview(getJourneyTests(build.journeys));
+  const groups = useMemo(
+    () => getJourneyTestGroups(build.journeys, page.statuses),
+    [build.journeys, page.statuses],
+  );
   const unchangedCount = groups.unchanged.reduce(
     (count, file) => count + file.tests.length,
     0,
@@ -401,8 +379,6 @@ export function JourneysSectionView(props: {
           />
         </section>
       ) : null}
-      {/* Muted, with the status after the title as on the journeys' cards,
-          and saying why it is folded. */}
       {unchangedCount > 0 ? (
         <Details
           open={showUnchanged}
@@ -553,17 +529,6 @@ function JourneyFileCard(props: {
 
 const MAX_CHANGED_SCREEN_NAMES = 6;
 
-/** A screen of a journey, opened with the journey filter on. */
-function getJourneyScreenURL(
-  params: BuildParams,
-  journey: Journey,
-  diffId: string,
-): string {
-  return serializeJourneySearch(getBuildURL({ ...params, diffId }), {
-    journey: new Set([journey.id]),
-  });
-}
-
 type NamedScreen = JourneyScreen & {
   journey: Journey;
   /** The label, with its folder when another screen of the run shares it. */
@@ -580,6 +545,10 @@ type NamedScreen = JourneyScreen & {
 function getChangedScreens(test: JourneyTest): NamedScreen[] {
   const byIdentity = new Map<string, NamedScreen>();
   for (const run of test.runs) {
+    const labelCounts = new Map<string, number>();
+    for (const screen of run.screens) {
+      labelCounts.set(screen.label, (labelCounts.get(screen.label) ?? 0) + 1);
+    }
     const seen = new Map<string, number>();
     for (const screen of run.screens) {
       const occurrence = seen.get(screen.label) ?? 0;
@@ -588,8 +557,7 @@ function getChangedScreens(test: JourneyTest): NamedScreen[] {
       if (!screen.changed || byIdentity.has(identity)) {
         continue;
       }
-      const shared =
-        run.screens.filter((other) => other.label === screen.label).length > 1;
+      const shared = (labelCounts.get(screen.label) ?? 0) > 1;
       byIdentity.set(identity, {
         ...screen,
         journey: run.journey,
@@ -618,7 +586,11 @@ function JourneyTestItem(props: {
       ref.current?.scrollIntoView({ block: "center" });
     }
   }, [scrollIntoView]);
-  const mark = getReviewMark(getChangedDiffIds(test.runs), page.statuses);
+  const mark =
+    test.status === EvaluationStatus.Accepted ||
+    test.status === EvaluationStatus.Rejected
+      ? test.status
+      : null;
   const changedScreens = getChangedScreens(test);
   const namedScreens = changedScreens.slice(0, MAX_CHANGED_SCREEN_NAMES);
   return (
@@ -637,7 +609,7 @@ function JourneyTestItem(props: {
               key={`${screen.journey.id}:${screen.key}`}
               href={getJourneyScreenURL(
                 page.params,
-                screen.journey,
+                screen.journey.id,
                 screen.diffId,
               )}
               aria-label={`Screen ${screen.stepIndex + 1}, ${screen.name}, changed`}
@@ -658,6 +630,11 @@ function JourneyTestItem(props: {
   );
 }
 
+/** A viewport's width over its height, a desktop's when it is unknown. */
+function getViewportRatio(viewport: Viewport | null): number {
+  return viewport ? viewport.width / viewport.height : 1.5;
+}
+
 /**
  * The first screen of a run as it showed, at twice the width the card draws
  * it: the top of a full-page capture, one viewport tall.
@@ -666,10 +643,9 @@ function getFirstScreenTransformations(
   viewport: Viewport | null,
   width: number,
 ): string[] {
-  const ratio = viewport ? viewport.width / viewport.height : 1.5;
   return [
     `w-${width}`,
-    `h-${Math.round(width / ratio)}`,
+    `h-${Math.round(width / getViewportRatio(viewport))}`,
     "fo-top",
     "e-sharpen",
   ];
@@ -722,26 +698,14 @@ const IMAGE_AREA_RATIO = 16 / 9;
  */
 const SHOWN_SCREEN_SHARE = 0.6;
 
-/** A screen's width in its card, in percent. */
 function getScreenWidthPercent(viewport: Viewport | null): number {
-  const ratio = viewport ? viewport.width / viewport.height : 1.5;
   return Math.min(
     100,
-    Math.round((ratio / IMAGE_AREA_RATIO / SHOWN_SCREEN_SHARE) * 100),
+    Math.round(
+      (getViewportRatio(viewport) / IMAGE_AREA_RATIO / SHOWN_SCREEN_SHARE) *
+        100,
+    ),
   );
-}
-
-function getDiffCardVariant(mark: ReviewMarkValue | null) {
-  switch (mark) {
-    case EvaluationStatus.Accepted:
-      return "success" as const;
-    case EvaluationStatus.Rejected:
-      return "danger" as const;
-    case null:
-      return "primary" as const;
-    default:
-      assertNever(mark);
-  }
 }
 
 function JourneyRunItem(props: {
@@ -757,10 +721,7 @@ function JourneyRunItem(props: {
   const label = getRunLabel(run, test);
   const changed = screens.filter((screen) => screen.changed);
   const reviewStatuses = page.statuses;
-  const mark = getReviewMark(
-    changed.map((screen) => screen.diffId),
-    reviewStatuses,
-  );
+  const mark = getReviewMark(run.changedDiffIds, reviewStatuses);
   const reviewedCount = changed.filter((screen) => {
     const status = reviewStatuses[screen.diffId];
     return (
@@ -779,9 +740,8 @@ function JourneyRunItem(props: {
     // `isolate`: the card draws its ring above its image, which would also put
     // it above its file's sticky header.
     <li className="isolate">
-      {/* The whole card walks the journey from its start. */}
       <HeadlessLink
-        href={getJourneyScreenURL(page.params, journey, firstScreen.diffId)}
+        href={getJourneyScreenURL(page.params, journey.id, firstScreen.diffId)}
         aria-label={`Walk “${test.title}”${label ? ` at ${label}` : ""}`}
         className="group/item block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-(--ring-color-default)"
       >
@@ -789,7 +749,7 @@ function JourneyRunItem(props: {
           isActive={false}
           variant={
             changed.length > 0 && !reviewBlocker
-              ? getDiffCardVariant(mark)
+              ? getReviewDiffCardVariant(mark)
               : "neutral"
           }
         >

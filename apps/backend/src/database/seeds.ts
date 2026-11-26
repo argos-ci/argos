@@ -1692,6 +1692,18 @@ export async function createJourneyScenario(input: {
  * (one journey each, under one title), a sign-up nothing changed in, and a
  * test that captures a single screen, which is not a journey.
  */
+/** The metadata Playwright records for a test of `file`, run in `project`. */
+function getTestMetadata(file: string, title: string, project?: string) {
+  return {
+    id: [file, title, project].filter(Boolean).join("-").replaceAll(" ", "-"),
+    title,
+    titlePath: [file, title],
+    location: { file: `e2e/${file}`, line: 5, column: 3 },
+    retries: 0,
+    retry: 0,
+  };
+}
+
 export async function createJourneysScenario(input: {
   projectId: string;
   /** `reference` for a build that ran on an auto-approved branch. */
@@ -1756,16 +1768,9 @@ export async function createJourneysScenario(input: {
         ...common,
         url: `https://shop.example.com/${step.name}`,
         viewport: run.viewport,
-        test: {
-          // Playwright derives the test id from the project, which is what
-          // keeps the two runs of the checkout apart.
-          id: `${file}-${title}-${run.project}`.replaceAll(" ", "-"),
-          title,
-          titlePath: run.test,
-          location: { file: `e2e/${file}`, line: 5, column: 3 },
-          retries: 0,
-          retry: 0,
-        },
+        // Playwright derives the test id from the project, which is what
+        // keeps the two runs of the checkout apart.
+        test: getTestMetadata(file, title, run.project),
         capture: { index },
       } satisfies ScreenshotMetadata,
     }));
@@ -1789,14 +1794,7 @@ export async function createJourneysScenario(input: {
         ...common,
         url: `https://shop.example.com/${step.name}`,
         viewport,
-        test: {
-          id: "search.spec.ts-finds-a-product",
-          title: search.title,
-          titlePath: [search.file, search.title],
-          location: { file: `e2e/${search.file}`, line: 5, column: 3 },
-          retries: 0,
-          retry: 0,
-        },
+        test: getTestMetadata(search.file, search.title),
         capture: { index },
       } satisfies ScreenshotMetadata,
     })),

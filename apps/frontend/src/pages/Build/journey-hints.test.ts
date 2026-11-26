@@ -7,8 +7,7 @@ describe("#getJourneyRunHints", () => {
     id,
     prefix: "a.spec.ts",
     title,
-    browser,
-    viewport: { width, height: 720 },
+    variants: [{ browser, viewport: { width, height: 720 } }],
   });
 
   it("keeps what differs among the runs of one test", () => {

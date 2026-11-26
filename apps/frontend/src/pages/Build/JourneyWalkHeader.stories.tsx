@@ -5,6 +5,14 @@ import { userEvent, within } from "storybook/test";
 
 import { openOverlayParameters } from "@/ui/storyOverlay";
 
+import {
+  checkoutDesktop,
+  DESKTOP,
+  JOURNEYS,
+  journeyFixture,
+  searchDesktop,
+  signupDesktop,
+} from "./journey-testing";
 import { JourneyWalkHeaderView } from "./JourneyWalkHeader";
 
 type Props = ComponentProps<typeof JourneyWalkHeaderView>;
@@ -12,86 +20,7 @@ type Journey = Props["journeys"][number];
 
 type Viewport = { width: number; height: number };
 
-const DESKTOP = { width: 1280, height: 720 };
-const MOBILE = { width: 375, height: 812 };
-
-/** A run of a test in one Playwright project, a step per screen. */
-function journey(input: {
-  id: string;
-  file: string;
-  title: string;
-  /** `describe` blocks between the file and the title. */
-  describe?: string[];
-  viewport: Viewport;
-  /** The screens, the changed ones marked with a `*`. */
-  screens: string[];
-}): Journey {
-  return {
-    __typename: "BuildJourney",
-    id: input.id,
-    prefix: [input.file, ...(input.describe ?? [])].join(" › "),
-    title: input.title,
-    browser: "chromium",
-    viewport: { __typename: "ScreenshotMetadataViewport", ...input.viewport },
-    location: {
-      __typename: "ScreenshotMetadataLocation",
-      file: `e2e/${input.file}`,
-    },
-    stepKeys: input.screens.map((name) => name.replace("*", "")),
-    variants: [
-      {
-        __typename: "BuildJourneyVariant",
-        diffIds: input.screens.map(
-          (name) => `${input.id}-${name.replace("*", "")}`,
-        ),
-        changedDiffIds: input.screens
-          .filter((name) => name.endsWith("*"))
-          .map((name) => `${input.id}-${name.replace("*", "")}`),
-      },
-    ],
-  };
-}
-
-const CHECKOUT = [
-  "checkout/cart",
-  "checkout/shipping*",
-  "checkout/payment",
-  "checkout/confirmation*",
-];
-
-const checkoutDesktop = journey({
-  id: "c0ffee01",
-  file: "checkout.spec.ts",
-  title: "complete a purchase",
-  viewport: DESKTOP,
-  screens: CHECKOUT,
-});
-
-const checkoutMobile = journey({
-  id: "c0ffee02",
-  file: "checkout.spec.ts",
-  title: "complete a purchase",
-  viewport: MOBILE,
-  screens: CHECKOUT,
-});
-
-const search = journey({
-  id: "c0ffee03",
-  file: "search.spec.ts",
-  title: "finds a product",
-  viewport: DESKTOP,
-  screens: ["search/results", "search/product*"],
-});
-
-const signup = journey({
-  id: "c0ffee04",
-  file: "signup.spec.ts",
-  title: "create an account",
-  viewport: DESKTOP,
-  screens: ["signup/form", "signup/welcome"],
-});
-
-const billing = journey({
+const billing = journeyFixture({
   id: "c0ffee05",
   file: "features/accounts/billing.spec.ts",
   describe: ["organization owners", "with a yearly plan"],
@@ -100,8 +29,6 @@ const billing = journey({
   viewport: DESKTOP,
   screens: ["billing/index*", "invoices/index"],
 });
-
-const JOURNEYS = [checkoutDesktop, checkoutMobile, search, signup];
 
 /** The review on the first screen of `journey`. */
 function activeOn(journey: Journey, viewport: Viewport) {
@@ -117,7 +44,7 @@ const meta = {
     journeys: JOURNEYS,
     walkedJourneys: [checkoutDesktop],
     active: activeOn(checkoutDesktop, DESKTOP),
-    statusContext: { statuses: {} },
+    statuses: {},
     params: { accountSlug: "acme", projectName: "shop", buildNumber: 42 },
   },
   // As wide as the build's list, which it sits above.
@@ -137,16 +64,16 @@ export const TwoRuns: Story = {};
 /** A test run once: its viewport and browser, nothing to switch. */
 export const SingleRun: Story = {
   args: {
-    walkedJourneys: [search],
-    active: activeOn(search, DESKTOP),
+    walkedJourneys: [searchDesktop],
+    active: activeOn(searchDesktop, DESKTOP),
   },
 };
 
 /** The last journey: no next one. */
 export const LastJourney: Story = {
   args: {
-    walkedJourneys: [signup],
-    active: activeOn(signup, DESKTOP),
+    walkedJourneys: [signupDesktop],
+    active: activeOn(signupDesktop, DESKTOP),
   },
 };
 

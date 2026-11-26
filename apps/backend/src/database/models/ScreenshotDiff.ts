@@ -222,46 +222,71 @@ export class ScreenshotDiff extends Model {
     END ASC
   `;
 
-  $getDiffStatus = async (
-    loadScreenshot?: (screenshotId: string) => Promise<Screenshot>,
-  ) => {
-    if (!this.compareScreenshotId) {
+  /**
+   * The status of a diff. Only an added screenshot is read: its name and
+   * retries tell a failure apart from a new capture.
+   */
+  static getDiffStatus(
+    diff: Pick<
+      ScreenshotDiff,
+      "compareScreenshotId" | "baseScreenshotId" | "score" | "ignored"
+    >,
+    added: {
+      name: string;
+      retry: number | null | undefined;
+      retries: number | null | undefined;
+    } | null,
+  ) {
+    if (!diff.compareScreenshotId) {
       return "removed";
     }
 
-    if (!this.baseScreenshotId) {
-      const compareScreenshot = await (() => {
-        if (this.compareScreenshot) {
-          return this.compareScreenshot;
-        }
-        invariant(
-          loadScreenshot,
-          "compareScreenshot is not loaded and no loader is provided",
-        );
-        return loadScreenshot(this.compareScreenshotId);
-      })();
-
-      const { name, metadata } = compareScreenshot;
-      return ScreenshotDiff.screenshotFailureRegexp.test(name)
-        ? metadata?.test?.retry == null ||
-          metadata?.test?.retries == null ||
-          metadata.test.retry === metadata.test.retries
+    if (!diff.baseScreenshotId) {
+      invariant(added, "an added screenshot is read for its status");
+      return ScreenshotDiff.screenshotFailureRegexp.test(added.name)
+        ? added.retry == null ||
+          added.retries == null ||
+          added.retry === added.retries
           ? "failure"
           : "retryFailure"
         : "added";
     }
 
-    if (this.score === null) {
+    if (diff.score === null) {
       return "pending";
     }
 
-    if (this.score > 0) {
-      if (this.ignored) {
+    if (diff.score > 0) {
+      if (diff.ignored) {
         return "ignored";
       }
       return "changed";
     }
     return "unchanged";
+  }
+
+  $getDiffStatus = async (
+    loadScreenshot?: (screenshotId: string) => Promise<Screenshot>,
+  ) => {
+    if (!this.compareScreenshotId || this.baseScreenshotId) {
+      return ScreenshotDiff.getDiffStatus(this, null);
+    }
+
+    const compareScreenshot =
+      this.compareScreenshot ??
+      (await (() => {
+        invariant(
+          loadScreenshot,
+          "compareScreenshot is not loaded and no loader is provided",
+        );
+        return loadScreenshot(this.compareScreenshotId);
+      })());
+    const test = compareScreenshot.metadata?.test;
+    return ScreenshotDiff.getDiffStatus(this, {
+      name: compareScreenshot.name,
+      retry: test?.retry,
+      retries: test?.retries,
+    });
   };
 
   override $parseDatabaseJson(json: Pojo) {

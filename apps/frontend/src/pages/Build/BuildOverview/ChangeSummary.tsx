@@ -188,25 +188,17 @@ function ChangeSentence(props: {
       ? "A single visual change"
       : `${uniqueChangeCount} visual changes`;
 
-  if (countOnly && uniqueChangeCount === 1 && entityCount === 1) {
-    return changedCount >= 4 ? (
-      <>A single visual change, seen across {changedCount} snapshots.</>
-    ) : (
-      <>A single visual change.</>
-    );
-  }
-
   // Single change to a single entity — the common, simplest case.
   if (uniqueChangeCount === 1 && entityCount === 1) {
+    const target = countOnly ? null : <> to {formatNames(names, entityIcon)}</>;
     if (changedCount >= 4) {
       return (
         <>
-          A single visual change to {formatNames(names, entityIcon)}, seen
-          across {changedCount} snapshots.
+          A single visual change{target}, seen across {changedCount} snapshots.
         </>
       );
     }
-    return <>A single visual change to {formatNames(names, entityIcon)}.</>;
+    return <>A single visual change{target}.</>;
   }
 
   // Amplified: few changes echoed across many snapshots and entities —

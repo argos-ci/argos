@@ -31,8 +31,12 @@ const _BuildFragment = graphql(`
 
 type Build = DocumentType<typeof _BuildFragment>;
 
-export function BuildOverview(props: { build: Build; repoUrl: string | null }) {
-  const { build, repoUrl } = props;
+/**
+ * The overview's shortcuts, in a component of their own: they read the diff
+ * list, which changes with each page it loads, and the overview around them
+ * would render again with it.
+ */
+function OverviewHotkeys() {
   const goToFirstDiff = useGoToNextDiff();
   useBuildHotkey("goToNextDiff", goToFirstDiff);
   useBuildHotkey("acceptDiff", goToFirstDiff);
@@ -40,10 +44,15 @@ export function BuildOverview(props: { build: Build; repoUrl: string | null }) {
   useBuildHotkey("startReview", goToFirstDiff, {
     ignoreInteractiveTarget: true,
   });
+  return null;
+}
 
+export function BuildOverview(props: { build: Build; repoUrl: string | null }) {
+  const { build, repoUrl } = props;
   const showDeployment = Boolean(build.deployment) || build.storybook;
   return (
     <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+      <OverviewHotkeys />
       <BuildDialogs build={build} />
       <div className="flex flex-col gap-10 p-6 lg:flex-row lg:gap-8">
         <div className="flex min-w-0 flex-1 justify-center">

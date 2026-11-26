@@ -1,21 +1,21 @@
-import { clsx } from "clsx";
+import { Fragment, useMemo, type ComponentProps, type ReactNode } from "react";
+import { invariant } from "@argos/util/invariant";
 
-import {
-  getDiffGroupDefinition,
-  type DiffGroupName,
-} from "@/containers/Build/BuildDiffGroup";
+import { DiffStatusIcon } from "@/containers/Build/BuildDiffGroup";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
-import { lowTextColorClassNames } from "@/util/colors";
+import { MenuHeading, MenuItem, MenuSeparator } from "@/ui/menu-kit";
 
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
 import {
   getJourneyRunHints,
-  getJourneyTestKey,
+  getRunCapture,
+  groupJourneysByTest,
   type JourneyRunHint,
 } from "./journey-hints";
 import {
   groupTestsForReview,
+  listJourneyTestFiles,
   type JourneyFile,
   type JourneyTestGroups,
 } from "./journey-order";
@@ -27,35 +27,6 @@ type TestJourney = {
   title: string;
   location: { file: string } | null;
 };
-
-/** A test and its runs: a journey per Playwright project it ran in. */
-type JourneyTest<J extends TestJourney> = {
-  key: string;
-  prefix: string;
-  title: string;
-  location: J["location"];
-  journeys: J[];
-};
-
-/** `journeys` by the test they are runs of, in the order they first come in. */
-function groupJourneysByTest<J extends TestJourney>(
-  journeys: readonly J[],
-): JourneyTest<J>[] {
-  const tests = new Map<string, JourneyTest<J>>();
-  for (const journey of journeys) {
-    const key = getJourneyTestKey(journey);
-    const test: JourneyTest<J> = tests.get(key) ?? {
-      key,
-      prefix: journey.prefix,
-      title: journey.title,
-      location: journey.location,
-      journeys: [],
-    };
-    tests.set(key, test);
-    test.journeys.push(journey);
-  }
-  return Array.from(tests.values());
-}
 
 /**
  * What the title path says about a test besides its file: `describe` blocks,
@@ -81,36 +52,30 @@ export function getTestContext(
  * Where a journey's review stands, as the snapshot list names its groups:
  * changed until every change is marked, then accepted or rejected.
  */
-export type JourneyStatus =
+type JourneyStatus =
   | ScreenshotDiffStatus.Unchanged
   | ScreenshotDiffStatus.Changed
   | EvaluationStatus.Accepted
   | EvaluationStatus.Rejected;
 
-/** What it takes to say where a journey's review stands. */
-export type JourneyStatusContext = {
-  /** The viewer's marks in the review under way, by diff id. */
-  statuses: Record<string, EvaluationStatus>;
-};
-
 const NO_STATUSES: Record<string, EvaluationStatus> = {};
 
-export function useJourneyStatusContext(): JourneyStatusContext {
-  const statuses = useBuildReviewState()?.diffStatuses ?? NO_STATUSES;
-  return { statuses };
+/** The viewer's marks in the review under way, by diff id. */
+export function useReviewStatuses(): Record<string, EvaluationStatus> {
+  return useBuildReviewState()?.diffStatuses ?? NO_STATUSES;
 }
 
 /** Where the review of a journey stands, from its screens waiting for one. */
 export function getJourneyStatus(
   changedDiffIds: readonly string[],
-  context: JourneyStatusContext,
+  statuses: Record<string, EvaluationStatus>,
 ): JourneyStatus {
   if (changedDiffIds.length === 0) {
     return ScreenshotDiffStatus.Unchanged;
   }
   let rejected = false;
   for (const diffId of changedDiffIds) {
-    const status = context.statuses[diffId];
+    const status = statuses[diffId];
     if (status === EvaluationStatus.Rejected) {
       rejected = true;
     } else if (status !== EvaluationStatus.Accepted) {
@@ -120,7 +85,7 @@ export function getJourneyStatus(
   return rejected ? EvaluationStatus.Rejected : EvaluationStatus.Accepted;
 }
 
-const STATUS_LABELS: Record<JourneyStatus, string> = {
+export const JOURNEY_STATUS_LABELS: Record<JourneyStatus, string> = {
   [ScreenshotDiffStatus.Unchanged]: "No changes",
   [ScreenshotDiffStatus.Changed]: "Changed",
   [EvaluationStatus.Accepted]: "Reviewed, every screen accepted",
@@ -128,30 +93,40 @@ const STATUS_LABELS: Record<JourneyStatus, string> = {
 };
 
 /** A journey's status, in the icon and color the snapshot list gives it. */
-export function JourneyStatusIcon(props: {
-  status: JourneyStatus;
-  className?: string;
-}) {
-  const group: DiffGroupName = props.status;
-  const { icon: Icon, color } = getDiffGroupDefinition(group);
+function JourneyStatusIcon(props: { status: JourneyStatus }) {
   return (
-    <Icon
-      role="img"
-      aria-label={STATUS_LABELS[props.status]}
-      className={clsx(lowTextColorClassNames[color], props.className)}
+    <DiffStatusIcon
+      group={props.status}
+      aria-label={JOURNEY_STATUS_LABELS[props.status]}
+      className="ml-1.5 inline size-3.5 align-[-0.125em]"
     />
   );
 }
 
 type ReviewedJourney = TestJourney & {
-  viewport: { width: number } | null;
-  variants: readonly { changedDiffIds: readonly string[] }[];
+  id: string;
+  variants: readonly {
+    browser: string | null;
+    viewport: { width: number; height: number } | null;
+    changedDiffIds: readonly string[];
+  }[];
 };
 
-export type ListedJourneyTest<J extends ReviewedJourney> = JourneyTest<J> & {
+/** A test and its runs, a journey per Playwright project, and its review. */
+export type ListedJourneyTest<J extends ReviewedJourney> = {
+  key: string;
+  prefix: string;
+  title: string;
+  location: J["location"];
+  /** Smallest viewport first, as the overview lays the runs out. */
+  journeys: J[];
   status: JourneyStatus;
   changedCount: number;
 };
+
+export type JourneyTestFiles<J extends ReviewedJourney> = JourneyTestGroups<
+  ListedJourneyTest<J>
+>;
 
 /**
  * The tests of `journeys` in the overview's order, by file, each with where
@@ -159,21 +134,26 @@ export type ListedJourneyTest<J extends ReviewedJourney> = JourneyTest<J> & {
  */
 export function getJourneyTestFiles<J extends ReviewedJourney>(
   journeys: readonly J[],
-  context: Parameters<typeof getJourneyStatus>[1],
-): JourneyTestGroups<ListedJourneyTest<J>> {
+  statuses: Record<string, EvaluationStatus>,
+): JourneyTestFiles<J> {
   const tests = groupJourneysByTest(journeys).map(
     (test): ListedJourneyTest<J> => {
+      const [first] = test.journeys;
+      invariant(first !== undefined, "a test has a run");
       const changedDiffIds = test.journeys.flatMap((journey) =>
         journey.variants.flatMap((variant) => variant.changedDiffIds),
       );
       return {
-        ...test,
-        // Smallest viewport first, as the overview lays the runs out.
+        key: test.key,
+        prefix: first.prefix,
+        title: first.title,
+        location: first.location,
         journeys: test.journeys.toSorted(
           (a, b) =>
-            (a.viewport?.width ?? Infinity) - (b.viewport?.width ?? Infinity),
+            (getRunCapture(a).viewport?.width ?? Infinity) -
+            (getRunCapture(b).viewport?.width ?? Infinity),
         ),
-        status: getJourneyStatus(changedDiffIds, context),
+        status: getJourneyStatus(changedDiffIds, statuses),
         changedCount: changedDiffIds.length,
       };
     },
@@ -181,14 +161,23 @@ export function getJourneyTestFiles<J extends ReviewedJourney>(
   return groupTestsForReview(tests);
 }
 
+/** The tests of `journeys`, computed again only when they or the marks change. */
+export function useJourneyTestFiles<J extends ReviewedJourney>(
+  journeys: readonly J[],
+) {
+  const statuses = useReviewStatuses();
+  return useMemo(
+    () => getJourneyTestFiles(journeys, statuses),
+    [journeys, statuses],
+  );
+}
+
 /**
  * What a test's row says under its title: the runs it took, told apart by
  * what differs between them, and how many screens changed.
  */
-export function getJourneyTestSummary(
-  test: ListedJourneyTest<
-    ReviewedJourney & Parameters<typeof getJourneyRunHints>[0][number]
-  >,
+function getJourneyTestSummary(
+  test: ListedJourneyTest<ReviewedJourney>,
 ): string {
   const hints = getJourneyRunHints(test.journeys);
   const runs = test.journeys
@@ -212,4 +201,40 @@ export function getJourneyRunLabel(hint: JourneyRunHint | undefined): string {
   ]
     .filter(Boolean)
     .join(" · ");
+}
+
+/**
+ * A menu row per test of `groups`, under its file, the unchanged tests after
+ * a separator. A plain function rather than a component: menu-kit reads the
+ * rows it is given.
+ */
+export function getJourneyTestMenuItems<J extends ReviewedJourney>(
+  groups: JourneyTestFiles<J>,
+  getItemProps: (
+    test: ListedJourneyTest<J>,
+  ) => Omit<ComponentProps<typeof MenuItem>, "children">,
+): ReactNode[] {
+  return listJourneyTestFiles(groups).map(({ key, file, separated }) => (
+    <Fragment key={key}>
+      {separated ? <MenuSeparator /> : null}
+      <MenuHeading>{file.path ?? file.name}</MenuHeading>
+      {file.tests.map((test) => {
+        const context = getTestContext(test, file);
+        return (
+          <MenuItem
+            key={test.key}
+            wrap
+            textValue={[context, test.title].filter(Boolean).join(" › ")}
+            keywords={[file.path ?? file.name]}
+            subtitle={getJourneyTestSummary(test)}
+            {...getItemProps(test)}
+          >
+            {context ? <span className="text-low">{context} › </span> : null}
+            {test.title}
+            <JourneyStatusIcon status={test.status} />
+          </MenuItem>
+        );
+      })}
+    </Fragment>
+  ));
 }
