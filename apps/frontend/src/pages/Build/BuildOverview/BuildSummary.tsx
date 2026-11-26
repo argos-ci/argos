@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildType } from "@/gql/graphql";
@@ -8,6 +8,8 @@ import { ShortcutHint } from "@/ui/ShortcutHint";
 
 import { useBuildDiffState, useGoToNextDiff } from "../BuildDiffState";
 import { useCanReviewBuild } from "../BuildReviewability";
+import { getBrowserVersionChanges } from "../metadata/browser/browserVersionChange";
+import { BrowserVersionNotice } from "./BrowserVersionNotice";
 import { BuildSummaryDescription } from "./BuildSummaryDescription";
 import { ChangeSummary } from "./ChangeSummary";
 import { OrphanNextSteps } from "./OrphanNextSteps";
@@ -77,9 +79,13 @@ function BrowseSnapshotSection(props: { build: Build }) {
 
 export function BuildSummary(props: { build: Build }) {
   const { build } = props;
-  const { stats } = useBuildDiffState();
+  const { stats, allDiffs } = useBuildDiffState();
   const hasFailures = Boolean(stats?.failure);
   const canReview = useCanReviewBuild(build);
+  const browserVersionChanges = useMemo(
+    () => getBrowserVersionChanges(allDiffs),
+    [allDiffs],
+  );
   // Failing tests take precedence over the visual review, so the change summary
   // steps aside for the failure-focused description.
   const showReviewInsights = canReview && !hasFailures;
@@ -92,7 +98,12 @@ export function BuildSummary(props: { build: Build }) {
         <SummaryBuildTitle build={build} hasFailures={hasFailures} />
         <BuildSummaryDescription build={build} canReview={canReview} />
       </div>
-      {showReviewInsights && <ChangeSummary build={build} />}
+      {showReviewInsights && (
+        <>
+          <BrowserVersionNotice changes={browserVersionChanges} />
+          <ChangeSummary build={build} />
+        </>
+      )}
       {isOrphan && <OrphanNextSteps build={build} />}
       {hasSnapshots && <BrowseSnapshotSection build={build} />}
     </section>
