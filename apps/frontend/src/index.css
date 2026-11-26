@@ -339,12 +339,9 @@
  *
  * Use this **only** in `ui/TextInput`.
  *
- * The modality attribute sits on `<html>` and flips on every switch between
- * mouse and keyboard, so the selector must let the browser find what it
- * affects. A descendant combinator ending on the utility's class does; a
- * universal `*` (as in `&:where(html[…] *)`) does not, and Chrome then
- * restyles the whole document on each flip: ~9 ms on a 3,600-element page,
- * paid by the first keystroke after a click.
+ * Keep `&` outside the `:where()`, unlike `dark` above: the attribute flips on
+ * every switch between mouse and keyboard, and under a universal `*` Chrome
+ * restyles the whole document each time.
  */
 @custom-variant kbd-focus (
   :where(html[data-focus-modality="keyboard"]) &:focus

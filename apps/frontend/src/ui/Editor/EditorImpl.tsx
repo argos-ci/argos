@@ -171,6 +171,7 @@ export default function Editor(props: EditorProps) {
     mentions: mentionsProp,
     mentionedUsers,
     repositoryUrl,
+    "aria-label": ariaLabel,
   } = props;
 
   const mentionableUsers = useMentionableUsers();
@@ -197,11 +198,12 @@ export default function Editor(props: EditorProps) {
     repositoryUrlRef.current = repositoryUrl;
   });
 
-  // `useEditor` compares these options with the editor's after every render
-  // and, on any difference, pushes them back into ProseMirror (`setOptions`
-  // re-runs `updateState`). This component renders on every keystroke, since
-  // its parent holds the value, so the options keep their identity: the
-  // extensions are only read when the editor is created anyway.
+  // This component renders on every keystroke, since its parent holds the
+  // value, and `useEditor` pushes any option that changed identity back into
+  // ProseMirror (`setOptions` re-runs `updateState`). The editor reads its
+  // content and extensions only when it is created, so both are frozen here; a
+  // controlled `value` reaches it through `setContent` below.
+  const [initialContent] = useState(() => value ?? defaultValue);
   const [extensions] = useState(() => [
     StarterKit.configure({
       link: {
@@ -238,7 +240,6 @@ export default function Editor(props: EditorProps) {
       ? (contentClassName ?? EDITOR_DEFAULT_CONTENT_HEIGHT_CLASS)
       : contentClassName,
   );
-  const ariaLabel = props["aria-label"];
   const editorProps = useMemo(
     (): UseEditorOptions["editorProps"] => ({
       attributes: {
@@ -264,7 +265,7 @@ export default function Editor(props: EditorProps) {
   const editor = useEditor({
     extensions,
     editable,
-    content: value ?? defaultValue,
+    content: initialContent,
     autofocus: autoFocus ? "end" : false,
     editorProps,
     onUpdate: ({ editor }) => {
