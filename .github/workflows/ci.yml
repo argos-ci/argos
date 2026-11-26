@@ -233,16 +233,42 @@ jobs:
   docker-image:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # The action's build record would add an artifact to every run.
+    env:
+      DOCKER_BUILD_RECORD_UPLOAD: false
+      DOCKER_BUILD_SUMMARY: false
 
     steps:
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # The runner's Docker builds with BuildKit already. A buildx builder, as in
-      # the release workflow, is only worth it for a registry cache: here it
-      # cost ~45s to export the image back into Docker and tear itself down.
+      # In the background, so they download while the image builds.
+      - name: Pull the services the image check runs
+        run: scripts/check-image.sh --pull > /dev/null 2>&1 &
+
+      # The runner's Docker keeps images in containerd, so its own builder
+      # reads and writes the Actions cache: a buildx builder would cost ~45s to
+      # export the image back into Docker. Only the dependency stages are
+      # cached, as they change with the lockfile alone: a layer already in the
+      # cache is not uploaded again, and the rest changes on every commit.
+      - name: Cache dependency layers
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: prod-deps
+          outputs: type=cacheonly
+          cache-from: type=gha,scope=docker-image
+          cache-to: type=gha,scope=docker-image,mode=max
+
+      # Uncompressed: the image goes no further than this runner's Docker.
       - name: Build image
-        run: docker build --target runtime --tag argos:ci --build-arg ASSETS_BASE_URL=https://assets.argos-ci.com .
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: runtime
+          build-args: ASSETS_BASE_URL=https://assets.argos-ci.com
+          outputs: type=image,name=argos:ci,unpack=true,compression=uncompressed
+          cache-from: type=gha,scope=docker-image
 
       - name: Check image
         run: scripts/check-image.sh argos:ci
