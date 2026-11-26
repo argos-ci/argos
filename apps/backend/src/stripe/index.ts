@@ -1269,6 +1269,29 @@ export async function handleStripeEvent({
         `no Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
       );
 
+      // Ending the trial opened its first paid invoice with the tax setting
+      // the subscription had, so one still waiting for tax was billed without.
+      // Turning tax on now only fixes the next invoices: this one has to be
+      // corrected by hand.
+      if (
+        data.previous_attributes &&
+        "status" in data.previous_attributes &&
+        data.previous_attributes.status === "trialing" &&
+        stripeSubscription.status !== "canceled" &&
+        checkIsAutomaticTaxPending(stripeSubscription)
+      ) {
+        captureException(
+          new Error("Trial converted without tax: no customer location"),
+          {
+            extra: {
+              accountId: argosSubscription.accountId,
+              stripeSubscriptionId: stripeSubscription.id,
+              latestInvoiceId: stripeSubscription.latest_invoice,
+            },
+          },
+        );
+      }
+
       // A payment method set on the subscription itself locates the customer
       // too. Before the sync, as on "payment_method.attached".
       await enablePendingAutomaticTax(stripeSubscription);
@@ -1428,6 +1451,15 @@ async function createTaxedStripeSubscription(
   }
 }
 
+function checkIsAutomaticTaxPending(
+  stripeSubscription: Stripe.Subscription,
+): boolean {
+  return Boolean(
+    stripeSubscription.metadata[AUTOMATIC_TAX_PENDING_KEY] &&
+    !stripeSubscription.automatic_tax.enabled,
+  );
+}
+
 /**
  * Turn tax on for a subscription created without it, if Stripe can now locate
  * its customer. Otherwise it stays flagged, for the next card or address
@@ -1436,10 +1468,7 @@ async function createTaxedStripeSubscription(
 async function enablePendingAutomaticTax(
   stripeSubscription: Stripe.Subscription,
 ): Promise<void> {
-  if (
-    !stripeSubscription.metadata[AUTOMATIC_TAX_PENDING_KEY] ||
-    stripeSubscription.automatic_tax.enabled
-  ) {
+  if (!checkIsAutomaticTaxPending(stripeSubscription)) {
     return;
   }
   try {
@@ -1564,62 +1593,50 @@ export async function createStripeCheckoutSession(args: {
     // Tax locates the customer by, and a VAT number makes an EU sale a
     // reverse charge.
     billing_address_collection: "required",
-    ...(teamAccount.stripeCustomerId
-      ? await getCheckoutCustomerParams({
-          customerId: teamAccount.stripeCustomerId,
-          accountId: teamAccount.id,
-        })
-      : { tax_id_collection: { enabled: true } }),
+    tax_id_collection: { enabled: true },
+    ...(await getCheckoutCustomerParams(teamAccount)),
   });
 }
 
 /**
- * The checkout parameters that save what an existing customer enters (billing
- * address, legal name, VAT number) on it, for its later invoices to read.
+ * The customer a team's checkout bills, with what it enters there (billing
+ * address, legal name, VAT number) saved on it. Stripe requires both updates to
+ * collect a VAT number for an existing customer.
  *
  * Trials opened server side reuse their owner's customer, found by email, for
- * every team the owner creates. On a customer that also bills someone else,
- * nothing already there is overwritten, or the other team's invoices would
- * carry this team's name and address. Stripe only collects a VAT number for
- * an existing customer while overwriting its name, so that is left off too.
+ * every team the owner creates. A customer that also bills another team is
+ * left alone: Stripe taxes the checkout at the address saved on the customer,
+ * which would be the other team's. Without a customer, the checkout creates one
+ * for this team, which the "checkout.session.completed" webhook records on it.
  */
-async function getCheckoutCustomerParams(args: {
-  customerId: string;
-  accountId: string;
-}): Promise<
-  Pick<
-    Stripe.Checkout.SessionCreateParams,
-    "customer" | "customer_update" | "tax_id_collection"
-  >
+async function getCheckoutCustomerParams(
+  teamAccount: Account,
+): Promise<
+  Pick<Stripe.Checkout.SessionCreateParams, "customer" | "customer_update">
 > {
-  const { customerId, accountId } = args;
+  const customerId = teamAccount.stripeCustomerId;
+  if (!customerId) {
+    return {};
+  }
   const [otherTeam, stripeSubscriptions] = await Promise.all([
     Account.query()
       .where({ stripeCustomerId: customerId })
       .whereNotNull("teamId")
-      .whereNot("id", accountId)
+      .whereNot("id", teamAccount.id)
       .first(),
     listCustomerSubscriptions(customerId),
   ]);
   const shared =
     Boolean(otherTeam) ||
     stripeSubscriptions.some(
-      (subscription) => subscription.metadata["accountId"] !== accountId,
+      (subscription) => subscription.metadata["accountId"] !== teamAccount.id,
     );
-  if (!shared) {
-    return {
-      customer: customerId,
-      customer_update: { address: "auto", name: "auto" },
-      tax_id_collection: { enabled: true },
-    };
+  if (shared) {
+    return {};
   }
-  // Automatic tax in a subscription checkout needs an address on the
-  // customer. Saving one where there is none overwrites nothing.
-  const customer = await stripe.customers.retrieve(customerId);
-  const hasAddress = !customer.deleted && Boolean(customer.address);
   return {
     customer: customerId,
-    ...(!hasAddress && { customer_update: { address: "auto" } }),
+    customer_update: { address: "auto", name: "auto" },
   };
 }
 
