@@ -338,9 +338,13 @@
  * be told how focus arrived — see `util/focus-modality`, which publishes it.
  *
  * Use this **only** in `ui/TextInput`.
+ *
+ * Keep `&` outside the `:where()`, unlike `dark` above: the attribute flips on
+ * every switch between mouse and keyboard, and under a universal `*` Chrome
+ * restyles the whole document each time.
  */
 @custom-variant kbd-focus (
-  &:where(html[data-focus-modality="keyboard"] *):focus
+  :where(html[data-focus-modality="keyboard"]) &:focus
 );
 
 /**

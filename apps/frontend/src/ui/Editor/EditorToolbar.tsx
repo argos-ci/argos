@@ -1,5 +1,10 @@
-import { useEffect, useState } from "react";
-import { useEditorState, type Editor } from "@tiptap/react";
+import { memo, useCallback, useEffect, useState } from "react";
+import type { EditorState } from "@tiptap/pm/state";
+import {
+  useEditorState,
+  type Editor,
+  type EditorStateSnapshot,
+} from "@tiptap/react";
 import { clsx } from "clsx";
 import {
   BoldIcon,
@@ -42,11 +47,40 @@ const BUBBLE_MENU_ANIMATION_CLASS_NAME = clsx(
   "data-[toolbar-animation=exit]:animate-out data-[toolbar-animation=exit]:fade-out data-[toolbar-animation=exit]:zoom-out-95",
 );
 
-export function EditorToolbar(props: EditorToolbarProps) {
+/**
+ * Over a selection that holds text, or on a link. Module-level because
+ * `BubbleMenu` dispatches a transaction whenever `shouldShow` changes identity.
+ */
+function shouldShowToolbar(props: {
+  editor: Editor;
+  state: EditorState;
+  from: number;
+  to: number;
+}): boolean {
+  const { editor, state, from, to } = props;
+  if (!editor.isEditable) {
+    return false;
+  }
+  return state.doc.textBetween(from, to).length > 0 || editor.isActive("link");
+}
+
+/**
+ * The selector runs on every transaction. While the toolbar is hidden it
+ * returns the state it last read: that skips eight `can()` dry runs and a
+ * re-render per keystroke, and a toolbar fading out keeps its buttons.
+ */
+const lastReadStates = new WeakMap<Editor, ToolbarState>();
+
+// Memoized because the editor around it re-renders on every keystroke, and the
+// toolbar has its own subscription to the editor.
+export const EditorToolbar = memo(function EditorToolbar(
+  props: EditorToolbarProps,
+) {
   const { editor } = props;
-  const state = useEditorState({
-    editor,
-    selector: ({ editor: snapshotEditor }): ToolbarState | null => {
+  const selector = useCallback(
+    ({
+      editor: snapshotEditor,
+    }: EditorStateSnapshot<Editor | null>): ToolbarState | null => {
       // `useEditorState` keeps its own reference to the editor and only
       // re-points it in a layout effect, so a render that happens right after
       // the editor was torn down (`useEditor` destroys the instance a tick
@@ -57,8 +91,21 @@ export function EditorToolbar(props: EditorToolbarProps) {
       if (snapshotEditor !== editor || !editor || editor.isDestroyed) {
         return null;
       }
-      const { selection } = editor.state;
-      return {
+      const { state: editorState } = editor;
+      const { selection } = editorState;
+      const lastRead = lastReadStates.get(editor);
+      if (
+        lastRead &&
+        !shouldShowToolbar({
+          editor,
+          state: editorState,
+          from: selection.from,
+          to: selection.to,
+        })
+      ) {
+        return lastRead;
+      }
+      const next: ToolbarState = {
         isBold: editor.isActive("bold"),
         canBold: editor.can().toggleBold(),
         isItalic: editor.isActive("italic"),
@@ -87,8 +134,12 @@ export function EditorToolbar(props: EditorToolbarProps) {
         selectionTo: selection.to,
         selectionEmpty: selection.empty,
       };
+      lastReadStates.set(editor, next);
+      return next;
     },
-  });
+    [editor],
+  );
+  const state = useEditorState({ editor, selector });
 
   const [linkEditing, setLinkEditing] = useState(false);
 
@@ -132,16 +183,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
         "bg-subtle border-thin z-50 flex items-center gap-0.5 rounded-lg bg-clip-padding p-1 shadow-sm",
       )}
       animationDurationMs={BUBBLE_MENU_ANIMATION_DURATION_MS}
-      shouldShow={({ editor, state: pmState, from, to }) => {
-        if (!editor.isEditable) {
-          return false;
-        }
-        const hasTextInSelection = pmState.doc.textBetween(from, to).length > 0;
-        if (!hasTextInSelection) {
-          return editor.isActive("link");
-        }
-        return true;
-      }}
+      shouldShow={shouldShowToolbar}
     >
       {showLinkInput ? (
         <EditorToolbarLinkInput
@@ -160,7 +202,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
       )}
     </AnimatedBubbleMenu>
   );
-}
+});
 
 function FormatToolbar(props: {
   editor: Editor;
