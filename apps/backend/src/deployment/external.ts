@@ -41,6 +41,8 @@ export async function createExternalDeployment(input: {
   });
 
   await Promise.all([
+    // Only refreshes the pull request comment: the host of an external
+    // deployment reports its commit status and GitHub deployment itself.
     pushDeploymentNotification({
       deploymentId: deployment.id,
       type: "success",

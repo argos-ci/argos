@@ -203,6 +203,13 @@ deployment whose id you store), and there is no constraint to lean on. Take a
 the row inside it. Don't count on the job runner's lock on `[queue, id]`: it
 can't be seen where the check is made, and other callers don't take it.
 
+**Queries that run for every build:** a query added to the build job, an
+upload or a finalize ships with its cost. Measure it with `EXPLAIN (ANALYZE)`
+on production-shaped data: a throwaway database seeded with around a million
+screenshots and buckets of 1k, 10k and 50k. Compare it with the queries that
+path already runs on the same rows, and put the numbers in the pull request.
+Local test databases are too small for the plan or the cost to show.
+
 ## GraphQL
 
 - The schema is the source of truth. After editing any `typeDefs` in

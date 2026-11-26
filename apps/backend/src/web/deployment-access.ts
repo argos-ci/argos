@@ -33,15 +33,14 @@ async function parseReturnTo(input: string): Promise<URL | null> {
     return null;
   }
 
-  if (checkIsDeploymentsHostname(url.hostname)) {
+  const hostname = url.hostname.toLowerCase();
+  if (checkIsDeploymentsHostname(hostname)) {
     return url;
   }
 
-  const customDomain = await ProjectDomain.query().select("id").findOne({
-    domain: url.hostname.toLowerCase(),
-    internal: false,
-    status: "active",
-  });
+  const customDomain = await ProjectDomain.query()
+    .select("id")
+    .findOne({ domain: hostname, internal: false, status: "active" });
 
   return customDomain ? url : null;
 }
