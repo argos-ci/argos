@@ -118,6 +118,8 @@ type JourneyDiff = Journey["steps"][number]["diffs"][number];
 type Viewport = { width: number; height: number };
 
 type JourneyScreen = {
+  /** The step's key, its screenshot name without the variant. */
+  key: string;
   label: string;
   /** The step's screenshot in the variant the run shows. */
   diff: JourneyDiff;
@@ -174,6 +176,7 @@ function getJourneyRuns(
       return diff
         ? [
             {
+              key: step.key,
               label: getStepLabel(step.key),
               diff,
               changed: checkDiffNeedsAttention(diff, context),
@@ -568,22 +571,42 @@ function getJourneyScreenURL(
   });
 }
 
-type NamedScreen = JourneyScreen & { index: number; journey: Journey };
+type NamedScreen = JourneyScreen & {
+  index: number;
+  journey: Journey;
+  /** The label, with its folder when another screen of the run shares it. */
+  name: string;
+};
 
 /**
- * The screens that changed in any run of a test, once each, in journey order:
- * the runs of a test take the same screens, at another viewport.
+ * The screens that changed in any run of a test, once each, in journey order.
+ * The runs of a test take the same screens at another size, and may name
+ * them apart (`desktop/cart`, `mobile/cart`): a screen is known across runs
+ * by its label and how many screens of its run came before with that label,
+ * so `cart/index` and `account/index` stay two screens.
  */
 function getChangedScreens(test: JourneyTest): NamedScreen[] {
-  const byLabel = new Map<string, NamedScreen>();
+  const byIdentity = new Map<string, NamedScreen>();
   for (const run of test.runs) {
+    const seen = new Map<string, number>();
     run.screens.forEach((screen, index) => {
-      if (screen.changed && !byLabel.has(screen.label)) {
-        byLabel.set(screen.label, { ...screen, index, journey: run.journey });
+      const occurrence = seen.get(screen.label) ?? 0;
+      seen.set(screen.label, occurrence + 1);
+      const identity = `${screen.label}#${occurrence}`;
+      if (!screen.changed || byIdentity.has(identity)) {
+        return;
       }
+      const shared =
+        run.screens.filter((other) => other.label === screen.label).length > 1;
+      byIdentity.set(identity, {
+        ...screen,
+        index,
+        journey: run.journey,
+        name: shared ? screen.key.split("/").slice(-2).join("/") : screen.label,
+      });
     });
   }
-  return Array.from(byLabel.values()).sort((a, b) => a.index - b.index);
+  return Array.from(byIdentity.values()).sort((a, b) => a.index - b.index);
 }
 
 function JourneyTestItem(props: {
@@ -619,12 +642,12 @@ function JourneyTestItem(props: {
         <div className="mt-2 flex flex-wrap items-center gap-1">
           {namedScreens.map((screen) => (
             <HeadlessLink
-              key={screen.label}
+              key={`${screen.journey.id}:${screen.key}`}
               href={getJourneyScreenURL(params, screen.journey, screen.diff)}
-              aria-label={`Screen ${screen.index + 1}, ${screen.label}, changed`}
+              aria-label={`Screen ${screen.index + 1}, ${screen.name}, changed`}
               className="border-thin bg-app hover:bg-hover focus-ring text-xxs max-w-full truncate rounded-full px-1.5 transition"
             >
-              {screen.label}
+              {screen.name}
             </HeadlessLink>
           ))}
           {changedScreens.length > namedScreens.length ? (
