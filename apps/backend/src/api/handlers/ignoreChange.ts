@@ -52,7 +52,6 @@ export const ignoreChangeOperation = {
     "Ignore a test change so its diffs no longer require review and are automatically approved on future builds. Use it to silence a change that has been identified as flaky.",
   tags: ["Tests"],
   security: patOrOAuthAuth(["reviews:write"]),
-  "x-mcp": { destructive: true },
   requestParams: {
     path: IgnorePathParams,
     query: IgnoreQueryParams,
@@ -81,7 +80,6 @@ export const unignoreChangeOperation = {
     "Stop ignoring a test change so its diffs require review again on future builds.",
   tags: ["Tests"],
   security: patOrOAuthAuth(["reviews:write"]),
-  "x-mcp": { destructive: true },
   requestParams: {
     path: IgnorePathParams,
     query: IgnoreQueryParams,
