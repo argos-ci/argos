@@ -109,6 +109,9 @@ short, plain and confident, and respect the reader's time.
   renamed".
 - **One name per concept.** Use the words the rest of the product and the docs
   use: project token, build, screenshot, team.
+- **An amount that includes tax says how much.** A billed amount a customer
+  reads (an invoice total, an estimate) shows the tax inside it, "incl. €41.50
+  tax", so it matches the document their accounting files.
 
 Older copy predates these rules, so don't take it as a model. Fix the strings
 you touch.

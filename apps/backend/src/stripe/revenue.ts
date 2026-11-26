@@ -555,27 +555,43 @@ export type InvoiceRevenue = { amount: number; currency: string };
  * is resolved at ingest from the credit notes themselves, so a fully refunded
  * taxed invoice nets to zero rather than to minus its VAT.
  */
-export function getInvoiceRevenue(invoice: {
-  currency: string;
+export function getInvoiceRevenue(
+  invoice: InvoiceTaxAmounts & {
+    currency: string;
+    creditedAmountExcludingTax: number;
+  },
+): InvoiceRevenue {
+  return {
+    // Stripe states amounts in the currency's minor unit.
+    amount:
+      (getInvoiceTotalExcludingTax(invoice) -
+        invoice.creditedAmountExcludingTax) /
+      100,
+    currency: invoice.currency,
+  };
+}
+
+type InvoiceTaxAmounts = {
   total: number;
   totalExcludingTax: number | null;
   /** The listed taxes added up — the fallback when no pre-tax total exists. */
   totalTaxesAmount: number | null;
-  creditedAmountExcludingTax: number;
-}): InvoiceRevenue {
-  // Null on invoices Stripe states no pre-tax total for. The taxes it listed
-  // are taken off the total instead, rather than letting the tax through as
-  // revenue — falling back to `total` alone would overstate every invoice that
-  // collected VAT, and say nothing about it.
-  const excludingTax =
-    invoice.totalExcludingTax ??
-    invoice.total - (invoice.totalTaxesAmount ?? 0);
+};
 
-  return {
-    // Stripe states amounts in the currency's minor unit.
-    amount: (excludingTax - invoice.creditedAmountExcludingTax) / 100,
-    currency: invoice.currency,
-  };
+/**
+ * A mirrored invoice's total before tax, in Stripe's minor unit.
+ *
+ * `totalExcludingTax` is null on invoices Stripe states no pre-tax total for.
+ * The taxes it listed are taken off the total instead: falling back to `total`
+ * alone would count the VAT of every invoice that collected some as if it were
+ * none.
+ */
+export function getInvoiceTotalExcludingTax(
+  invoice: InvoiceTaxAmounts,
+): number {
+  return (
+    invoice.totalExcludingTax ?? invoice.total - (invoice.totalTaxesAmount ?? 0)
+  );
 }
 
 /**

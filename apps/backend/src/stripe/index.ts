@@ -508,7 +508,7 @@ async function getArgosSubscriptionDataFromStripe(
   } satisfies Partial<Subscription>;
 }
 
-export async function createArgosSubscriptionFromStripe({
+async function createArgosSubscriptionFromStripe({
   account,
   subscriberId,
   stripeSubscription,
@@ -674,11 +674,16 @@ async function getAmountDue(
  */
 async function endStripeTrial(
   argosSubscription: Subscription,
+  trialingStripeSubscription: Stripe.Subscription,
 ): Promise<Subscription> {
   invariant(
     argosSubscription.stripeSubscriptionId,
     "not a stripe subscription",
   );
+  // The webhook that marks the payment method filled, which let usage get
+  // here, can land before the one that turns tax on: the invoice the trial
+  // opens now must not be the untaxed one.
+  await enablePendingAutomaticTax(trialingStripeSubscription);
   const stripeSubscription = await stripe.subscriptions.update(
     argosSubscription.stripeSubscriptionId,
     { trial_end: "now" },
@@ -769,7 +774,7 @@ export async function endTrialToUnlockUsage(
         // lock hold, budgeted for the Stripe calls only.
         const synced =
           stripeSubscription.status === "trialing"
-            ? await endStripeTrial(freshSubscription)
+            ? await endStripeTrial(freshSubscription, stripeSubscription)
             : await updateArgosSubscriptionFromStripe(
                 freshSubscription,
                 stripeSubscription,
@@ -778,7 +783,7 @@ export async function endTrialToUnlockUsage(
 
         return { unlocked: checkIsBillableStatus(synced.status), synced };
       },
-      // The task can run two Stripe calls, keep the timeout well clear of
+      // The task can run three Stripe calls, keep the timeout well clear of
       // third-party latency: past it, the lock rejects while the task keeps
       // running, and the conversion would be reported as a failure.
       { timeout: 60000 },
@@ -870,7 +875,7 @@ async function getArgosSubscriptionFromStripeSubscriptionId(
 /**
  * Get Stripe prices for the default team plan.
  */
-export async function getDefaultTeamPlanItems(
+async function getDefaultTeamPlanItems(
   plan: Plan,
 ): Promise<{ price: string; quantity?: number }[]> {
   invariant(
@@ -1027,16 +1032,29 @@ export async function getStripeProPlanOrThrow(): Promise<Plan> {
   return plan;
 }
 
+/**
+ * Every subscription of a customer that is not canceled, across pages: a
+ * customer reused for many teams' trials can have more than the ten of a
+ * single page.
+ */
+function listCustomerSubscriptions(
+  customerId: string,
+  params?: Omit<Stripe.SubscriptionListParams, "customer" | "limit">,
+): Promise<Stripe.Subscription[]> {
+  return stripe.subscriptions
+    .list({ ...params, customer: customerId, limit: 100 })
+    .autoPagingToArray({ limit: 10000 });
+}
+
 async function updateSubscriptionsFromCustomer(
   customerId: string,
   options?: { allowNotFound?: boolean },
 ): Promise<void> {
-  const stripeSubscriptions = await stripe.subscriptions.list({
-    customer: customerId,
+  const stripeSubscriptions = await listCustomerSubscriptions(customerId, {
     expand: ["data.customer"],
   });
 
-  for (const stripeSubscription of stripeSubscriptions.data) {
+  for (const stripeSubscription of stripeSubscriptions) {
     const argosSubscription =
       await getArgosSubscriptionFromStripeSubscriptionId(stripeSubscription.id);
     if (!argosSubscription) {
@@ -1172,6 +1190,9 @@ export async function handleStripeEvent({
         typeof paymentMethod.customer === "string",
         "customer is not a string",
       );
+      // Before the sync marks the payment method filled, which lets usage end
+      // the trial: the invoice that opens must already be taxed.
+      await enableCustomerPendingAutomaticTax(paymentMethod.customer);
       await updateSubscriptionsFromCustomer(paymentMethod.customer, {
         // This event can be sent before the subscription is created in Argos.
         allowNotFound: true,
@@ -1188,6 +1209,10 @@ export async function handleStripeEvent({
       return;
     }
     case "customer.updated": {
+      const customer = data.object as Stripe.Customer;
+      // An address or a default payment method can give Stripe the location
+      // a subscription created without tax waits for.
+      await enableCustomerPendingAutomaticTax(customer.id);
       // Only update from customer if the "default_payment_method" changes,
       // for everything else we will get a "customer.subscription.updated".
       if (
@@ -1196,7 +1221,6 @@ export async function handleStripeEvent({
         data.previous_attributes.invoice_settings &&
         "default_payment_method" in data.previous_attributes.invoice_settings
       ) {
-        const customer = data.object as Stripe.Customer;
         await updateSubscriptionsFromCustomer(customer.id);
       }
       return;
@@ -1244,6 +1268,33 @@ export async function handleStripeEvent({
         argosSubscription,
         `no Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
       );
+
+      // Ending the trial opened its first paid invoice with the tax setting
+      // the subscription had, so one still waiting for tax was billed without.
+      // Turning tax on now only fixes the next invoices: this one has to be
+      // corrected by hand.
+      if (
+        data.previous_attributes &&
+        "status" in data.previous_attributes &&
+        data.previous_attributes.status === "trialing" &&
+        stripeSubscription.status !== "canceled" &&
+        checkIsAutomaticTaxPending(stripeSubscription)
+      ) {
+        captureException(
+          new Error("Trial converted without tax: no customer location"),
+          {
+            extra: {
+              accountId: argosSubscription.accountId,
+              stripeSubscriptionId: stripeSubscription.id,
+              latestInvoiceId: stripeSubscription.latest_invoice,
+            },
+          },
+        );
+      }
+
+      // A payment method set on the subscription itself locates the customer
+      // too. Before the sync, as on "payment_method.attached".
+      await enablePendingAutomaticTax(stripeSubscription);
 
       await Promise.all([
         updateArgosSubscriptionFromStripe(
@@ -1329,7 +1380,7 @@ export const TRIAL_DAYS = 14;
 /**
  * Get Stripe subscription data common to all subscriptions.
  */
-export function getSubscriptionData(args: {
+function getSubscriptionData(args: {
   accountId: string;
   subscriberId: string;
   /** Length of the trial the subscription opens on, null for none. */
@@ -1352,6 +1403,95 @@ export function getSubscriptionData(args: {
 }
 
 /**
+ * Stripe Tax is active on the account, but it only taxes the objects created
+ * with it enabled: a subscription or checkout session without it is billed
+ * the bare price, whatever the customer's country.
+ */
+const AUTOMATIC_TAX = { enabled: true } as const;
+
+/**
+ * Flags a subscription created without tax because its customer had no
+ * location yet. Only flagged subscriptions are switched on later, so the ones
+ * created before tax was enabled are left for the Dashboard.
+ */
+const AUTOMATIC_TAX_PENDING_KEY = "automaticTaxPending";
+
+function checkIsTaxLocationError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    "code" in error &&
+    error.code === "customer_tax_location_invalid"
+  );
+}
+
+/**
+ * Create a subscription that Stripe taxes.
+ *
+ * Stripe refuses to enable tax for a customer it can't locate, which is every
+ * trial opened server side from an email alone. That subscription is created
+ * untaxed and flagged instead: `enablePendingAutomaticTax` turns tax on once a
+ * card or an address locates the customer, before the first paid invoice.
+ */
+async function createTaxedStripeSubscription(
+  params: Stripe.SubscriptionCreateParams,
+): Promise<Stripe.Subscription> {
+  try {
+    return await stripe.subscriptions.create({
+      ...params,
+      automatic_tax: AUTOMATIC_TAX,
+    });
+  } catch (error) {
+    if (!checkIsTaxLocationError(error)) {
+      throw error;
+    }
+    return stripe.subscriptions.create({
+      ...params,
+      metadata: { ...params.metadata, [AUTOMATIC_TAX_PENDING_KEY]: "true" },
+    });
+  }
+}
+
+function checkIsAutomaticTaxPending(
+  stripeSubscription: Stripe.Subscription,
+): boolean {
+  return Boolean(
+    stripeSubscription.metadata[AUTOMATIC_TAX_PENDING_KEY] &&
+    !stripeSubscription.automatic_tax.enabled,
+  );
+}
+
+/**
+ * Turn tax on for a subscription created without it, if Stripe can now locate
+ * its customer. Otherwise it stays flagged, for the next card or address
+ * change to try again.
+ */
+async function enablePendingAutomaticTax(
+  stripeSubscription: Stripe.Subscription,
+): Promise<void> {
+  if (!checkIsAutomaticTaxPending(stripeSubscription)) {
+    return;
+  }
+  try {
+    await stripe.subscriptions.update(stripeSubscription.id, {
+      automatic_tax: AUTOMATIC_TAX,
+      // An empty value deletes the key.
+      metadata: { [AUTOMATIC_TAX_PENDING_KEY]: "" },
+    });
+  } catch (error) {
+    if (!checkIsTaxLocationError(error)) {
+      throw error;
+    }
+  }
+}
+
+async function enableCustomerPendingAutomaticTax(
+  customerId: string,
+): Promise<void> {
+  const stripeSubscriptions = await listCustomerSubscriptions(customerId);
+  await Promise.all(stripeSubscriptions.map(enablePendingAutomaticTax));
+}
+
+/**
  * Open a trial of the Pro plan for a team, server side rather than through
  * checkout, and record it.
  */
@@ -1364,7 +1504,7 @@ export async function createStripeTrialSubscription(args: {
   const { teamAccount, subscriberId, stripeCustomerId, days } = args;
   const plan = await getStripeProPlanOrThrow();
   const items = await getDefaultTeamPlanItems(plan);
-  const stripeSubscription = await stripe.subscriptions.create({
+  const stripeSubscription = await createTaxedStripeSubscription({
     customer: stripeCustomerId,
     items,
     ...getSubscriptionData({
@@ -1448,10 +1588,56 @@ export async function createStripeCheckoutSession(args: {
     success_url: successUrl,
     cancel_url: cancelUrl,
     payment_method_collection: trial ? "if_required" : "always",
-    ...(teamAccount.stripeCustomerId && {
-      customer: teamAccount.stripeCustomerId,
-    }),
+    automatic_tax: AUTOMATIC_TAX,
+    // Asked even for a trial taken without a card: the address is what Stripe
+    // Tax locates the customer by, and a VAT number makes an EU sale a
+    // reverse charge.
+    billing_address_collection: "required",
+    tax_id_collection: { enabled: true },
+    ...(await getCheckoutCustomerParams(teamAccount)),
   });
+}
+
+/**
+ * The customer a team's checkout bills, with what it enters there (billing
+ * address, legal name, VAT number) saved on it. Stripe requires both updates to
+ * collect a VAT number for an existing customer.
+ *
+ * Trials opened server side reuse their owner's customer, found by email, for
+ * every team the owner creates. A customer that also bills another team is
+ * left alone: Stripe taxes the checkout at the address saved on the customer,
+ * which would be the other team's. Without a customer, the checkout creates one
+ * for this team, which the "checkout.session.completed" webhook records on it.
+ */
+async function getCheckoutCustomerParams(
+  teamAccount: Account,
+): Promise<
+  Pick<Stripe.Checkout.SessionCreateParams, "customer" | "customer_update">
+> {
+  const customerId = teamAccount.stripeCustomerId;
+  if (!customerId) {
+    return {};
+  }
+  const [otherTeam, stripeSubscriptions] = await Promise.all([
+    Account.query()
+      .where({ stripeCustomerId: customerId })
+      .whereNotNull("teamId")
+      .whereNot("id", teamAccount.id)
+      .first(),
+    listCustomerSubscriptions(customerId),
+  ]);
+  const shared =
+    Boolean(otherTeam) ||
+    stripeSubscriptions.some(
+      (subscription) => subscription.metadata["accountId"] !== teamAccount.id,
+    );
+  if (shared) {
+    return {};
+  }
+  return {
+    customer: customerId,
+    customer_update: { address: "auto", name: "auto" },
+  };
 }
 
 async function getCustomerByEmail(

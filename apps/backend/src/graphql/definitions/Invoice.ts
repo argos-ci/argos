@@ -1,6 +1,7 @@
 import gqlTag from "graphql-tag";
 
 import { getInvoiceDocumentUrl } from "@/stripe/invoice-documents";
+import { getInvoiceTotalExcludingTax } from "@/stripe/revenue";
 
 import {
   IInvoiceStatus,
@@ -33,6 +34,8 @@ export const typeDefs = gql`
     date: DateTime!
     "What it comes to, tax included."
     total: Float!
+    "The tax included in the total, zero when none was charged."
+    taxAmount: Float!
     "The ISO code it was raised in, lowercase, as Stripe states it."
     currency: String!
     status: InvoiceStatus!
@@ -105,6 +108,8 @@ export const resolvers: IResolvers = {
     // The mirror keeps Stripe's minor units; the reader gets the figure that
     // reads on the document.
     total: (invoice) => invoice.total / 100,
+    taxAmount: (invoice) =>
+      (invoice.total - getInvoiceTotalExcludingTax(invoice)) / 100,
     refundedAmount: (invoice) => invoice.refundedAmount / 100,
     status: (invoice) => {
       const status = INVOICE_STATUSES[invoice.status];

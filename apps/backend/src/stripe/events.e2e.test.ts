@@ -18,6 +18,13 @@ import {
 } from "./fixtures/cancel-subscription-event-payload";
 import { handleStripeEvent, stripe } from "./index";
 
+/** A customer's subscriptions, as the auto-paginated list returns them. */
+function mockSubscriptionList(subscriptions: Stripe.Subscription[]) {
+  return vi.spyOn(stripe.subscriptions, "list").mockReturnValue({
+    autoPagingToArray: async () => subscriptions,
+  } as unknown as Stripe.ApiListPromise<Stripe.Subscription>);
+}
+
 describe("handleStripeEvent", () => {
   beforeEach(async () => {
     await setupDatabase();
@@ -231,9 +238,7 @@ describe("handleStripeEvent", () => {
       const send = vi
         .spyOn(discord, "notifyDiscord")
         .mockResolvedValue(undefined);
-      vi.spyOn(stripe.subscriptions, "list").mockResolvedValue({
-        data: [TRIALING_SUBSCRIPTION_WITH_PAYMENT_METHOD],
-      } as unknown as Stripe.Response<Stripe.ApiList<Stripe.Subscription>>);
+      mockSubscriptionList([TRIALING_SUBSCRIPTION_WITH_PAYMENT_METHOD]);
 
       const plan = await Plan.query()
         .findOne({ stripeProductId: STRIPE_PRODUCT_ID })
@@ -271,6 +276,54 @@ describe("handleStripeEvent", () => {
       expect(content).toContain("Payment method added during trial");
       expect(content).not.toContain("null");
       expect(content).toContain(account.slug);
+    });
+  });
+
+  describe("customer.updated", () => {
+    const pendingTaxSubscription = {
+      ...TRIALING_SUBSCRIPTION_WITH_PAYMENT_METHOD,
+      id: "sub_pending_tax_test",
+      metadata: { automaticTaxPending: "true" },
+    } as unknown as Stripe.Subscription;
+
+    const customerUpdated = () =>
+      handleStripeEvent({
+        type: "customer.updated",
+        data: {
+          object: { id: TRIALING_CUSTOMER_ID },
+          previous_attributes: { address: null },
+        } as unknown as Stripe.CustomerUpdatedEvent.Data,
+      });
+
+    it("turns tax on for the subscriptions created without it, and only those", async () => {
+      mockSubscriptionList([
+        // This one predates Stripe Tax: it is left for the Dashboard.
+        TRIALING_SUBSCRIPTION_WITH_PAYMENT_METHOD,
+        pendingTaxSubscription,
+      ]);
+      const update = vi
+        .spyOn(stripe.subscriptions, "update")
+        .mockResolvedValue(
+          pendingTaxSubscription as Stripe.Response<Stripe.Subscription>,
+        );
+
+      await customerUpdated();
+
+      expect(update).toHaveBeenCalledExactlyOnceWith("sub_pending_tax_test", {
+        automatic_tax: { enabled: true },
+        metadata: { automaticTaxPending: "" },
+      });
+    });
+
+    it("keeps the subscription flagged while Stripe still can't locate the customer", async () => {
+      mockSubscriptionList([pendingTaxSubscription]);
+      vi.spyOn(stripe.subscriptions, "update").mockRejectedValue(
+        Object.assign(new Error("The customer's location isn't recognized."), {
+          code: "customer_tax_location_invalid",
+        }),
+      );
+
+      await expect(customerUpdated()).resolves.toBeUndefined();
     });
   });
 });

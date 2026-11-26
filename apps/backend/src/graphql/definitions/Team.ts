@@ -75,12 +75,10 @@ import {
   getStaticIpAddresses,
 } from "@/github/static-ip";
 import {
-  createArgosSubscriptionFromStripe,
   createStripeCheckoutSession,
+  createStripeTrialSubscription,
   getCustomerIdFromUserAccount,
-  getDefaultTeamPlanItems,
   getStripeProPlanOrThrow,
-  getSubscriptionData,
   stripe,
   TRIAL_DAYS,
 } from "@/stripe";
@@ -1143,23 +1141,11 @@ export const resolvers: IResolvers = {
       // Register the Stripe customer id to the team account
       await teamAccount.$query().patchAndFetch({ stripeCustomerId });
 
-      const items = await getDefaultTeamPlanItems(plan);
-
-      // Create a Stripe subscription for the user
-      const stripeSubscription = await stripe.subscriptions.create({
-        customer: stripeCustomerId,
-        items,
-        ...getSubscriptionData({
-          trialDays: TRIAL_DAYS,
-          accountId: teamAccount.id,
-          subscriberId: auth.user.id,
-        }),
-      });
-
-      await createArgosSubscriptionFromStripe({
-        stripeSubscription,
-        account: teamAccount,
+      await createStripeTrialSubscription({
+        teamAccount,
         subscriberId: auth.user.id,
+        stripeCustomerId,
+        days: TRIAL_DAYS,
       });
 
       return {
@@ -1211,22 +1197,11 @@ export const resolvers: IResolvers = {
         return { team: teamAccount, redirectUrl: session.url };
       }
 
-      const items = await getDefaultTeamPlanItems(plan);
-
-      const stripeSubscription = await stripe.subscriptions.create({
-        customer: stripeCustomerId,
-        items,
-        ...getSubscriptionData({
-          trialDays: TRIAL_DAYS,
-          accountId: teamAccount.id,
-          subscriberId: auth.user.id,
-        }),
-      });
-
-      await createArgosSubscriptionFromStripe({
-        stripeSubscription,
-        account: teamAccount,
+      await createStripeTrialSubscription({
+        teamAccount,
         subscriberId: auth.user.id,
+        stripeCustomerId,
+        days: TRIAL_DAYS,
       });
 
       await notifyDiscord({
