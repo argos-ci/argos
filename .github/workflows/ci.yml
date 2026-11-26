@@ -16,7 +16,7 @@ env:
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
 # The organization's plan runs 20 jobs at once, across every repository, and a
-# run takes 10. A pull request pushed again cancels its previous run instead of
+# run takes 11. A pull request pushed again cancels its previous run instead of
 # queueing behind it. Pushes to `main` each get a group of their own: every
 # commit there needs its Argos builds, the baselines of later pull requests.
 concurrency:
@@ -66,14 +66,30 @@ jobs:
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-deps
 
+      # Codegen and the workspace packages: Storybook builds the frontend from
+      # its sources.
       - name: Setup
         id: setup
-        run: pnpm run build
-        env:
-          BUILD_MODE: production
+        run: pnpm exec -- turbo run build --filter=@argos/frontend^...
 
+      # In the background: the build keeps the CPU busy while the browser
+      # install below waits on the network, and publishing waits on the network
+      # while the stories run. Published even when a story fails, so it can be
+      # looked at in the deployed Storybook.
+      - name: Build and publish Storybook
+        run: |
+          (
+            set +e
+            pnpm --dir apps/frontend run build-storybook &&
+              pnpm --dir apps/frontend run deploy-storybook
+            echo $? > "$RUNNER_TEMP/storybook-exit"
+          ) > "$RUNNER_TEMP/storybook.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/storybook-pid"
+
+      # Headless Chromium runs the headless shell, so the full browser is not
+      # needed.
       - name: Install Playwright browser
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps --only-shell chromium
 
       - name: Run Storybook tests
         run: pnpm --dir apps/frontend run test-storybook
@@ -83,16 +99,17 @@ jobs:
           NODE_ENV: test
           TZ: UTC
 
-      # Published even when a story fails, so it can be looked at in the
-      # deployed Storybook.
-      - name: Build Storybook
-        id: build-storybook
+      - name: Wait for Storybook to publish
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: pnpm --dir apps/frontend run build-storybook
-
-      - name: Publish Storybook to Argos
-        if: ${{ !cancelled() && steps.build-storybook.outcome == 'success' }}
-        run: pnpm --dir apps/frontend run deploy-storybook
+        run: |
+          pid=$(cat "$RUNNER_TEMP/storybook-pid")
+          while kill -0 "$pid" 2> /dev/null; do sleep 1; done
+          cat "$RUNNER_TEMP/storybook.log"
+          if [ ! -f "$RUNNER_TEMP/storybook-exit" ]; then
+            echo "Storybook build was interrupted." >&2
+            exit 1
+          fi
+          exit "$(cat "$RUNNER_TEMP/storybook-exit")"
 
   integration-test:
     runs-on: ubuntu-latest
@@ -107,57 +124,23 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-    services:
-      redis:
-        image: redis:6-alpine
-        ports:
-          - 6380:6379
-        # Speed up initialization by disabling health checks
-        # Services run during the installation of the dependencies
-        # options: >-
-        #   --health-cmd "redis-cli ping"
-        #   --health-interval 10s
-        #   --health-timeout 5s
-        #   --health-retries 5
-
-      postgres:
-        image: postgres:18-alpine
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_HOST_AUTH_METHOD: trust
-        # Speed up initialization by disabling health checks
-        # Services run during the installation of the dependencies
-        # options: >-
-        #   --health-cmd "pg_isready"
-        #   --health-interval 10s
-        #   --health-timeout 5s
-        #   --health-retries 5
-
-      rabbit:
-        # Keep in sync with docker-compose.yml and production (Amazon MQ 4.2).
-        image: rabbitmq:4.2-alpine
-        ports:
-          - 5672:5672
-        # Speed up initialization by disabling health checks
-        # Services run during the installation of the dependencies
-        # options: >-
-        #   --health-cmd "rabbitmq-diagnostics -q ping"
-        #   --health-interval 10s
-        #   --health-timeout 5s
-        #   --health-retries 5
-
     steps:
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Start services
+        run: scripts/ci-services.sh start
+
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-deps
 
+      # Codegen and the workspace packages: tests run the backend from its
+      # sources.
       - name: Setup
-        run: pnpm run setup
-        env:
-          BUILD_MODE: production
+        run: pnpm exec -- turbo run build --filter='./packages/*'
+
+      - name: Wait for services
+        run: scripts/ci-services.sh wait
 
       - name: Test
         run: pnpm run test:integration --shard=${{ matrix.shard }}/3
@@ -168,7 +151,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4]
     env:
       API_BASE_URL: http://localhost:3000
       NODE_ENV: test
@@ -178,72 +161,47 @@ jobs:
       ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
       PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.65.1-jammy
 
-    services:
-      redis:
-        image: redis:6-alpine
-        ports:
-          - 6380:6379
-        # Speed up initialization by disabling health checks
-        # Services run during the installation of the dependencies
-        # options: >-
-        #   --health-cmd "redis-cli ping"
-        #   --health-interval 10s
-        #   --health-timeout 5s
-        #   --health-retries 5
-
-      postgres:
-        image: postgres:18-alpine
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_HOST_AUTH_METHOD: trust
-        # Speed up initialization by disabling health checks
-        # Services run during the installation of the dependencies
-        # options: >-
-        #   --health-cmd "pg_isready"
-        #   --health-interval 10s
-        #   --health-timeout 5s
-        #   --health-retries 5
-
-      # Named after the host in `AMQP_URL` below: the web server runs inside
-      # the Playwright container and reaches services by their label. Without
-      # it, anything that enqueues a job — submitting a build review, say —
-      # blocks forever on a broker that does not resolve, and the request that
-      # triggered it never answers.
-      rabbitmq:
-        # Keep in sync with docker-compose.yml and production (Amazon MQ 4.2).
-        image: rabbitmq:4.2-alpine
-        ports:
-          - 5672:5672
-
     steps:
-      # A `docker://` step would pull the image before the job's first step,
-      # holding everything up for half a minute. Pulled in the background, it
-      # downloads while dependencies install and the app builds.
-      - name: Pull Playwright image
-        run: docker pull --quiet "$PLAYWRIGHT_IMAGE" > /dev/null 2>&1 &
-
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Start services
+        run: scripts/ci-services.sh start
 
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-deps
 
-      - name: Setup
-        run: pnpm run setup
+      # Pulled in the background, so it downloads while the app builds. A
+      # `docker://` step would pull it before the job's first step, and pulled
+      # from the first step, it slowed the dependency download down.
+      - name: Pull Playwright image
+        run: docker pull --quiet "$PLAYWRIGHT_IMAGE" > /dev/null 2>&1 &
+
+      - name: Build
+        run: pnpm exec -- turbo run build
         env:
           BUILD_MODE: production
+
+      - name: Wait for services
+        run: scripts/ci-services.sh wait
+
+      - name: Create database
+        run: pnpm --filter @argos/backend run setup
 
       # The workspace and RUNNER_TEMP are mounted at their own paths, so the
       # GITHUB_* variables pointing into them — the event payload the Argos
       # reporter reads, for one — resolve inside the container too.
+      #
+      # The web server runs in the container and reaches the services by their
+      # container names. A broker that does not resolve blocks anything that
+      # enqueues a job (submitting a build review, say) forever, and the
+      # request that triggered it never answers.
       - name: Run Playwright tests
         env:
           REDIS_URL: redis://redis:6379/1
           DATABASE_URL: postgresql://postgres@postgres/test
           AMQP_URL: amqp://rabbitmq
-          NETWORK: ${{ job.services.postgres.network }}
-          SHARD: ${{ matrix.shard }}
+          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
         run: |
           # Joins the background pull, or retries it if it failed.
           docker pull --quiet "$PLAYWRIGHT_IMAGE"
@@ -251,16 +209,13 @@ jobs:
           for name in $(compgen -e | grep '^GITHUB_'); do
             github_env+=(--env "$name")
           done
-          # HOME=/root: Firefox fails on permissions otherwise
-          # https://github.com/microsoft/playwright/issues/6500
           docker run --rm \
-            --network "$NETWORK" \
+            --network services \
             --volume "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             --volume "$RUNNER_TEMP:$RUNNER_TEMP" \
             --workdir "$GITHUB_WORKSPACE" \
             "${github_env[@]}" \
             --env CI \
-            --env HOME=/root \
             --env API_BASE_URL \
             --env NODE_ENV \
             --env TZ \
@@ -271,7 +226,7 @@ jobs:
             --env DATABASE_URL \
             --env AMQP_URL \
             "$PLAYWRIGHT_IMAGE" \
-            npm run test:e2e -- --shard="$SHARD/3"
+            npm run test:e2e -- --shard="$SHARD"
 
   # The image only gets built on release otherwise, so a file the runtime stage
   # forgets to copy would first show up as a failed deploy.
@@ -283,11 +238,19 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # The runner's Docker builds with BuildKit already. A buildx builder, as in
-      # the release workflow, is only worth it for a registry cache: here it
-      # cost ~45s to export the image back into Docker and tear itself down.
+      # In the background, so they download while the image builds.
+      - name: Pull the services the image check runs
+        run: scripts/check-image.sh --pull > /dev/null 2>&1 &
+
+      # No layer cache: restored from the Actions cache, the 480 MB pnpm store
+      # took 42s to download and unpack, twice what `pnpm fetch` takes.
+      # Uncompressed, as the image goes no further than this runner's Docker.
       - name: Build image
-        run: docker build --target runtime --tag argos:ci --build-arg ASSETS_BASE_URL=https://assets.argos-ci.com .
+        run: >-
+          docker buildx build --target runtime
+          --build-arg ASSETS_BASE_URL=https://assets.argos-ci.com
+          --output type=image,name=argos:ci,unpack=true,compression=uncompressed
+          .
 
       - name: Check image
         run: scripts/check-image.sh argos:ci

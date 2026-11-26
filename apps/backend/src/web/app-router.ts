@@ -11,7 +11,11 @@ import { revokeSessionByToken } from "@/auth/session";
 import { clearSessionCookies, readSessionCookie } from "@/auth/session-cookie";
 import config from "@/config";
 import { checkIsCustomDomainsConfigured } from "@/deployment/cloudfront";
-import { apolloServer, createApolloMiddleware } from "@/graphql";
+import {
+  apolloServer,
+  createApolloMiddleware,
+  startApolloServer,
+} from "@/graphql";
 import { mountOAuthServer } from "@/oauth/router";
 import { installSkillsRoutes } from "@/skills/router";
 import { getSlackMiddleware } from "@/slack";
@@ -115,7 +119,7 @@ export const installAppRouter = async (app: express.Application) => {
     );
   }
 
-  await apolloServer.start();
+  await startApolloServer(apolloServer);
 
   const cspReportUri = getCSPReportURI();
 

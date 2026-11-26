@@ -8,6 +8,7 @@
         "src/build/bin/*.ts",
         "src/database/bin/*.ts",
         "src/database/testing/index.ts",
+        "src/database/testing/sequences.ts",
         "src/database/testing/workers.ts",
         "src/graphql/definitions/*.ts",
         "scripts/*.ts"

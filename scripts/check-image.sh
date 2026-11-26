@@ -4,13 +4,30 @@
 # worker processes — and fails on anything the image is missing.
 #
 # Usage: scripts/check-image.sh <image>
+#        scripts/check-image.sh --pull
+#
+# `--pull` only downloads the services below, so CI can fetch them while the
+# image builds.
 #
 # Postgres, Redis and RabbitMQ are throwaway containers on a private network, so
 # this runs the same in CI and next to a local dev stack, which it never
 # touches.
 set -euo pipefail
 
-image="${1:?usage: scripts/check-image.sh <image>}"
+# Same versions as docker-compose.yml.
+POSTGRES=postgres:18-alpine
+REDIS=redis:6-alpine
+RABBITMQ=rabbitmq:4.2-alpine
+
+if [ "${1:-}" = "--pull" ]; then
+  for service in "$POSTGRES" "$REDIS" "$RABBITMQ"; do
+    docker pull --quiet "$service" >/dev/null &
+  done
+  wait
+  exit 0
+fi
+
+image="${1:?usage: scripts/check-image.sh <image> | --pull}"
 prefix="argos-check-image-$$"
 
 cleanup() {
@@ -31,29 +48,25 @@ fail() {
 
 # wait_for <seconds> <command...>
 wait_for() {
-  local seconds=$1
+  local deadline=$((SECONDS + $1))
   shift
-  for ((i = 0; i < seconds; i++)); do
-    if "$@" >/dev/null 2>&1; then
-      return 0
-    fi
-    sleep 1
+  until "$@" >/dev/null 2>&1; do
+    ((SECONDS < deadline)) || return 1
+    sleep 0.2
   done
-  return 1
 }
 
 running() {
   [ "$(docker inspect -f '{{.State.Running}}' "$prefix-$1")" = true ]
 }
 
-# Same versions as docker-compose.yml.
 docker network create "$prefix" >/dev/null
 docker run -d --name "$prefix-postgres" --network "$prefix" \
-  -e POSTGRES_HOST_AUTH_METHOD=trust postgres:18-alpine >/dev/null
+  -e POSTGRES_HOST_AUTH_METHOD=trust "$POSTGRES" >/dev/null
 docker run -d --name "$prefix-redis" --network "$prefix" \
-  redis:6-alpine >/dev/null
+  "$REDIS" >/dev/null
 docker run -d --name "$prefix-rabbitmq" --network "$prefix" \
-  rabbitmq:4.2-alpine >/dev/null
+  "$RABBITMQ" >/dev/null
 
 # Placeholders for the secrets production injects that a process refuses to
 # start without.

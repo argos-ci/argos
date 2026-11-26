@@ -7,7 +7,7 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Number of workers.
  */
-const WORKERS = 2;
+const WORKERS = 4;
 
 const backendDir = fileURLToPath(new URL("./apps/backend", import.meta.url));
 const backendManifest = createRequire(import.meta.url)(
@@ -52,6 +52,7 @@ const config = defineConfig({
   reporter: [
     ["list"],
     ["html"],
+    ["./tests/shard-balancer.ts"],
     [
       "@argos-ci/playwright/reporter",
       createArgosReporterOptions({
@@ -85,13 +86,6 @@ const config = defineConfig({
       },
       dependencies: ["setup"],
     },
-    {
-      name: "firefox",
-      use: {
-        ...devices["Desktop Firefox"],
-      },
-      dependencies: ["setup"],
-    },
   ],
 
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
@@ -106,6 +100,9 @@ const config = defineConfig({
     reuseExistingServer: false,
     env: {
       NODE_ENV: "test",
+      // The test environment gives each process one connection, which made the
+      // server answer the workers' requests one query at a time.
+      PG_POOL_MAX: String(WORKERS * 2),
       CSP_SCRIPT_SRC: `${getCSPScriptHash()},'unsafe-eval'`,
     },
   },
