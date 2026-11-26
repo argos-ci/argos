@@ -219,9 +219,7 @@ function buildTool(
     outputSchema,
     annotations: {
       readOnlyHint: method === "get",
-      destructiveHint:
-        xMcp?.destructive ??
-        (method === "put" || method === "patch" || method === "delete"),
+      destructiveHint: xMcp?.destructive ?? method === "delete",
       idempotentHint:
         method === "get" || method === "put" || method === "delete",
       openWorldHint: false,

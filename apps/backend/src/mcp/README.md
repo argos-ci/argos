@@ -42,14 +42,13 @@ that snapshot, which is the only MCP touchpoint in review.
 
 ### Annotations
 
-`readOnlyHint` is true for `GET`. `destructiveHint` is true for `PUT`, `PATCH`
-and `DELETE`, and for a `POST` flagged with `"x-mcp": { destructive: true }`:
-one that changes or removes something that exists, revokes access, or sends
-something that cannot be recalled (resolve a thread, dismiss a review,
-transfer a project, send invites). The Claude and ChatGPT directories review
-these hints against what each tool does, so a second snapshot in
-`tools.test.ts` lists every destructive tool: a new write endpoint shows up
-there.
+`readOnlyHint` is true for `GET`. `destructiveHint` is true for `DELETE`, and
+for an operation flagged with `"x-mcp": { destructive: true }`: one that
+revokes access, cancels something, or sends something that cannot be recalled
+(reset the invite link, dismiss a review, transfer a project, send invites).
+Updates and toggles, such as a `PATCH` or resolving a thread, are not
+destructive. The Claude and ChatGPT directories check these hints against what
+each tool does.
 
 ### `x-mcp` operation extension
 
