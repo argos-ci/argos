@@ -8,12 +8,13 @@ import { pushDeploymentNotification } from "@/deployment-notification";
 import { trySendProjectEvent } from "@/event/send";
 
 /**
- * The URL of a deployment hosted elsewhere. Rejects `localhost` and IP
- * addresses, whose links would lead nowhere for anyone else.
+ * The URL of a deployment hosted elsewhere: http or https, on a domain name with
+ * at least one dot. `localhost` and IP addresses are refused.
  */
 export const ExternalDeploymentUrlSchema = z
   .httpUrl({ normalize: true })
-  .max(2048);
+  .max(2048)
+  .brand<"ExternalDeploymentUrl">();
 
 /**
  * Record a deployment hosted elsewhere. There is nothing to upload, so it is
@@ -21,8 +22,7 @@ export const ExternalDeploymentUrlSchema = z
  */
 export async function createExternalDeployment(input: {
   project: WithGraphModel<Project, "account">;
-  /** Parsed with `ExternalDeploymentUrlSchema`. */
-  url: string;
+  url: z.output<typeof ExternalDeploymentUrlSchema>;
   environment: DeploymentEnvironment;
   branch: string;
   commitSha: string;

@@ -6,6 +6,7 @@ import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
 import { Project, ProjectDomain } from "@/database/models";
 import { resolveDeploymentByDomain } from "@/deployment/resolve";
+import { checkIsDeploymentsHostname } from "@/deployment/url";
 import { boom } from "@/util/error";
 
 import { asyncHandler } from "./util";
@@ -32,15 +33,15 @@ async function parseReturnTo(input: string): Promise<URL | null> {
     return null;
   }
 
-  const baseDomain = config.get("deployments.baseDomain").toLowerCase();
-  const hostname = url.hostname.toLowerCase();
-  if (hostname === baseDomain || hostname.endsWith(`.${baseDomain}`)) {
+  if (checkIsDeploymentsHostname(url.hostname)) {
     return url;
   }
 
-  const customDomain = await ProjectDomain.query()
-    .select("id")
-    .findOne({ domain: hostname, internal: false, status: "active" });
+  const customDomain = await ProjectDomain.query().select("id").findOne({
+    domain: url.hostname.toLowerCase(),
+    internal: false,
+    status: "active",
+  });
 
   return customDomain ? url : null;
 }

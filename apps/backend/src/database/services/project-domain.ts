@@ -205,7 +205,11 @@ export async function ensureProductionInternalProjectDomain(input: {
   }
 }
 
-async function getLatestReadyProductionDeployment(
+/**
+ * The deployment that holds the production aliases: they move to a production
+ * deployment when it is ready.
+ */
+export async function getLatestReadyProductionDeployment(
   projectId: string,
   trx?: TransactionOrKnex,
 ) {

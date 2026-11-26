@@ -1,15 +1,19 @@
 import type { WithGraphModel } from "objection";
+import type { z } from "zod";
 
-import config from "@/config";
 import { raw } from "@/database";
 import { Deployment, Screenshot } from "@/database/models";
 import type { Build, Project } from "@/database/models";
+import { getLatestReadyProductionDeployment } from "@/database/services/project-domain";
 import { getEnvironmentFromBranch } from "@/deployment/environment";
 import {
   createExternalDeployment,
   ExternalDeploymentUrlSchema,
 } from "@/deployment/external";
-import { getDeploymentAliasUrl } from "@/deployment/url";
+import {
+  checkIsDeploymentsHostname,
+  getDeploymentAliasUrl,
+} from "@/deployment/url";
 import { redisLock } from "@/util/redis";
 
 /**
@@ -40,8 +44,7 @@ const NON_PUBLIC_TLDS = new Set([
 ]);
 
 /**
- * Count the screenshots of a bucket by the origin of the page they were taken
- * on. URLs without an origin, `file:` or `about:blank`, count under `null`.
+ * URLs without an origin, `file:` or `about:blank`, count under `null`.
  */
 async function countScreenshotsByOrigin(
   screenshotBucketId: string,
@@ -71,24 +74,25 @@ async function countScreenshotsByOrigin(
 
 function pickMajorityOrigin(counts: Map<string | null, number>): string | null {
   let total = 0;
-  let top: { origin: string | null; count: number } | null = null;
+  let top: string | null = null;
+  let topCount = 0;
   for (const [origin, count] of counts) {
     total += count;
-    if (!top || count > top.count) {
-      top = { origin, count };
+    if (count > topCount) {
+      top = origin;
+      topCount = count;
     }
   }
-  if (!top || top.count < total * MIN_ORIGIN_SHARE) {
-    return null;
-  }
-  return top.origin;
+  return topCount >= total * MIN_ORIGIN_SHARE ? top : null;
 }
 
 /**
  * The deployment URL an origin stands for, or `null` when it is not one
  * anyone else can open: a local dev server or Storybook, a private network.
  */
-function parsePublicOrigin(origin: string): string | null {
+function parsePublicOrigin(
+  origin: string,
+): z.output<typeof ExternalDeploymentUrlSchema> | null {
   const result = ExternalDeploymentUrlSchema.safeParse(origin);
   if (!result.success) {
     return null;
@@ -99,35 +103,43 @@ function parsePublicOrigin(origin: string): string | null {
     return null;
   }
   // Argos knows the deployments it serves.
-  const baseDomain = config.get("deployments.baseDomain").toLowerCase();
-  if (hostname === baseDomain || hostname.endsWith(`.${baseDomain}`)) {
+  if (checkIsDeploymentsHostname(hostname)) {
     return null;
   }
   return result.data;
 }
 
 /**
- * The origins production is served on: the latest ready production
- * deployment's own URL and its aliases, custom domains included. Aliases move
- * to a deployment when it is ready.
+ * Whether production is served on the origin: the latest ready production
+ * deployment's own URL, or one of its aliases, custom domains included.
  */
-async function getProductionOrigins(projectId: string): Promise<Set<string>> {
-  const deployment = await Deployment.query()
-    .where({ projectId, environment: "production", status: "ready" })
-    .withGraphFetched("aliases")
-    .orderBy([
-      { column: "createdAt", order: "desc" },
-      { column: "id", order: "desc" },
-    ])
-    .first();
+async function checkIsProductionOrigin(
+  projectId: string,
+  origin: string,
+): Promise<boolean> {
+  const deployment = await getLatestReadyProductionDeployment(projectId);
   if (!deployment) {
-    return new Set();
+    return false;
   }
-  return new Set(
-    [deployment.url, ...deployment.aliases.map(getDeploymentAliasUrl)].map(
-      (url) => new URL(url).origin,
-    ),
+  const { aliases } = await deployment.$fetchGraph("aliases");
+  return [deployment.url, ...aliases.map(getDeploymentAliasUrl)].some(
+    (url) => new URL(url).origin === origin,
   );
+}
+
+/**
+ * A reported deployment wins. One reported later is newer, and takes over.
+ */
+async function checkHasDeployment(input: {
+  projectId: string;
+  commitShas: string[];
+}): Promise<boolean> {
+  const deployment = await Deployment.query()
+    .select("id")
+    .where("projectId", input.projectId)
+    .whereIn("commitSha", input.commitShas)
+    .first();
+  return deployment !== undefined;
 }
 
 /**
@@ -153,42 +165,41 @@ export async function inferDeployment(input: {
     return null;
   }
 
-  const { compareScreenshotBucket: bucket } = await build.$fetchGraph(
-    "compareScreenshotBucket",
-    { skipFetched: true },
-  );
+  const {
+    compareScreenshotBucket: { branch, commit },
+  } = await build.$fetchGraph("compareScreenshotBucket");
+  const commitShas = build.prHeadCommit
+    ? [commit, build.prHeadCommit]
+    : [commit];
 
-  const origin = pickMajorityOrigin(await countScreenshotsByOrigin(bucket.id));
+  // Checked again under the lock. This one spares the screenshot scan to the
+  // builds of teams that report their deployments.
+  if (await checkHasDeployment({ projectId: project.id, commitShas })) {
+    return null;
+  }
+
+  const origin = pickMajorityOrigin(
+    await countScreenshotsByOrigin(build.compareScreenshotBucketId),
+  );
   const url = origin ? parsePublicOrigin(origin) : null;
   if (!origin || !url) {
     return null;
   }
 
-  const { branch, commit } = bucket;
   const environment = await getEnvironmentFromBranch({ project, branch });
 
   // Smoke tests of a pull request against the production site.
   if (
     environment === "preview" &&
-    (await getProductionOrigins(project.id)).has(origin)
+    (await checkIsProductionOrigin(project.id, origin))
   ) {
     return null;
   }
 
-  const commitShas = build.prHeadCommit
-    ? [commit, build.prHeadCommit]
-    : [commit];
-
   return redisLock.acquire(
     ["infer-deployment", project.id, commit],
     async () => {
-      // A reported deployment wins. One reported later is newer, and takes over.
-      const reported = await Deployment.query()
-        .select("id")
-        .where("projectId", project.id)
-        .whereIn("commitSha", commitShas)
-        .first();
-      if (reported) {
+      if (await checkHasDeployment({ projectId: project.id, commitShas })) {
         return null;
       }
 

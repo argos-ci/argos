@@ -1,3 +1,4 @@
+import type { WithGraphModel } from "objection";
 import { test as base, describe, expect } from "vitest";
 
 import {
@@ -16,14 +17,15 @@ const prHeadCommit = "b".repeat(40);
 const previewUrl = "https://web-git-feature-login.vercel.app";
 
 const test = base.extend<{
-  project: Project;
+  project: WithGraphModel<Project, "account">;
   createBuild: (input?: {
     branch?: string;
     authSource?: Build["authSource"];
     mode?: Build["mode"];
-    prHeadCommit?: string;
-    urls?: (string | null)[];
+    prHeadCommit?: string | null;
+    urls?: readonly (string | null)[];
   }) => Promise<Build>;
+  infer: (build: Build) => Promise<Deployment | null>;
 }>({
   project: async ({}, use) => {
     await setupDatabase();
@@ -33,46 +35,58 @@ const test = base.extend<{
       githubRepositoryId: null,
       deploymentProdBranchGlob: "main",
     });
-    await use(project);
+    await use(await project.$fetchGraph("account"));
   },
   createBuild: async ({ project }, use) => {
-    await use(async (input = {}) => {
-      const bucket = await factory.ScreenshotBucket.create({
-        projectId: project.id,
-        commit,
-        branch: input.branch ?? "feature/login",
-      });
-      const build = await factory.Build.create({
-        projectId: project.id,
-        compareScreenshotBucketId: bucket.id,
-        baseScreenshotBucketId: null,
-        jobStatus: "progress",
-        conclusion: null,
-        authSource:
-          input.authSource === undefined ? "project-token" : input.authSource,
-        mode: input.mode ?? "ci",
-        prHeadCommit: input.prHeadCommit ?? null,
-      });
-      const urls = input.urls ?? [
-        `${previewUrl}/`,
-        `${previewUrl}/login`,
-        `${previewUrl}/settings?tab=profile`,
-      ];
-      const file = await factory.File.create({ type: "screenshot" });
-      await factory.Screenshot.createMany(
-        urls.length,
-        urls.map((url) => ({
-          screenshotBucketId: bucket.id,
-          fileId: file.id,
-          metadata: {
-            url,
-            automationLibrary: { name: "@playwright/test", version: "1.57.0" },
-            sdk: { name: "@argos-ci/playwright", version: "6.3.0" },
-          },
-        })),
-      );
-      return build;
-    });
+    await use(
+      async ({
+        branch = "feature/login",
+        authSource = "project-token",
+        mode = "ci",
+        prHeadCommit = null,
+        urls = [
+          `${previewUrl}/`,
+          `${previewUrl}/login`,
+          `${previewUrl}/settings?tab=profile`,
+        ],
+      } = {}) => {
+        const bucket = await factory.ScreenshotBucket.create({
+          projectId: project.id,
+          commit,
+          branch,
+        });
+        const build = await factory.Build.create({
+          projectId: project.id,
+          compareScreenshotBucketId: bucket.id,
+          baseScreenshotBucketId: null,
+          jobStatus: "progress",
+          conclusion: null,
+          authSource,
+          mode,
+          prHeadCommit,
+        });
+        const file = await factory.File.create({ type: "screenshot" });
+        await factory.Screenshot.createMany(
+          urls.length,
+          urls.map((url) => ({
+            screenshotBucketId: bucket.id,
+            fileId: file.id,
+            metadata: {
+              url,
+              automationLibrary: {
+                name: "@playwright/test",
+                version: "1.57.0",
+              },
+              sdk: { name: "@argos-ci/playwright", version: "6.3.0" },
+            },
+          })),
+        );
+        return build;
+      },
+    );
+  },
+  infer: async ({ project }, use) => {
+    await use((build) => inferDeployment({ build, project }));
   },
 });
 
@@ -110,8 +124,8 @@ describe("inferDeployment", () => {
   });
 
   test("ignores the few pages the tests leave the app for", async ({
-    project,
     createBuild,
+    infer,
   }) => {
     const build = await createBuild({
       urls: [
@@ -123,27 +137,21 @@ describe("inferDeployment", () => {
       ],
     });
 
-    const deployment = await inferDeployment({
-      build,
-      project: await project.$fetchGraph("account"),
-    });
+    const deployment = await infer(build);
 
     expect(deployment).toMatchObject({ externalUrl: `${previewUrl}/` });
   });
 
   test("records production from the production branch", async ({
-    project,
     createBuild,
+    infer,
   }) => {
     const build = await createBuild({
       branch: "main",
       urls: ["https://WWW.example.com:443/pricing"],
     });
 
-    const deployment = await inferDeployment({
-      build,
-      project: await project.$fetchGraph("account"),
-    });
+    const deployment = await infer(build);
 
     expect(deployment).toMatchObject({
       environment: "production",
@@ -154,15 +162,11 @@ describe("inferDeployment", () => {
   test("records one deployment when builds of a commit finish together", async ({
     project,
     createBuild,
+    infer,
   }) => {
-    const projectWithAccount = await project.$fetchGraph("account");
     const builds = await Promise.all([createBuild(), createBuild()]);
 
-    await Promise.all(
-      builds.map((build) =>
-        inferDeployment({ build, project: projectWithAccount }),
-      ),
-    );
+    await Promise.all(builds.map((build) => infer(build)));
 
     await expect(
       Deployment.query().where("projectId", project.id).resultSize(),
@@ -178,39 +182,16 @@ describe("inferDeployment", () => {
       "http://web.localhost:5173/",
       "https://web.internal/",
       "file:///home/runner/work/web/storybook-static/iframe.html",
-    ])("for a local origin: %s", async (url, { project, createBuild }) => {
+    ])("for a local origin: %s", async (url, { createBuild, infer }) => {
       const build = await createBuild({ urls: repeat(url, 3) });
 
-      await expect(
-        inferDeployment({
-          build,
-          project: await project.$fetchGraph("account"),
-        }),
-      ).resolves.toBeNull();
-    });
-
-    test("when no origin covers most screenshots", async ({
-      project,
-      createBuild,
-    }) => {
-      const build = await createBuild({
-        urls: [
-          ...repeat(`${previewUrl}/`, 6),
-          ...repeat("https://docs-git-feature-login.vercel.app/", 4),
-        ],
-      });
-
-      await expect(
-        inferDeployment({
-          build,
-          project: await project.$fetchGraph("account"),
-        }),
-      ).resolves.toBeNull();
+      await expect(infer(build)).resolves.toBeNull();
     });
 
     test("when a deployment was reported for the commit", async ({
       project,
       createBuild,
+      infer,
     }) => {
       await factory.Deployment.create({
         projectId: project.id,
@@ -220,55 +201,38 @@ describe("inferDeployment", () => {
       });
       const build = await createBuild({ prHeadCommit });
 
-      await expect(
-        inferDeployment({
-          build,
-          project: await project.$fetchGraph("account"),
-        }),
-      ).resolves.toBeNull();
+      await expect(infer(build)).resolves.toBeNull();
     });
 
-    test("for a tokenless build", async ({ project, createBuild }) => {
-      const build = await createBuild({
-        authSource: "github-actions-tokenless",
-      });
+    test.for([
+      {
+        title: "when no origin covers most screenshots",
+        input: {
+          urls: [
+            ...repeat(`${previewUrl}/`, 6),
+            ...repeat("https://docs-git-feature-login.vercel.app/", 4),
+          ],
+        },
+      },
+      {
+        title: "for a tokenless build",
+        input: { authSource: "github-actions-tokenless" },
+      },
+      {
+        title: "for a build that predates its recorded credential",
+        input: { authSource: null },
+      },
+      { title: "for a monitoring build", input: { mode: "monitoring" } },
+    ] as const)("$title", async ({ input }, { createBuild, infer }) => {
+      const build = await createBuild(input);
 
-      await expect(
-        inferDeployment({
-          build,
-          project: await project.$fetchGraph("account"),
-        }),
-      ).resolves.toBeNull();
-    });
-
-    test("for a build that predates its recorded credential", async ({
-      project,
-      createBuild,
-    }) => {
-      const build = await createBuild({ authSource: null });
-
-      await expect(
-        inferDeployment({
-          build,
-          project: await project.$fetchGraph("account"),
-        }),
-      ).resolves.toBeNull();
-    });
-
-    test("for a monitoring build", async ({ project, createBuild }) => {
-      const build = await createBuild({ mode: "monitoring" });
-
-      await expect(
-        inferDeployment({
-          build,
-          project: await project.$fetchGraph("account"),
-        }),
-      ).resolves.toBeNull();
+      await expect(infer(build)).resolves.toBeNull();
     });
 
     test("for the production site on a feature branch", async ({
       project,
       createBuild,
+      infer,
     }) => {
       await factory.Deployment.create({
         projectId: project.id,
@@ -281,17 +245,13 @@ describe("inferDeployment", () => {
         urls: repeat("https://www.example.com/pricing", 3),
       });
 
-      await expect(
-        inferDeployment({
-          build,
-          project: await project.$fetchGraph("account"),
-        }),
-      ).resolves.toBeNull();
+      await expect(infer(build)).resolves.toBeNull();
     });
 
     test("for the production custom domain on a feature branch", async ({
       project,
       createBuild,
+      infer,
     }) => {
       const production = await factory.Deployment.create({
         projectId: project.id,
@@ -307,12 +267,7 @@ describe("inferDeployment", () => {
         urls: repeat("https://www.example.com/pricing", 3),
       });
 
-      await expect(
-        inferDeployment({
-          build,
-          project: await project.$fetchGraph("account"),
-        }),
-      ).resolves.toBeNull();
+      await expect(infer(build)).resolves.toBeNull();
     });
   });
 });
