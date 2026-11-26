@@ -17,6 +17,9 @@ const _BuildFragment = graphql(`
     mode
     branch
     baseBranch
+    journeys {
+      id
+    }
     reviews {
       id
       date
@@ -127,6 +130,15 @@ function ApprovedDescription(props: { build: Build; canReview: boolean }) {
   );
 }
 
+function ChangesResume() {
+  return (
+    <Paragraph>
+      <Emphasis>Changes were detected in this build.</Emphasis> Please review
+      the snapshots and confirm whether these changes are expected.
+    </Paragraph>
+  );
+}
+
 export function BuildSummaryDescription({
   build,
   canReview,
@@ -182,10 +194,10 @@ export function BuildSummaryDescription({
   }
 
   switch (build.status) {
-    // The title already says it, and the review insights and the review
-    // button follow right below.
+    // With journeys, the title says it and the journeys to review follow
+    // right below.
     case BuildStatus.ChangesDetected:
-      return null;
+      return build.journeys.length > 0 ? null : <ChangesResume />;
 
     case BuildStatus.Accepted:
       return <ApprovedDescription build={build} canReview={canReview} />;
