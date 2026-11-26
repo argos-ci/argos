@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { useEditorState, type Editor } from "@tiptap/react";
 import { clsx } from "clsx";
 import {
@@ -42,7 +42,19 @@ const BUBBLE_MENU_ANIMATION_CLASS_NAME = clsx(
   "data-[toolbar-animation=exit]:animate-out data-[toolbar-animation=exit]:fade-out data-[toolbar-animation=exit]:zoom-out-95",
 );
 
-export function EditorToolbar(props: EditorToolbarProps) {
+/**
+ * The toolbar only shows over a selection or on a link, but its selector runs
+ * on every transaction. While it is hidden, the selector returns the state it
+ * last read: that skips eight `can()` dry runs and a re-render per keystroke,
+ * and a toolbar fading out keeps the buttons it was showing.
+ */
+const lastReadStates = new WeakMap<Editor, ToolbarState>();
+
+// Memoized because the editor around it re-renders on every keystroke, and the
+// toolbar has its own subscription to the editor.
+export const EditorToolbar = memo(function EditorToolbar(
+  props: EditorToolbarProps,
+) {
   const { editor } = props;
   const state = useEditorState({
     editor,
@@ -58,7 +70,11 @@ export function EditorToolbar(props: EditorToolbarProps) {
         return null;
       }
       const { selection } = editor.state;
-      return {
+      const lastRead = lastReadStates.get(editor);
+      if (lastRead && selection.empty && !editor.isActive("link")) {
+        return lastRead;
+      }
+      const next: ToolbarState = {
         isBold: editor.isActive("bold"),
         canBold: editor.can().toggleBold(),
         isItalic: editor.isActive("italic"),
@@ -87,6 +103,8 @@ export function EditorToolbar(props: EditorToolbarProps) {
         selectionTo: selection.to,
         selectionEmpty: selection.empty,
       };
+      lastReadStates.set(editor, next);
+      return next;
     },
   });
 
@@ -160,7 +178,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
       )}
     </AnimatedBubbleMenu>
   );
-}
+});
 
 function FormatToolbar(props: {
   editor: Editor;
