@@ -89,9 +89,14 @@ export async function processDeploymentNotification(
     });
   };
 
-  logger.info("Creating status and comment");
-  await Promise.all([
-    createGhCommitStatus(octokit, {
+  const status = async () => {
+    // The host of an external deployment reports its own status.
+    if (deployment.externalUrl) {
+      logger.info("External deployment, skipping status");
+      return;
+    }
+
+    await createGhCommitStatus(octokit, {
       owner: githubAccount.login,
       repo: githubRepository.name,
       // A pull request only shows the statuses of its head commit, and a
@@ -100,12 +105,14 @@ export async function processDeploymentNotification(
       sha: deployment.prHeadCommit ?? deployment.commitSha,
       state: notification.github.state,
       target_url: getDeploymentPreferredUrl({
-        slug: deployment.slug,
+        url: deployment.url,
         aliases: deploymentAliases,
       }),
       description: notification.description,
       context: notification.context,
-    }),
-    comment(),
-  ]);
+    });
+  };
+
+  logger.info("Creating status and comment");
+  await Promise.all([status(), comment()]);
 }

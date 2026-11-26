@@ -49,17 +49,18 @@ export function ProjectDeployments(props: {
   const { project, isTeam } = props;
   return (
     <>
-      <DeploymentsCard project={project} />
+      <HostingCard project={project} />
       {project.deploymentEnabled && (
         <>
           <DeploymentAuthentication project={project} isTeam={isTeam} />
           <Domains project={project} />
-          <ProductionDeploymentBranch project={project} />
-          {project.repository?.__typename === "GithubRepository" && (
-            <GitHubDeployments project={project} />
-          )}
         </>
       )}
+      <ProductionDeploymentBranch project={project} />
+      {project.deploymentEnabled &&
+        project.repository?.__typename === "GithubRepository" && (
+          <GitHubDeployments project={project} />
+        )}
     </>
   );
 }
@@ -68,7 +69,7 @@ type Inputs = {
   deploymentEnabled: boolean;
 };
 
-function DeploymentsCard(props: {
+function HostingCard(props: {
   project: DocumentType<typeof _ProjectFragment>;
 }) {
   const { project } = props;
@@ -86,6 +87,13 @@ function DeploymentsCard(props: {
         projectId: project.id,
         deploymentEnabled: data.deploymentEnabled,
       },
+      update: (cache) => {
+        // Hosting decides which deployments a project shows, so the lists
+        // cached under the previous setting are wrong.
+        const id = cache.identify({ __typename: "Project", id: project.id });
+        cache.evict({ id, fieldName: "deployments" });
+        cache.evict({ id, fieldName: "latestProductionDeployment" });
+      },
     });
     form.reset(data);
   };
@@ -94,15 +102,16 @@ function DeploymentsCard(props: {
     <Card>
       <Form form={form} onSubmit={onSubmit}>
         <CardBody>
-          <CardTitle>Deployments</CardTitle>
+          <CardTitle>Hosting</CardTitle>
           <CardParagraph>
-            Deploy static environments like Storybook and review them on
-            dedicated URLs.
+            Upload static sites like Storybook and Argos serves them on their
+            own URLs. Turning it off takes those URLs offline. Deployments
+            hosted elsewhere are not affected.
           </CardParagraph>
           <FormSwitch
             control={form.control}
             name="deploymentEnabled"
-            label="Enable deployments for this project"
+            label="Host deployments on Argos"
           />
         </CardBody>
         <FormCardFooter control={form.control}>

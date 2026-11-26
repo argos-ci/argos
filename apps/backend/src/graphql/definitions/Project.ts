@@ -254,7 +254,7 @@ export const typeDefs = gql`
     deploymentProductionBranchGlob: String!
     "Glob pattern for production deployment branches edited by the user"
     customDeploymentProductionBranchGlob: String
-    "Whether deployments are accessible"
+    "Whether Argos serves the deployments it hosts. Deployments hosted elsewhere are not affected."
     deploymentEnabled: Boolean!
     "Deployment authentication policy"
     deploymentAuth: DeploymentAuth!
@@ -841,9 +841,6 @@ export const resolvers: IResolvers = {
       return ctx.loaders.LatestProjectBuild.load(project.id);
     },
     latestProductionDeployment: async (project, _args, ctx) => {
-      if (!project.deploymentEnabled) {
-        return null;
-      }
       return ctx.loaders.LatestProductionDeploymentByProject.load(project.id);
     },
     builds: async (project, { first, after, filters }) => {
@@ -950,13 +947,17 @@ export const resolvers: IResolvers = {
       return paginateResult({ result, first, after });
     },
     deployments: async (project, { first, after }) => {
-      const result = await Deployment.query()
+      const query = Deployment.query()
         .where("projectId", project.id)
         .orderBy([
           { column: "createdAt", order: "desc" },
           { column: "id", order: "desc" },
-        ])
-        .range(after, after + first - 1);
+        ]);
+      // Argos no longer serves the deployments it hosts.
+      if (!project.deploymentEnabled) {
+        query.whereNotNull("externalUrl");
+      }
+      const result = await query.range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
     },

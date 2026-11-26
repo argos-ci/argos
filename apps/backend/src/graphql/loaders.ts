@@ -193,6 +193,13 @@ function createLatestProjectBuildLoader() {
   });
 }
 
+/**
+ * Turning deployments off on a project stops Argos serving the ones it hosts,
+ * so their URLs lead nowhere. A deployment hosted elsewhere stays reachable.
+ * Expects `projects` joined on the deployment's project.
+ */
+const REACHABLE_DEPLOYMENT_SQL = `("deployments"."externalUrl" is not null or "projects"."deploymentEnabled")`;
+
 function createLatestProductionDeploymentByProjectLoader() {
   return new DataLoader<string, Deployment | null>(async (projectIds) => {
     const valuesSql = projectIds.map(() => "(?::bigint)").join(", ");
@@ -207,10 +214,12 @@ function createLatestProductionDeploymentByProjectLoader() {
       .joinRaw(
         `
           join lateral (
-            select *
+            select "deployments".*
             from "deployments"
+            join "projects" on "projects"."id" = "deployments"."projectId"
             where "deployments"."projectId" = t."projectId"
               and "deployments"."environment" = 'production'
+              and ${REACHABLE_DEPLOYMENT_SQL}
             order by "deployments"."createdAt" desc, "deployments"."id" desc
             limit 1
           ) as deployments on true
@@ -285,10 +294,12 @@ function createLatestDeploymentByProjectAndCommitLoader() {
         .joinRaw(
           `
             join lateral (
-              select *
+              select "deployments".*
               from "deployments"
+              join "projects" on "projects"."id" = "deployments"."projectId"
               where "deployments"."projectId" = lookup."projectId"
                 and "deployments"."commitSha" = any(lookup."commitShas")
+                and ${REACHABLE_DEPLOYMENT_SQL}
               order by "deployments"."createdAt" desc, "deployments"."id" desc
               limit 1
             ) as deployments on true
