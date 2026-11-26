@@ -459,3 +459,34 @@ loggedTest(
     ).toHaveCount(0);
   },
 );
+
+loggedTest(
+  "keeps each build's journeys when going from one build to another",
+  async ({ page, team, project }) => {
+    // Two builds of the same tests: their journeys share their ids.
+    await createJourneysScenario({ projectId: project.id, number: 1 });
+    await createJourneysScenario({ projectId: project.id, number: 2 });
+    const buildLink = (number: number) =>
+      page.locator(`a[href$="/builds/${number}"]`);
+    const walkLink = page.getByRole("link", {
+      name: "Walk “complete a purchase” at 1280×720",
+    });
+
+    // Moving between the builds in the app keeps what the first one loaded.
+    await page.goto(`/${team.account.slug}/${project.name}`);
+    await buildLink(1).click();
+    await expect(walkLink).toBeVisible();
+    await page.goBack();
+    await buildLink(2).click();
+    await expect(walkLink).toBeVisible();
+    await page.goBack();
+    await buildLink(1).click();
+
+    // Back on the first build, its journeys still lead to its own screens.
+    await walkLink.click();
+    await expect(
+      page.getByRole("heading", { name: "desktop/checkout/cart.png" }),
+    ).toBeVisible();
+    await expect(page.locator("[role='button'][data-index]")).toHaveCount(4);
+  },
+);
