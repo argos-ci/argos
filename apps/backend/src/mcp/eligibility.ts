@@ -22,6 +22,14 @@ export type XMcpExtension = {
   name?: string;
   /** Override the tool description (defaults to summary + description). */
   description?: string;
+  /**
+   * Override the tool's `destructiveHint`. It defaults to the method: `PUT`,
+   * `PATCH` and `DELETE` are destructive, `POST` is not. Set it on a `POST`
+   * that changes or removes something that exists, revokes access, or sends
+   * something that cannot be recalled: the Claude and ChatGPT directories
+   * review every tool's annotations against what it does.
+   */
+  destructive?: boolean;
 };
 
 type EligibilityFields = {

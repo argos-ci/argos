@@ -181,6 +181,65 @@ describe("buildMcpTools", () => {
     expect(tool!.outputSchema).toBeInstanceOf(z.ZodObject);
   });
 
+  it("flags every tool that changes, removes, revokes or sends as destructive", () => {
+    // The Claude and ChatGPT directories reject a listing whose annotations
+    // understate what a tool does. A new write operation shows up here: check
+    // whether it needs `"x-mcp": { destructive: true }`.
+    expect(
+      mcpTools
+        .filter((tool) => tool.annotations.destructiveHint)
+        .map((tool) => `${tool.method.toUpperCase()} ${tool.name}`)
+        .sort(),
+    ).toMatchInlineSnapshot(`
+      [
+        "DELETE cancelAccountInvite",
+        "DELETE deleteAccountProjectToken",
+        "DELETE deleteAccountWebhook",
+        "DELETE deleteBuildComment",
+        "DELETE deleteMedia",
+        "DELETE deleteMediaComment",
+        "DELETE deleteProjectToken",
+        "DELETE deleteTestComment",
+        "DELETE removeAccountMember",
+        "DELETE removeBuildCommentReaction",
+        "DELETE removeBuildReviewers",
+        "DELETE removeMediaCommentReaction",
+        "DELETE removeProjectContributor",
+        "DELETE removeTeamDomain",
+        "DELETE removeTestCommentReaction",
+        "DELETE unsubscribeBuild",
+        "DELETE unsubscribeBuildCommentThread",
+        "DELETE unsubscribeMediaCommentThread",
+        "DELETE unsubscribeTest",
+        "DELETE unsubscribeTestCommentThread",
+        "PATCH setAccountMemberLevel",
+        "PATCH updateAccount",
+        "PATCH updateBuildComment",
+        "PATCH updateMedia",
+        "PATCH updateMediaComment",
+        "PATCH updateProject",
+        "PATCH updateTestComment",
+        "POST createAccountInvites",
+        "POST deactivateAutomationRule",
+        "POST dismissReview",
+        "POST ignoreChange",
+        "POST resendWebhookDelivery",
+        "POST resetAccountInviteLink",
+        "POST resolveBuildCommentThread",
+        "POST resolveMediaCommentThread",
+        "POST resolveTestCommentThread",
+        "POST transferProject",
+        "POST unignoreChange",
+        "POST unresolveBuildCommentThread",
+        "POST unresolveMediaCommentThread",
+        "POST unresolveTestCommentThread",
+        "PUT setProjectContributor",
+        "PUT updateAutomationRule",
+        "PUT updateProjectDomain",
+      ]
+    `);
+  });
+
   it("roots every output schema at an object, as MCP requires", () => {
     const nonObjectRoots = mcpTools
       .filter(

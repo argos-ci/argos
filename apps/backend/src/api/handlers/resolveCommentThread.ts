@@ -51,6 +51,7 @@ export const resolveBuildCommentThreadOperation = {
   description: "Mark a comment thread on a build as resolved.",
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
+  "x-mcp": { destructive: true },
   requestParams: { path: BuildPathParams },
   responses: commentResponses("The root comment of the resolved thread"),
 } satisfies ZodOpenApiOperationObject;
@@ -61,6 +62,7 @@ export const unresolveBuildCommentThreadOperation = {
   description: "Reopen a previously resolved comment thread on a build.",
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
+  "x-mcp": { destructive: true },
   requestParams: { path: BuildPathParams },
   responses: commentResponses("The root comment of the reopened thread"),
 } satisfies ZodOpenApiOperationObject;
@@ -71,6 +73,7 @@ export const resolveTestCommentThreadOperation = {
   description: "Mark a comment thread on a test as resolved.",
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
+  "x-mcp": { destructive: true },
   requestParams: { path: TestPathParams },
   responses: commentResponses("The root comment of the resolved thread"),
 } satisfies ZodOpenApiOperationObject;
@@ -81,6 +84,7 @@ export const resolveMediaCommentThreadOperation = {
   description: "Mark a comment thread on a media as resolved.",
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
+  "x-mcp": { destructive: true },
   requestParams: { path: MediaPathParams },
   responses: commentResponses("The root comment of the resolved thread"),
 } satisfies ZodOpenApiOperationObject;
@@ -91,6 +95,7 @@ export const unresolveTestCommentThreadOperation = {
   description: "Reopen a previously resolved comment thread on a test.",
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
+  "x-mcp": { destructive: true },
   requestParams: { path: TestPathParams },
   responses: commentResponses("The root comment of the reopened thread"),
 } satisfies ZodOpenApiOperationObject;
@@ -101,6 +106,7 @@ export const unresolveMediaCommentThreadOperation = {
   description: "Reopen a previously resolved comment thread on a media.",
   tags: ["Comments"],
   security: patOrOAuthAuth(["comments:write"]),
+  "x-mcp": { destructive: true },
   requestParams: { path: MediaPathParams },
   responses: commentResponses("The root comment of the reopened thread"),
 } satisfies ZodOpenApiOperationObject;

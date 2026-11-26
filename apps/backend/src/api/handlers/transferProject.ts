@@ -27,6 +27,7 @@ export const transferProjectOperation = {
     "Move a project to another account, optionally renaming it. The token must be scoped to both accounts, and you must be an owner of both.",
   tags: ["Projects"],
   security: patOrOAuthAuth(["projects:write"]),
+  "x-mcp": { destructive: true },
   requestParams: {
     path: z.object({
       owner: AccountSlug,

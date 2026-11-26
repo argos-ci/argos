@@ -29,6 +29,7 @@ export const dismissReviewOperation = {
     "Dismiss a previously submitted review on a build, clearing its effect on the build's review status.",
   tags: ["Reviews"],
   security: patOrOAuthAuth(["reviews:write"]),
+  "x-mcp": { destructive: true },
   requestParams: {
     path: z.object({
       owner: AccountSlug,
