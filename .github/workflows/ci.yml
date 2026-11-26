@@ -72,8 +72,24 @@ jobs:
         id: setup
         run: pnpm exec -- turbo run build --filter=@argos/frontend^...
 
+      # In the background: the build keeps the CPU busy while the browser
+      # install below waits on the network, and publishing waits on the network
+      # while the stories run. Published even when a story fails, so it can be
+      # looked at in the deployed Storybook.
+      - name: Build and publish Storybook
+        run: |
+          (
+            set +e
+            pnpm --dir apps/frontend run build-storybook &&
+              pnpm --dir apps/frontend run deploy-storybook
+            echo $? > "$RUNNER_TEMP/storybook-exit"
+          ) > "$RUNNER_TEMP/storybook.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/storybook-pid"
+
+      # Headless Chromium runs the headless shell, so the full browser is not
+      # needed.
       - name: Install Playwright browser
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps --only-shell chromium
 
       - name: Run Storybook tests
         run: pnpm --dir apps/frontend run test-storybook
@@ -83,16 +99,17 @@ jobs:
           NODE_ENV: test
           TZ: UTC
 
-      # Published even when a story fails, so it can be looked at in the
-      # deployed Storybook.
-      - name: Build Storybook
-        id: build-storybook
+      - name: Wait for Storybook to publish
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: pnpm --dir apps/frontend run build-storybook
-
-      - name: Publish Storybook to Argos
-        if: ${{ !cancelled() && steps.build-storybook.outcome == 'success' }}
-        run: pnpm --dir apps/frontend run deploy-storybook
+        run: |
+          pid=$(cat "$RUNNER_TEMP/storybook-pid")
+          while kill -0 "$pid" 2> /dev/null; do sleep 1; done
+          cat "$RUNNER_TEMP/storybook.log"
+          if [ ! -f "$RUNNER_TEMP/storybook-exit" ]; then
+            echo "Storybook build was interrupted." >&2
+            exit 1
+          fi
+          exit "$(cat "$RUNNER_TEMP/storybook-exit")"
 
   integration-test:
     runs-on: ubuntu-latest
