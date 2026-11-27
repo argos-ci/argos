@@ -181,8 +181,11 @@ describe("GraphQL staffTeams", () => {
       slug: "stripe-customer",
       stripeCustomerId: "cus_search",
     });
+    // Keeps the owner's customer while its subscription bills another one, as
+    // after a trial extended by another member.
     const subscribed = await factory.TeamAccount.create({
       slug: "stripe-subscription",
+      stripeCustomerId: "cus_owner",
     });
     const subscriber = await factory.User.create();
     await factory.Subscription.create({
@@ -192,9 +195,16 @@ describe("GraphQL staffTeams", () => {
       subscriberId: subscriber.id,
       status: "canceled",
     });
+    await factory.StripeInvoice.create({
+      stripeCustomerId: "cus_member",
+      stripeSubscriptionId: "sub_search",
+    });
 
     const byCustomer = await queryTeams(viewer, { search: "cus_search" });
     expect(getSlugs(byCustomer)).toEqual(["stripe-customer"]);
+
+    const byBilledCustomer = await queryTeams(viewer, { search: "cus_member" });
+    expect(getSlugs(byBilledCustomer)).toEqual(["stripe-subscription"]);
 
     // A canceled subscription still leads to its team.
     const bySubscription = await queryTeams(viewer, { search: "sub_search" });

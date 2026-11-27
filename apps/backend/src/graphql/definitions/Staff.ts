@@ -9,6 +9,7 @@ import config from "@/config";
 import {
   Account,
   StaffTeamContact,
+  StripeInvoice,
   Subscription,
   TeamUser,
   UserEmail,
@@ -1042,10 +1043,21 @@ export const resolvers: IResolvers = {
                 // Stripe ids are pasted whole from the dashboard: a fragment
                 // of one would match unrelated teams.
                 .orWhere("stripeCustomerId", search)
-                .orWhereExists(
+                .orWhereIn(
+                  "accounts.id",
                   Subscription.query()
-                    .whereColumn("subscriptions.accountId", "accounts.id")
-                    .where("stripeSubscriptionId", search),
+                    .select("accountId")
+                    .where("stripeSubscriptionId", search)
+                    // The account keeps one customer, but a team can be
+                    // billed on another (a trial extended by another member
+                    // bills theirs): the mirrored invoices tie each customer
+                    // to the subscriptions it paid for.
+                    .orWhereIn(
+                      "stripeSubscriptionId",
+                      StripeInvoice.query()
+                        .select("stripeSubscriptionId")
+                        .where("stripeCustomerId", search),
+                    ),
                 );
               // Members only answer a search that looks like an email, or a
               // name search would also list every team with a member whose
