@@ -1,12 +1,21 @@
+import { createHash } from "node:crypto";
 import { invariant } from "@argos/util/invariant";
 import request from "supertest";
-import { test as base, beforeAll, describe, expect, vi } from "vitest";
+import {
+  test as base,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  vi,
+} from "vitest";
 
 import {
   Account,
   GithubPullRequest,
   GithubRepository,
   Media,
+  MediaVersion,
   Project,
   User,
   UserAccessTokenScope,
@@ -31,13 +40,22 @@ const app = createTestHandlerApp(
 
 const HASH = "b".repeat(64);
 const PROJECT_PATH = "acme/awesome-project";
+const FINALIZE_BYTES = Buffer.from("the uploaded PNG");
+const FINALIZE_HASH = createHash("sha256").update(FINALIZE_BYTES).digest("hex");
+const FINALIZE_CHECKSUM = createHash("sha256")
+  .update(FINALIZE_BYTES)
+  .digest("base64");
 
 // Overridable per test: `null` is "the bytes are not there", which is what the
 // create tests want; the finalize tests hand back a real object instead.
 const headMediaObject = vi.hoisted(() =>
-  vi.fn<() => Promise<{ size: number; contentType: string } | null>>(
-    async () => null,
-  ),
+  vi.fn<
+    () => Promise<{
+      size: number;
+      contentType: string;
+      checksumSha256?: string | null;
+    } | null>
+  >(async () => null),
 );
 vi.mock("@/media/object", () => ({
   headMediaObject,
@@ -123,6 +141,11 @@ const test = base.extend<{
 
 beforeAll(async () => {
   await setupDatabase();
+});
+
+beforeEach(() => {
+  headMediaObject.mockReset();
+  headMediaObject.mockResolvedValue(null);
 });
 
 /** Upload a media against a branch and return the created row. */
@@ -595,6 +618,7 @@ describe("finalize", () => {
     headMediaObject.mockResolvedValueOnce({
       size: 2048,
       contentType: "image/png",
+      checksumSha256: FINALIZE_CHECKSUM,
     });
     const pullRequest = await factory.PullRequest.create({
       githubRepositoryId: repository.id,
@@ -605,7 +629,12 @@ describe("finalize", () => {
     });
     const { media } = await factory.createMediaWithVersion({
       media: { projectId: project.id, name: "late.png", branch: "feat/late" },
-      version: { number: 1, uploadedAt: null, billedUnits: 0 },
+      version: {
+        number: 1,
+        key: `media/${project.id}/${FINALIZE_HASH}.png`,
+        uploadedAt: null,
+        billedUnits: 0,
+      },
     });
 
     const res = await request(app)
@@ -629,6 +658,7 @@ describe("finalize", () => {
     headMediaObject.mockResolvedValueOnce({
       size: 2048,
       contentType: "image/png",
+      checksumSha256: FINALIZE_CHECKSUM,
     });
     const pullRequest = await factory.PullRequest.create({
       githubRepositoryId: repository.id,
@@ -642,7 +672,12 @@ describe("finalize", () => {
         name: "attached.png",
         githubPullRequestId: pullRequest.id,
       },
-      version: { number: 1, uploadedAt: null, billedUnits: 0 },
+      version: {
+        number: 1,
+        key: `media/${project.id}/${FINALIZE_HASH}.png`,
+        uploadedAt: null,
+        billedUnits: 0,
+      },
     });
 
     await request(app)
@@ -651,6 +686,49 @@ describe("finalize", () => {
       .expect(200);
 
     expect(updatePullRequestComment).toHaveBeenCalledTimes(1);
+  });
+
+  test("refuses a checksum mismatch and finalizes once the bytes are replaced", async ({
+    token,
+    project,
+  }) => {
+    const wrong = createHash("sha256").update("wrong bytes").digest("base64");
+    headMediaObject.mockResolvedValueOnce({
+      size: 2048,
+      contentType: "image/png",
+      checksumSha256: wrong,
+    });
+    const { media, version } = await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "bad-hash.png" },
+      version: {
+        number: 1,
+        key: `media/${project.id}/${FINALIZE_HASH}.png`,
+        uploadedAt: null,
+        billedUnits: 0,
+      },
+    });
+
+    const rejected = await request(app)
+      .post(`/media/${media.id}/finalize`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(400);
+    expect(rejected.body.error).toMatch(/SHA-256/);
+    await expect(
+      MediaVersion.query().findById(version.id),
+    ).resolves.toMatchObject({ uploadedAt: null });
+
+    headMediaObject.mockResolvedValueOnce({
+      size: 2048,
+      contentType: "image/png",
+      checksumSha256: FINALIZE_CHECKSUM,
+    });
+    await request(app)
+      .post(`/media/${media.id}/finalize`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+    await expect(
+      MediaVersion.query().findById(version.id),
+    ).resolves.toMatchObject({ uploadedAt: expect.any(Date) });
   });
 
   test("does not touch GitHub when the upload already landed", async ({

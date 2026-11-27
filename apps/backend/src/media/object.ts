@@ -12,19 +12,24 @@ import { chunk } from "@/util/chunk";
  * A missing object is a normal answer — the caller finalized before the upload
  * finished, or the same bytes have never been uploaded before — not an error.
  */
-export async function headMediaObject(
-  key: string,
-): Promise<{ size: number; contentType: string | null } | null> {
+export async function headMediaObject(key: string): Promise<{
+  size: number;
+  contentType: string | null;
+  checksumSha256: string | null;
+} | null> {
   try {
     const result = await getS3Client().send(
       new HeadObjectCommand({
         Bucket: config.get("s3.screenshotsBucket"),
         Key: key,
+        // Without this S3 omits stored checksums from HEAD responses.
+        ChecksumMode: "ENABLED",
       }),
     );
     return {
       size: result.ContentLength ?? 0,
       contentType: result.ContentType ?? null,
+      checksumSha256: result.ChecksumSHA256 ?? null,
     };
   } catch (error) {
     if (isNotFoundError(error)) {

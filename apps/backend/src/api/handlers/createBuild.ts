@@ -314,9 +314,10 @@ async function getLegacyUploads(keys: string[]): Promise<LegacyUpload[]> {
  *     `[1, MAX_UPLOAD_FILE_BYTES]`.
  *   - `eq $Content-Type <contentType>`: the client must upload with exactly the
  *     content type declared at `createBuild` time.
- *   - `x-amz-checksum-sha256`: the body must hash to the key. Keys are shared
- *     by every project, so without it the first project to upload a key would
- *     decide the bytes behind everyone else's screenshot with that key.
+ *   - `x-amz-checksum-algorithm` and `x-amz-checksum-sha256`: the body must hash
+ *     to the key. The algorithm field names the checksum S3 must validate. Keys
+ *     are shared by every project, so without them the first project to upload
+ *     a key would decide the bytes behind everyone else's screenshot.
  */
 async function getSecureUploads(
   items: {
@@ -338,6 +339,7 @@ async function getSecureUploads(
         Expires: 1800, // 30 minutes
         Fields: {
           "Content-Type": item.contentType,
+          "x-amz-checksum-algorithm": "SHA256",
           "x-amz-checksum-sha256": Buffer.from(item.key, "hex").toString(
             "base64",
           ),

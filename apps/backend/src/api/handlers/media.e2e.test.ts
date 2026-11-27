@@ -1,6 +1,14 @@
+import { createHash } from "node:crypto";
 import { invariant } from "@argos/util/invariant";
 import request from "supertest";
-import { test as base, beforeAll, describe, expect, vi } from "vitest";
+import {
+  test as base,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  vi,
+} from "vitest";
 import z from "zod";
 
 import {
@@ -44,8 +52,13 @@ const PROJECT_PATH = "acme/awesome-project";
 
 // The signing and delete paths talk to S3. Nothing here is testing AWS — the
 // shared-key logic behind `deleteUnreferencedMediaObjects` has its own test.
+const headMediaObject = vi.hoisted(() =>
+  vi.fn<() => Promise<unknown>>(async () => null),
+);
+const createPresignedPost = vi.hoisted(() => vi.fn());
+
 vi.mock("@/media/object", () => ({
-  headMediaObject: vi.fn(async () => null),
+  headMediaObject,
   deleteUnreferencedMediaObjects: vi.fn(async () => undefined),
   deleteUnreferencedMediaDiffObjects: vi.fn(async () => undefined),
   getMediaDiffObjects: vi.fn(async () => ({
@@ -54,11 +67,18 @@ vi.mock("@/media/object", () => ({
   })),
 }));
 
+vi.mock("@/media/inspect", () => ({
+  inspectMediaObject: vi.fn(async () => ({ width: 1, height: 1 })),
+  MediaContentMismatchError: class MediaContentMismatchError extends Error {},
+}));
+
 vi.mock("@aws-sdk/s3-presigned-post", () => ({
-  createPresignedPost: vi.fn(async () => ({
-    url: "https://s3.example.com/bucket",
-    fields: { key: "media/1/abc.png", policy: "signed" },
-  })),
+  createPresignedPost,
+}));
+
+createPresignedPost.mockImplementation(async () => ({
+  url: "https://s3.example.com/bucket",
+  fields: { key: "media/1/abc.png", policy: "signed" },
 }));
 
 /**
@@ -145,6 +165,11 @@ beforeAll(async () => {
   await setupDatabase();
 });
 
+beforeEach(() => {
+  headMediaObject.mockReset();
+  headMediaObject.mockResolvedValue(null);
+});
+
 describe("createMedia", () => {
   test("registers a media and returns a signed upload target", async ({
     projectToken,
@@ -182,6 +207,142 @@ describe("createMedia", () => {
     // Media is project-scoped, and a project token identifies its own project.
     const media = await Media.query().findById(res.body.media.id);
     expect(media?.projectId).toBe(project.id);
+  });
+
+  test("signs the declared SHA-256 into the upload form", async ({
+    projectToken,
+  }) => {
+    createPresignedPost.mockClear();
+    await request(app)
+      .post("/media")
+      .set("Authorization", `Bearer ${projectToken}`)
+      .send({
+        name: "checksum.png",
+        contentType: "image/png",
+        size: 2048,
+        hash: HASH,
+      })
+      .expect(201);
+
+    const options = createPresignedPost.mock.calls[0]?.[1];
+    expect(options.Fields).toMatchObject({
+      "x-amz-checksum-algorithm": "SHA256",
+      "x-amz-checksum-sha256": Buffer.from(HASH, "hex").toString("base64"),
+    });
+    // The SDK turns every field into an exact-match policy condition, so a
+    // caller cannot swap the checksum when it posts the multipart form.
+    expect(options.Conditions).toContainEqual([
+      "eq",
+      "$Content-Type",
+      "image/png",
+    ]);
+  });
+
+  test("reuses an object whose checksum matches", async ({ projectToken }) => {
+    const head = {
+      size: 2048,
+      contentType: "image/png",
+      checksumSha256: Buffer.from(HASH, "hex").toString("base64"),
+    };
+    headMediaObject.mockResolvedValueOnce(head).mockResolvedValueOnce(head);
+
+    const res = await request(app)
+      .post("/media")
+      .set("Authorization", `Bearer ${projectToken}`)
+      .send({
+        name: "already-there.png",
+        contentType: "image/png",
+        size: 2048,
+        hash: HASH,
+      })
+      .expect(201);
+
+    expect(res.body.upload).toBeNull();
+    expect(res.body.media.status).toBe("ready");
+  });
+
+  test("does not reuse an object whose checksum does not match", async ({
+    projectToken,
+  }) => {
+    const wrong = createHash("sha256").update("other bytes").digest("base64");
+    headMediaObject.mockResolvedValueOnce({
+      size: 2048,
+      contentType: "image/png",
+      checksumSha256: wrong,
+    });
+
+    const res = await request(app)
+      .post("/media")
+      .set("Authorization", `Bearer ${projectToken}`)
+      .send({
+        name: "poisoned.png",
+        contentType: "image/png",
+        size: 2048,
+        hash: HASH,
+      })
+      .expect(201);
+
+    expect(res.body.media.status).toBe("pending");
+    expect(res.body.upload).toMatchObject({
+      url: "https://s3.example.com/bucket",
+    });
+  });
+
+  test("treats an object without a checksum as a cache miss", async ({
+    projectToken,
+  }) => {
+    createPresignedPost.mockClear();
+    headMediaObject.mockResolvedValueOnce({
+      size: 2048,
+      contentType: "image/png",
+    });
+
+    const res = await request(app)
+      .post("/media")
+      .set("Authorization", `Bearer ${projectToken}`)
+      .send({
+        name: "legacy.png",
+        contentType: "image/png",
+        size: 2048,
+        hash: HASH,
+      })
+      .expect(201);
+
+    expect(res.body.media.status).toBe("pending");
+    expect(res.body.upload).toMatchObject({
+      url: "https://s3.example.com/bucket",
+    });
+    // The signed POST writes to the same key, replacing the legacy object with
+    // bytes S3 has verified against the checksum.
+    expect(createPresignedPost.mock.calls[0]?.[1].Fields).toMatchObject({
+      "x-amz-checksum-algorithm": "SHA256",
+      "x-amz-checksum-sha256": Buffer.from(HASH, "hex").toString("base64"),
+    });
+  });
+
+  test("returns an uploaded version without calling S3", async ({
+    projectToken,
+    project,
+  }) => {
+    await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "early.png" },
+      version: { key: `media/${project.id}/${HASH}.png` },
+    });
+
+    const res = await request(app)
+      .post("/media")
+      .set("Authorization", `Bearer ${projectToken}`)
+      .send({
+        name: "early.png",
+        contentType: "image/png",
+        size: 2048,
+        hash: HASH,
+      })
+      .expect(201);
+
+    expect(res.body.upload).toBeNull();
+    expect(res.body.media.status).toBe("ready");
+    expect(headMediaObject).not.toHaveBeenCalled();
   });
 
   test("rejects a content type that is not an accepted media type", async ({
