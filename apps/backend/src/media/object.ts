@@ -28,6 +28,8 @@ export async function headMediaObject(key: string): Promise<{
       new HeadObjectCommand({
         Bucket: config.get("s3.screenshotsBucket"),
         Key: key,
+        // Without this S3 omits stored checksums from HEAD responses.
+        ChecksumMode: "ENABLED",
       }),
     );
     return {

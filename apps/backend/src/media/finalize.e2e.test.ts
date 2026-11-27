@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MediaVersion } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-type StoredObject = { bytes: Buffer; checksum?: string };
+type StoredObject = { bytes: Buffer; checksum: string | null };
 
 const objects = vi.hoisted(() => new Map<string, StoredObject>());
 const send = vi.hoisted(() => vi.fn());
@@ -27,13 +27,15 @@ function sha256(bytes: Buffer): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-function put(key: string, bytes: Buffer, withChecksum = true): void {
-  const checksum = withChecksum
-    ? createHash("sha256").update(bytes).digest("base64")
-    : null;
+function base64(bytes: Buffer): string {
+  return createHash("sha256").update(bytes).digest("base64");
+}
+
+/** `undefined` computes the checksum, `null` stores an object without one. */
+function put(key: string, bytes: Buffer, checksum?: string | null): void {
   objects.set(key, {
     bytes,
-    ...(checksum ? { checksum } : {}),
+    checksum: checksum === undefined ? base64(bytes) : checksum,
   });
 }
 
@@ -48,6 +50,19 @@ async function pendingVersion(bytes: Buffer) {
   return { media, version, key };
 }
 
+/** Commands that read the whole object, which only the hash fallback does. */
+function fullReads(): number {
+  return send.mock.calls.filter((call) => {
+    const command = call[0] as {
+      constructor: { name: string };
+      input: { Range?: string };
+    };
+    return (
+      command.constructor.name === "GetObjectCommand" && !command.input.Range
+    );
+  }).length;
+}
+
 beforeEach(async () => {
   await setupDatabase();
   objects.clear();
@@ -58,6 +73,7 @@ beforeEach(async () => {
       input: {
         Key?: string;
         Range?: string;
+        ChecksumMode?: string;
         Delete?: { Objects: { Key: string }[] };
       };
     }) => {
@@ -69,7 +85,10 @@ beforeEach(async () => {
         return {
           ContentLength: object.bytes.length,
           ContentType: "image/png",
-          ...(object.checksum ? { ChecksumSHA256: object.checksum } : {}),
+          // S3 only returns checksums when the caller asks for them.
+          ...(command.input.ChecksumMode === "ENABLED" && object.checksum
+            ? { ChecksumSHA256: object.checksum }
+            : {}),
         };
       }
       if (command.constructor.name === "GetObjectCommand") {
@@ -95,7 +114,24 @@ beforeEach(async () => {
 });
 
 describe("finalizeMedia SHA-256 integrity", () => {
-  it("finalizes bytes whose SHA-256 matches the key", async () => {
+  it("asks S3 for the stored checksum in HEAD", async () => {
+    const bytes = await png(8, 8);
+    const { media, version, key } = await pendingVersion(bytes);
+    put(key, bytes);
+
+    await finalizeMedia(version, media);
+
+    const head = send.mock.calls.find(
+      (call) =>
+        (call[0] as { constructor: { name: string } }).constructor.name ===
+        "HeadObjectCommand",
+    );
+    expect(head?.[0]).toMatchObject({
+      input: { Key: key, ChecksumMode: "ENABLED" },
+    });
+  });
+
+  it("finalizes bytes whose SHA-256 matches the key without re-hashing", async () => {
     const bytes = await png(8, 8);
     const { media, version, key } = await pendingVersion(bytes);
     put(key, bytes);
@@ -103,6 +139,7 @@ describe("finalizeMedia SHA-256 integrity", () => {
     await expect(finalizeMedia(version, media)).resolves.toMatchObject({
       uploadedAt: expect.any(Date),
     });
+    expect(fullReads()).toBe(0);
     await expect(
       MediaVersion.query().findById(version.id),
     ).resolves.toMatchObject({
@@ -116,7 +153,9 @@ describe("finalizeMedia SHA-256 integrity", () => {
     const declared = await png(8, 8);
     const other = await png(16, 16);
     const { media, version, key } = await pendingVersion(declared);
-    put(key, other);
+    // Image B landed under image A's key. S3 stores B's checksum with it, so
+    // the mismatch has to be caught before the version is finalized.
+    put(key, other, base64(other));
 
     await expect(finalizeMedia(version, media)).rejects.toThrow(/SHA-256/);
     expect(objects.has(key)).toBe(false);
@@ -127,21 +166,22 @@ describe("finalizeMedia SHA-256 integrity", () => {
     });
   });
 
-  it("verifies an older object that has no stored checksum", async () => {
+  it("verifies an older object that has no stored checksum by streaming it", async () => {
     const bytes = await png(8, 8);
     const { media, version, key } = await pendingVersion(bytes);
-    put(key, bytes, false);
+    put(key, bytes, null);
 
     await expect(finalizeMedia(version, media)).resolves.toMatchObject({
       uploadedAt: expect.any(Date),
     });
+    expect(fullReads()).toBe(1);
   });
 
   it("rejects older bytes that do not match the key either", async () => {
     const declared = await png(8, 8);
     const other = await png(16, 16);
     const { media, version, key } = await pendingVersion(declared);
-    put(key, other, false);
+    put(key, other, null);
 
     await expect(finalizeMedia(version, media)).rejects.toThrow(/SHA-256/);
     expect(objects.has(key)).toBe(false);
