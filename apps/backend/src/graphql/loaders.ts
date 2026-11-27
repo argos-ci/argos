@@ -55,6 +55,7 @@ import {
   ScreenshotDiff,
   SlackInstallation,
   TeamOutreach,
+  type TeamOutreachType,
   Subscription,
   Team,
   TeamUser,
@@ -1094,6 +1095,35 @@ function createTrialOutreachByTeamIdLoader() {
     );
     return teamIds.map((teamId) => actionByTeamId.get(String(teamId)) ?? null);
   });
+}
+
+/**
+ * The latest email of a type on each subscription, or null when there is
+ * none.
+ */
+function createLatestOutreachBySubscriptionIdLoader(type: TeamOutreachType) {
+  return new DataLoader<string, TeamOutreach | null>(
+    async (subscriptionIds) => {
+      const actions = await TeamOutreach.query()
+        .where("type", type)
+        .whereIn("subscriptionId", subscriptionIds as string[])
+        .orderBy("createdAt", "desc")
+        .orderBy("id", "desc");
+      const latestBySubscriptionId = new Map<string, TeamOutreach>();
+      for (const action of actions) {
+        if (
+          action.subscriptionId &&
+          !latestBySubscriptionId.has(action.subscriptionId)
+        ) {
+          latestBySubscriptionId.set(action.subscriptionId, action);
+        }
+      }
+      return subscriptionIds.map(
+        (subscriptionId) =>
+          latestBySubscriptionId.get(String(subscriptionId)) ?? null,
+      );
+    },
+  );
 }
 
 function createCancellationOutreachBySubscriptionIdLoader() {
@@ -2245,6 +2275,10 @@ export const createLoaders = () => ({
   TrialOutreachByTeamId: createTrialOutreachByTeamIdLoader(),
   CancellationOutreachBySubscriptionId:
     createCancellationOutreachBySubscriptionIdLoader(),
+  EnterpriseOfferBySubscriptionId:
+    createLatestOutreachBySubscriptionIdLoader("enterprise_offer"),
+  LastRenewalEmailBySubscriptionId:
+    createLatestOutreachBySubscriptionIdLoader("enterprise_renewal"),
   SubscriptionRevenue: createSubscriptionRevenueLoader(),
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),

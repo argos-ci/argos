@@ -94,6 +94,13 @@ const config: CodegenConfig = {
           TeamStaffContact: "../../database/models/index.js#TeamOutreach",
           TeamStaffMember: "../../database/models/index.js#TeamUser",
           StaffCancellation: "../../database/models/index.js#Subscription",
+          StaffEnterpriseOffer: "../../database/models/index.js#Subscription",
+          StaffEnterprise:
+            "../../database/services/enterprise-offer.js#StaffEnterprise",
+          StaffEnterpriseContract:
+            "../../database/services/enterprise-offer.js#StaffEnterpriseTeam",
+          StaffEnterpriseTrial:
+            "../../database/services/enterprise-offer.js#StaffEnterpriseTrial",
           Project: "../../database/models/index.js#Project",
           ProjectToken: "../../database/models/index.js#ProjectToken",
           Webhook: "../../database/models/index.js#Webhook",

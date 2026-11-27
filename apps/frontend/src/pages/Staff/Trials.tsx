@@ -619,6 +619,8 @@ function ContactCell(props: { team: PipelineTeam }) {
     <div className="flex items-center justify-center gap-1">
       <LinkButton
         href={mailtoUrl || undefined}
+        // Without an owner email no draft opens, so nothing is recorded.
+        disabled={!mailtoUrl}
         variant="secondary"
         size="small"
         iconOnly
