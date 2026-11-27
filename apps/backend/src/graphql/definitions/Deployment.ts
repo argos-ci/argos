@@ -41,6 +41,8 @@ export const typeDefs = gql`
     branch: String!
     commitSha: String!
     url: String!
+    "Whether the deployment is hosted outside Argos"
+    external: Boolean!
     aliases: [DeploymentAlias!]!
     pullRequest: PullRequest
     build: Build
@@ -55,6 +57,7 @@ export const typeDefs = gql`
 export const resolvers: IResolvers = {
   Deployment: {
     id: (deployment) => formatDeploymentId(deployment.id),
+    external: (deployment) => deployment.externalUrl !== null,
     aliases: async (deployment, _args, ctx) => {
       const aliases = await ctx.loaders.DeploymentAliasesByDeploymentId.load(
         deployment.id,

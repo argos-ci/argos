@@ -1,6 +1,7 @@
 import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
 import type { BuildType } from "@argos/schemas/build-type";
 import { invariant } from "@argos/util/invariant";
+import type { WithGraphModel } from "objection";
 
 import { getApprovalEmoji, getBuildLabel } from "@/build/label";
 import { getStatsMessage } from "@/build/stats";
@@ -217,78 +218,76 @@ function formatReviewLabel(
   return `${emoji} ${verb} by ${reviewerListFormatter.format(names)}`;
 }
 
-function getBuildRows(input: {
-  builds: Build[];
+async function getBuildRows(input: {
+  builds: WithGraphModel<Build, "project">[];
   hasMultipleProjects: boolean;
-  aggregateStatuses: Awaited<
-    ReturnType<typeof Build.getAggregatedBuildStatuses>
-  >;
-  reviewSummaries: Map<string, BuildReviewSummary>;
-  urls: string[];
 }) {
-  return input.builds
-    .filter((build) => {
-      invariant(build.project, "Relation `project` should be fetched");
-      return build.project.prCommentEnabled;
-    })
-    .map((build, index) => {
-      invariant(build.project, "Relation `project` should be fetched");
+  const builds = input.builds.filter((build) => build.project.prCommentEnabled);
+  const [aggregateStatuses, urls, reviewSummaries] = await Promise.all([
+    Build.getAggregatedBuildStatuses(builds),
+    Promise.all(builds.map((build) => build.getUrl())),
+    getBuildReviewSummaries(builds),
+  ]);
+  return builds.map((build, index) => {
+    const url = urls[index];
+    invariant(url, "missing build URL");
 
-      const url = input.urls[index];
-      invariant(url, "missing build URL");
+    const status = aggregateStatuses[index];
+    invariant(status, "missing build status");
 
-      const status = input.aggregateStatuses[index];
-      invariant(status, "missing build status");
+    const stats = build.stats
+      ? getStatsMessage(build.stats, { isSubsetBuild: build.subset })
+      : null;
 
-      const stats = build.stats
-        ? getStatsMessage(build.stats, { isSubsetBuild: build.subset })
-        : null;
-
-      const label = getReviewAwareBuildLabel({
-        type: build.type,
-        status,
-        summary: input.reviewSummaries.get(build.id),
-      });
-      const review =
-        status === "changes-detected" && build.type !== "reference"
-          ? ` ([Review](${url}))`
-          : "";
-      const name = getBuildName({
-        build,
-        project: input.hasMultipleProjects ? build.project : null,
-      });
-
-      return `| **${name}** ([Inspect](${url})) | ${label}${review} | ${
-        stats || "-"
-      } | ${formatDate(build.updatedAt)} |`;
+    const label = getReviewAwareBuildLabel({
+      type: build.type,
+      status,
+      summary: reviewSummaries.get(build.id),
     });
+    const review =
+      status === "changes-detected" && build.type !== "reference"
+        ? ` ([Review](${url}))`
+        : "";
+    const name = getBuildName({
+      build,
+      project: input.hasMultipleProjects ? build.project : null,
+    });
+
+    return `| **${name}** ([Inspect](${url})) | ${label}${review} | ${
+      stats || "-"
+    } | ${formatDate(build.updatedAt)} |`;
+  });
+}
+
+/**
+ * An external deployment's URL comes from the API: an unbalanced parenthesis
+ * would end the link early, and a pipe would split the table row.
+ */
+function escapeMarkdownTableUrl(url: string): string {
+  return url.replace(
+    /[()|]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
 }
 
 function getDeploymentRows(input: {
-  deployments: Deployment[];
+  deployments: WithGraphModel<Deployment, "[project, aliases]">[];
   hasMultipleProjects: boolean;
 }) {
   return input.deployments
-    .filter((deployment) => {
-      invariant(deployment.project, "Relation `project` should be fetched");
-      return deployment.project.prCommentEnabled;
-    })
+    .filter((deployment) => deployment.project.prCommentEnabled)
     .map((deployment) => {
-      invariant(deployment.project, "Relation `project` should be fetched");
-
       const name = getDeploymentName({
         deployment,
         project: input.hasMultipleProjects ? deployment.project : null,
       });
 
-      invariant(deployment.aliases, "Relation `aliases` should be fetched");
-
       const url = getDeploymentPreferredUrl({
-        slug: deployment.slug,
+        url: deployment.url,
         aliases: deployment.aliases,
       });
 
-      return `| **${name}** ([Open](${url})) | ${getDeploymentLabel(
+      return `| **${name}** ([Open](${escapeMarkdownTableUrl(url)})) | ${getDeploymentLabel(
         deployment,
       )} | ${deployment.branch} | ${formatDate(deployment.updatedAt)} |`;
     });
@@ -325,6 +324,12 @@ export async function getCommentBody(props: {
       .withGraphFetched("[project,aliases]")
       .where("deployments.commitSha", commit)
       .whereNull("project.deletedAt")
+      // With hosting off, Argos no longer serves the deployments it hosts.
+      .where((query) =>
+        query
+          .whereNotNull("deployments.externalUrl")
+          .orWhere("project.deploymentEnabled", true),
+      )
       .orderBy([
         { column: "deployments.projectId", order: "desc" },
         { column: "deployments.environment", order: "desc" },
@@ -338,18 +343,7 @@ export async function getCommentBody(props: {
       ...builds.map((build) => build.projectId),
       ...deployments.map((deployment) => deployment.projectId),
     ]).size > 1;
-  const [aggregateStatuses, urls, reviewSummaries] = await Promise.all([
-    Build.getAggregatedBuildStatuses(builds),
-    Promise.all(builds.map((build) => build.getUrl())),
-    getBuildReviewSummaries(builds),
-  ]);
-  const buildRows = getBuildRows({
-    builds,
-    hasMultipleProjects,
-    aggregateStatuses,
-    reviewSummaries,
-    urls,
-  });
+  const buildRows = await getBuildRows({ builds, hasMultipleProjects });
   const deploymentRows = getDeploymentRows({
     deployments,
     hasMultipleProjects,

@@ -32,7 +32,6 @@ export async function notifySlackChannelAction(
   // Group rules by account
   const accountById: Record<string, Account> = {};
   const rulesByAccount = groupBy(rules, (rule) => {
-    invariant(rule.project?.account, "project.account relation not loaded");
     accountById[rule.project.account.id] = rule.project.account;
     return rule.project.account.id;
   });
@@ -47,10 +46,6 @@ export async function notifySlackChannelAction(
       data: {
         action,
         automationRules: rules.map((rule) => {
-          invariant(
-            rule.project?.account,
-            "project.account relation not loaded",
-          );
           return {
             name: rule.name,
             href: `${config.get("server.url")}/${rule.project.account.slug}/${rule.project.name}/automations/${rule.id}`,

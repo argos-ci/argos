@@ -66,8 +66,6 @@ export async function exchangeGitHubActionsOidcToken(
     throw boom(401, "No Argos project is linked to this GitHub repository.");
   }
 
-  invariant(repository.projects, "Relation `projects` not loaded");
-
   // Deleted rows keep their repository link, and one left in would shadow the
   // live project as "multiple projects found" — which no caller of this
   // endpoint can disambiguate, since it takes no project slug. Mirrors the

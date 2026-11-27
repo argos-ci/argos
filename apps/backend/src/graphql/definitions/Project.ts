@@ -254,7 +254,7 @@ export const typeDefs = gql`
     deploymentProductionBranchGlob: String!
     "Glob pattern for production deployment branches edited by the user"
     customDeploymentProductionBranchGlob: String
-    "Whether deployments are accessible"
+    "Whether Argos serves the deployments it hosts. Deployments hosted elsewhere are not affected."
     deploymentEnabled: Boolean!
     "Deployment authentication policy"
     deploymentAuth: DeploymentAuth!
@@ -595,7 +595,6 @@ const getOrCreateGitlabProject = async (props: {
   invariant(client, "Gitlab client not found");
 
   const glProject = await client.Projects.show(Number(props.gitlabProjectId));
-  invariant(glProject, "GitLab Project not found");
 
   if (!("default_branch" in glProject)) {
     throw badUserInput(
@@ -842,9 +841,6 @@ export const resolvers: IResolvers = {
       return ctx.loaders.LatestProjectBuild.load(project.id);
     },
     latestProductionDeployment: async (project, _args, ctx) => {
-      if (!project.deploymentEnabled) {
-        return null;
-      }
       return ctx.loaders.LatestProductionDeploymentByProject.load(project.id);
     },
     builds: async (project, { first, after, filters }) => {
@@ -951,13 +947,17 @@ export const resolvers: IResolvers = {
       return paginateResult({ result, first, after });
     },
     deployments: async (project, { first, after }) => {
-      const result = await Deployment.query()
+      const query = Deployment.query()
         .where("projectId", project.id)
         .orderBy([
           { column: "createdAt", order: "desc" },
           { column: "id", order: "desc" },
-        ])
-        .range(after, after + first - 1);
+        ]);
+      // Argos no longer serves the deployments it hosts.
+      if (!project.deploymentEnabled) {
+        query.whereNotNull("externalUrl");
+      }
+      const result = await query.range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
     },
@@ -1296,10 +1296,7 @@ export const resolvers: IResolvers = {
       const project = await getAdminProject({
         id: args.input.projectId,
         auth: ctx.auth,
-        withGraphFetched: "account",
-      });
-
-      invariant(project.account, "account not fetched");
+      }).then((project) => project.$fetchGraph("account"));
 
       const installation = await GithubInstallation.query()
         .findOne({ githubId: args.input.installationId })
@@ -1348,10 +1345,8 @@ export const resolvers: IResolvers = {
       const project = await getAdminProject({
         id: args.input.projectId,
         auth: ctx.auth,
-        withGraphFetched: "account",
-      });
+      }).then((project) => project.$fetchGraph("account"));
 
-      invariant(project.account, "account not fetched");
       invariant(
         project.account.gitlabAccessToken,
         "Gitlab access token is missing",
@@ -1389,10 +1384,7 @@ export const resolvers: IResolvers = {
       const project = await getAdminProject({
         id: args.input.projectId,
         auth: ctx.auth,
-        withGraphFetched: "account",
-      });
-
-      invariant(project.account, "account not fetched");
+      }).then((project) => project.$fetchGraph("account"));
 
       const repository = await getAccountOriginRepository({
         account: project.account,

@@ -1,12 +1,9 @@
-import { invariant } from "@argos/util/invariant";
-
 import { DeploymentNotification, GithubRepository } from "@/database/models";
 import { getDeploymentPreferredUrl } from "@/deployment/url";
 import { postGitHubComment } from "@/git-platform/github";
 import { getInstallationOctokit } from "@/github";
 import { githubDeploymentJob } from "@/github-deployment/job";
 import { createGhCommitStatus } from "@/github/commit-status";
-import { UnretryableError } from "@/job-core";
 import parentLogger from "@/logger";
 
 import { job as deploymentNotificationJob } from "./job";
@@ -39,23 +36,10 @@ export async function processDeploymentNotification(
     deploymentNotificationId: deploymentNotification.id,
   });
 
-  await deploymentNotification.$fetchGraph(
+  const { deployment } = await deploymentNotification.$fetchGraph(
     "deployment.[aliases,project.[githubRepository.[githubAccount,repoInstallations.installation]]]",
   );
-
-  invariant(
-    deploymentNotification.deployment,
-    "No deployment found",
-    UnretryableError,
-  );
-
-  const { deployment } = deploymentNotification;
-
-  const { project } = deployment;
-  invariant(project, "No project found", UnretryableError);
-
-  const { aliases: deploymentAliases } = deployment;
-  invariant(deploymentAliases, "No aliases found", UnretryableError);
+  const { project, aliases: deploymentAliases } = deployment;
 
   const { githubRepository } = project;
 
@@ -65,8 +49,6 @@ export async function processDeploymentNotification(
   }
 
   const { githubAccount } = githubRepository;
-
-  invariant(githubAccount, "No github account found", UnretryableError);
 
   const installation = GithubRepository.pickBestInstallation(githubRepository);
 
@@ -107,9 +89,14 @@ export async function processDeploymentNotification(
     });
   };
 
-  logger.info("Creating status and comment");
-  await Promise.all([
-    createGhCommitStatus(octokit, {
+  const status = async () => {
+    // The host of an external deployment reports its own status.
+    if (deployment.externalUrl) {
+      logger.info("External deployment, skipping status");
+      return;
+    }
+
+    await createGhCommitStatus(octokit, {
       owner: githubAccount.login,
       repo: githubRepository.name,
       // A pull request only shows the statuses of its head commit, and a
@@ -118,12 +105,14 @@ export async function processDeploymentNotification(
       sha: deployment.prHeadCommit ?? deployment.commitSha,
       state: notification.github.state,
       target_url: getDeploymentPreferredUrl({
-        slug: deployment.slug,
+        url: deployment.url,
         aliases: deploymentAliases,
       }),
       description: notification.description,
       context: notification.context,
-    }),
-    comment(),
-  ]);
+    });
+  };
+
+  logger.info("Creating status and comment");
+  await Promise.all([status(), comment()]);
 }

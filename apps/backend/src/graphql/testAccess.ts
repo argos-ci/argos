@@ -23,7 +23,6 @@ async function getTestByGraphqlId(id: string): Promise<Test> {
   if (!test) {
     throw notFound("Test not found");
   }
-  invariant(test.project?.account, "Test project account not found");
   // The public ID embeds the project name, so a test addressed through another
   // project's ID must not resolve.
   if (test.project.name.toUpperCase() !== parsed.projectName) {

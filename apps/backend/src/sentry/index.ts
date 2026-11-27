@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/node";
 
 import config from "@/config";
-import { getOctokitErrorStatus } from "@/github/error";
+import { checkIsOctokitServerError } from "@/github/error";
 import { isHttp2GoAwayCode0Error } from "@/util/error";
 
 const piiKeys = { deny: ["forwarded", "-ip", "remote-", "via", "-user"] };
@@ -94,10 +94,9 @@ export function setup() {
         }
       }
 
-      const octokitErrorStatus = getOctokitErrorStatus(error);
-
-      // 5xx from GitHub are set to info level
-      if (typeof octokitErrorStatus === "number" && octokitErrorStatus >= 500) {
+      // GitHub still failing after the client's retries: an outage on their
+      // side, nothing for us to fix.
+      if (checkIsOctokitServerError(error)) {
         event.level = "info";
         return event;
       }

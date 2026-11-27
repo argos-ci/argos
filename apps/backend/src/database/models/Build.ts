@@ -162,8 +162,8 @@ export class Build extends Model {
   runId!: string | null;
   runAttempt!: number | null;
   /**
-   * This flag is set to true when a build is submitted from a partial retry in GitHub Actions,
-   * meaning not all test cases were executed.
+   * Set once a partial rerun in GitHub Actions got the shards it did not run
+   * again from the previous run attempt.
    */
   partial!: boolean | null;
   metadata!: BuildMetadata | null;
@@ -548,15 +548,12 @@ export class Build extends Model {
   }
 
   async getUrl({ trx }: { trx?: TransactionOrKnex } = {}) {
-    if (!this.project?.account) {
-      await this.$fetchGraph(
-        "project.account",
-        trx ? { transaction: trx } : undefined,
-      );
-    }
-    invariant(this.project?.account, "account not found");
+    const { project } = await this.$fetchGraph("project.account", {
+      skipFetched: true,
+      ...(trx ? { transaction: trx } : {}),
+    });
 
-    const pathname = `/${this.project.account.slug}/${this.project.name}/builds/${this.number}`;
+    const pathname = `/${project.account.slug}/${project.name}/builds/${this.number}`;
 
     return `${config.get("server.url")}${pathname}`;
   }

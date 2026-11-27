@@ -1,5 +1,3 @@
-import { invariant } from "@argos/util/invariant";
-
 import { NotificationMessage } from "@/database/models";
 import { sendEmail } from "@/email/send";
 import { createModelJob } from "@/job-core";
@@ -20,36 +18,33 @@ async function processMessage(message: NotificationMessage) {
     throw new Error("Only email channel is supported");
   }
 
-  await message.$fetchGraph("[workflow, user.account]");
-  invariant(message.workflow, "workflow should be fetched");
-  invariant(message.user, "user should be fetched");
-  invariant(message.user.account, "user.account should be fetched");
+  const { workflow, user } = await message.$fetchGraph(
+    "[workflow, user.account]",
+  );
 
   // At this point, the user could have changed their email address.
-  if (!message.user.email) {
+  if (!user.email) {
     return;
   }
 
-  const to = [message.user.email];
-  const type = message.workflow.type;
+  const to = [user.email];
+  const type = workflow.type;
   const handler = notificationHandlers.find((h) => h.type === type);
   if (!handler) {
     throw new Error(`Handler not found: ${type}`);
   }
-  const data = message.workflow.data;
+  const data = workflow.data;
 
   // Configurable notifications link to the user's notification preferences so
   // they can manage what they receive.
   const preferencesUrl = isConfigurableNotificationCategory(handler.category)
-    ? getNotificationSettingsUrl(message.user.account.slug)
+    ? getNotificationSettingsUrl(user.account.slug)
     : null;
 
   const ctx = {
     user: {
       id: message.userId,
-      name: message.user.account.name
-        ? extractFirstName(message.user.account.name)
-        : null,
+      name: user.account.name ? extractFirstName(user.account.name) : null,
     },
     preferencesUrl,
   };

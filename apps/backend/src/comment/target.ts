@@ -1,5 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import type { WithGraphModel } from "objection";
 
 import { Build, Comment, Media, Project, Test } from "@/database/models";
 
@@ -82,31 +83,25 @@ export function isCommentOnTarget(
  */
 export async function getCommentTargetProject(
   target: CommentTarget,
-): Promise<Project> {
+): Promise<WithGraphModel<Project, "account">> {
   switch (target.type) {
     case "build": {
-      const { build } = target;
-      if (!build.project?.account) {
-        await build.$fetchGraph("project.account");
-      }
-      invariant(build.project?.account, "Build project account not found");
-      return build.project;
+      const { project } = await target.build.$fetchGraph("project.account", {
+        skipFetched: true,
+      });
+      return project;
     }
     case "test": {
-      const { test } = target;
-      if (!test.project?.account) {
-        await test.$fetchGraph("project.account");
-      }
-      invariant(test.project?.account, "Test project account not found");
-      return test.project;
+      const { project } = await target.test.$fetchGraph("project.account", {
+        skipFetched: true,
+      });
+      return project;
     }
     case "media": {
-      const { media } = target;
-      if (!media.project?.account) {
-        await media.$fetchGraph("project.account");
-      }
-      invariant(media.project?.account, "Media project account not found");
-      return media.project;
+      const { project } = await target.media.$fetchGraph("project.account", {
+        skipFetched: true,
+      });
+      return project;
     }
     default:
       assertNever(target);

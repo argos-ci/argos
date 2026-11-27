@@ -1,5 +1,6 @@
 import {
   ArgosCliLogo,
+  ChatGPTLogo,
   ClaudeCodeLogo,
   ClaudeLogo,
   CodexLogo,
@@ -28,6 +29,7 @@ export const KNOWN_APP_LOGOS: Record<
   claude: ClaudeLogo,
   "claude-code": ClaudeCodeLogo,
   "openai-codex": CodexLogo,
+  chatgpt: ChatGPTLogo,
   cursor: CursorLogo,
   vscode: VSCodeLogo,
   windsurf: WindsurfLogo,

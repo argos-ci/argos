@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 
-import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AuthGuard } from "@/containers/AuthGuard";
 import { PeriodSelect, usePeriodState } from "@/containers/PeriodSelect";
 import type { DocumentType } from "@/gql";
@@ -38,7 +37,6 @@ import {
   PageHeaderContent,
   PageHeaderHeadline,
 } from "@/ui/Layout";
-import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { StatTile, StatTileGroup } from "@/ui/StatTile";
@@ -49,7 +47,6 @@ import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 
-import { getAccountURL } from "../Account/AccountParams";
 import {
   formatPrice,
   getFallbackMonthlyPrice,
@@ -58,7 +55,7 @@ import {
   toMonthlyAmount,
 } from "./pricing";
 import { StaffAccessRestricted } from "./StaffAccessRestricted";
-import { StripeCustomerLink } from "./stripe";
+import { StaffTeamCell } from "./StaffTeamCell";
 import { getMailtoUrl, getOutreachEmail } from "./Trials.email";
 
 const TrialPipelineQuery = graphql(`
@@ -705,30 +702,13 @@ function FoundViaLine(props: { owners: PipelineTeam["staff"]["owners"] }) {
 
 function PipelineRow(props: { team: PipelineTeam; index: number }) {
   const { team, index } = props;
-  const teamURL = getAccountURL({ accountSlug: team.slug });
 
   return (
     <tr className={clsx("border-b", index % 2 === 0 ? "bg-app" : "bg-subtle")}>
       <td className="p-2 text-sm">
-        <div className="flex min-w-0 items-center gap-3">
-          <AccountAvatar avatar={team.avatar} className="size-8 shrink-0" />
-          {/* `flex-1` is what pushes the Stripe link to the cell edge: this
-              wrapper takes the width the link does not, so the link lands at
-              the same offset on every row whatever the name is. */}
-          <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center gap-3">
-              <Link href={teamURL} className="truncate font-medium">
-                {team.name || team.slug}
-              </Link>
-            </div>
-            <FoundViaLine owners={team.staff.owners} />
-          </div>
-          {/* A sibling of the name block rather than part of it, so the row's
-              `items-center` centers it against the whole cell. Nested next to
-              the name it sat on the first line, riding up whenever the team
-              had a "Found via" line under it. */}
-          <StripeCustomerLink stripeCustomerId={team.stripeCustomerId} />
-        </div>
+        <StaffTeamCell team={team}>
+          <FoundViaLine owners={team.staff.owners} />
+        </StaffTeamCell>
       </td>
       <td className="truncate p-2 text-sm">
         <Time date={team.createdAt} />

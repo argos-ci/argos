@@ -142,6 +142,49 @@ describe("getCommentBody", () => {
     expect(body).not.toContain(deployment.url);
   });
 
+  test("links a deployment hosted elsewhere on its own URL", async ({
+    project,
+  }) => {
+    await factory.Deployment.create({
+      projectId: project.id,
+      commitSha: commit,
+      slug: null,
+      externalUrl: "https://docs.example.com/a)|b",
+      branch: "feature/comment",
+      updatedAt: "2026-05-07T12:05:00.000Z",
+    });
+
+    const body = await getCommentBody({ commit });
+
+    // Escaped so the link and the table row stay whole.
+    expect(body).toContain(
+      "| **preview** ([Open](https://docs.example.com/a%29%7Cb)) | Ready | feature/comment | May 7, 2026, 12:05 PM |",
+    );
+  });
+
+  test("leaves out the deployments Argos no longer hosts", async ({
+    project,
+  }) => {
+    await project.$query().patch({ deploymentEnabled: false });
+    await factory.Deployment.create({
+      projectId: project.id,
+      commitSha: commit,
+      slug: null,
+      externalUrl: "https://docs-git-feature.vercel.app/",
+      createdAt: "2026-05-07T12:00:00.000Z",
+    });
+    const hostedDeployment = await createDeployment({
+      projectId: project.id,
+      slug: "hosted-deployment",
+      createdAt: "2026-05-07T12:10:00.000Z",
+    });
+
+    const body = await getCommentBody({ commit });
+
+    expect(body).toContain("([Open](https://docs-git-feature.vercel.app/))");
+    expect(body).not.toContain(hostedDeployment.url);
+  });
+
   test("uses the latest deployment per project and environment", async ({
     project,
   }) => {
@@ -218,6 +261,38 @@ describe("getCommentBody", () => {
     invariant(project.name, "project name should exist");
     expect(body).toContain(`| **${project.name}/default**`);
     expect(body).toContain(`| **${otherProject.name}/production**`);
+  });
+
+  test("pairs each build with its own link and status when a project hides PR comments", async ({
+    project,
+  }) => {
+    // Created after `project`, so its build is listed first and the visible
+    // build's row comes after a skipped one.
+    const hiddenProject = await factory.Project.create({
+      name: "storybook",
+      prCommentEnabled: false,
+    });
+    const [build, hiddenBuild] = await Promise.all([
+      createBuild({
+        projectId: project.id,
+        updatedAt: "2026-05-07T12:00:00.000Z",
+      }),
+      createBuild({
+        projectId: hiddenProject.id,
+        conclusion: "changes-detected",
+      }),
+    ]);
+
+    const [buildUrl, hiddenBuildUrl] = await Promise.all([
+      build.getUrl(),
+      hiddenBuild.getUrl(),
+    ]);
+    const body = await getCommentBody({ commit });
+
+    expect(body).toContain(
+      `| **docs/default** ([Inspect](${buildUrl})) | ✅ No changes detected | - | May 7, 2026, 12:00 PM |`,
+    );
+    expect(body).not.toContain(hiddenBuildUrl);
   });
 
   test("shows the reviewers and comment count for an approved build", async ({

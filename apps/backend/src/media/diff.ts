@@ -34,8 +34,6 @@ export async function computeMediaDiff(
     .withGraphFetched("[beforeVersion, afterVersion.media]");
 
   const { beforeVersion, afterVersion } = mediaDiff;
-  invariant(beforeVersion, "no before version");
-  invariant(afterVersion, "no after version");
   invariant(
     beforeVersion.isImage() && afterVersion.isImage(),
     "a media diff is only ever scheduled for two images",
@@ -44,7 +42,6 @@ export async function computeMediaDiff(
   // The mask is stored under the project's own prefix, and a pair is always
   // within one project — the pairing tuple starts with it.
   const afterMedia = afterVersion.media;
-  invariant(afterMedia, "no media on the after version");
 
   // Content-addressed keys, so the same key is the same bytes: identical halves
   // are answered without paying for two downloads and a compare.

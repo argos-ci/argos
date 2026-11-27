@@ -63,7 +63,10 @@ const UpdateProjectBodySchema = z
         "Access given to team members that are not contributors on this project. `null` gives them none.",
     }),
     ignoreConfig: IgnoreConfigSchema,
-    deploymentEnabled: z.boolean(),
+    deploymentEnabled: z.boolean().meta({
+      description:
+        "Turn Argos hosting on or off. When `false`, Argos stops serving the deployments it hosts. Deployments hosted elsewhere are not affected.",
+    }),
     deploymentAuth: DeploymentAuth,
     githubDeploymentEnabled: z.boolean().meta({
       description:

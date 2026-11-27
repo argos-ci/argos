@@ -48,6 +48,15 @@ test("returns latest production deployments for project lists", async ({
     accountId: teamAccount.id,
     name: "preview-only-project",
   });
+  const externalProject = await factory.Project.create({
+    accountId: teamAccount.id,
+    name: "external-project",
+  });
+  const disabledProject = await factory.Project.create({
+    accountId: teamAccount.id,
+    name: "disabled-project",
+    deploymentEnabled: false,
+  });
 
   await factory.Deployment.create({
     projectId: firstProject.id,
@@ -82,6 +91,41 @@ test("returns latest production deployments for project lists", async ({
     slug: "second-project-latest-production",
   });
   await factory.Deployment.create({
+    projectId: externalProject.id,
+    environment: "production",
+    status: "ready",
+    branch: "main",
+    createdAt: "2026-04-10T10:00:00.000Z",
+    slug: "external-project-older-production",
+  });
+  const externalProjectLatestDeployment = await factory.Deployment.create({
+    projectId: externalProject.id,
+    environment: "production",
+    status: "ready",
+    branch: "main",
+    createdAt: "2026-04-11T10:00:00.000Z",
+    slug: null,
+    externalUrl: "https://external-project.vercel.app/",
+  });
+  // Argos no longer serves the hosted one, but the external one is still live.
+  const disabledProjectLatestDeployment = await factory.Deployment.create({
+    projectId: disabledProject.id,
+    environment: "production",
+    status: "ready",
+    branch: "main",
+    createdAt: "2026-04-10T10:00:00.000Z",
+    slug: null,
+    externalUrl: "https://disabled-project.vercel.app/",
+  });
+  await factory.Deployment.create({
+    projectId: disabledProject.id,
+    environment: "production",
+    status: "ready",
+    branch: "main",
+    createdAt: "2026-04-11T10:00:00.000Z",
+    slug: "disabled-project-latest-production",
+  });
+  await factory.Deployment.create({
     projectId: previewOnlyProject.id,
     environment: "preview",
     status: "ready",
@@ -112,6 +156,8 @@ test("returns latest production deployments for project lists", async ({
                 environment
                 branch
                 createdAt
+                url
+                external
               }
             }
           }
@@ -153,5 +199,15 @@ test("returns latest production deployments for project lists", async ({
       createdAt: "2026-04-09T10:00:00.000Z",
     },
     "preview-only-project": null,
+    "external-project": {
+      id: formatDeploymentId(externalProjectLatestDeployment.id),
+      url: "https://external-project.vercel.app/",
+      external: true,
+    },
+    "disabled-project": {
+      id: formatDeploymentId(disabledProjectLatestDeployment.id),
+      url: "https://disabled-project.vercel.app/",
+      external: true,
+    },
   });
 });

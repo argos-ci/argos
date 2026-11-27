@@ -46,6 +46,8 @@ export const TRIALING_STRIPE_SUBSCRIPTION = {
   default_payment_method: "pm_trial_test",
   currency: "usd",
   created: TRIAL_START_TIMESTAMP,
+  metadata: {},
+  automatic_tax: { enabled: false, disabled_reason: null, liability: null },
   cancel_at: null,
   ended_at: null,
   trial_end: TRIAL_CONVERSION_TIMESTAMP,

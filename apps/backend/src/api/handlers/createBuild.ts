@@ -1,5 +1,4 @@
 import { SnapshotContentTypeSchema } from "@argos/schemas/content-type";
-import { invariant } from "@argos/util/invariant";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
@@ -467,7 +466,6 @@ async function handleCreateParallel(ctx: BuildContext): Promise<CreateResult> {
       }
 
       if (existingBuild) {
-        invariant(existingBuild.compareScreenshotBucket, "Bucket should exist");
         if (existingBuild.compareScreenshotBucket.complete) {
           throw boom(409, `Build already finalized`);
         }

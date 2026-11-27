@@ -2,6 +2,7 @@ import { memo } from "react";
 import { invariant } from "@argos/util/invariant";
 import { AlertTriangleIcon } from "lucide-react";
 
+import { TeamOwnersPopover } from "@/containers/Team/TeamOwnersPopover";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { Banner } from "@/ui/Banner";
@@ -53,7 +54,15 @@ export const GithubIpAllowListBanner = memo(
         return <span>Static IP, which lets Argos through, needs a team.</span>;
       }
       if (!isAdmin) {
-        return <span>Ask a team owner to enable Static IP.</span>;
+        return (
+          <span>
+            Ask{" "}
+            <TeamOwnersPopover account={account}>
+              a team owner
+            </TeamOwnersPopover>{" "}
+            to enable Static IP.
+          </span>
+        );
       }
       return <Link href={staticIpURL}>Enable Static IP</Link>;
     })();

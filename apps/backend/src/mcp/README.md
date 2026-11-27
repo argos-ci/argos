@@ -40,12 +40,27 @@ Adding a REST endpoint automatically adds the MCP tool. The unit test
 snapshot in `tools.test.ts` locks the tool surface; adding an endpoint updates
 that snapshot, which is the only MCP touchpoint in review.
 
+### Annotations
+
+`readOnlyHint` is true for `GET`. `destructiveHint` is true for `DELETE`, and
+for an operation flagged with `"x-mcp": { destructive: true }`: one that
+revokes access, cancels something, or sends something that cannot be recalled
+(reset the invite link, dismiss a review, transfer a project, send invites).
+Updates and toggles, such as a `PATCH` or resolving a thread, are not
+destructive. The Claude and ChatGPT directories check these hints against what
+each tool does.
+
 ### `x-mcp` operation extension
 
 Operations can opt out or customize their projection:
 
 ```ts
-"x-mcp": { enabled?: boolean; name?: string; description?: string }
+"x-mcp": {
+  enabled?: boolean;
+  name?: string;
+  description?: string;
+  destructive?: boolean;
+}
 ```
 
 No operation needs it by default — eligibility is computed from `security`.

@@ -1202,8 +1202,6 @@ export const resolvers: IResolvers = {
         .withGraphFetched("account")
         .throwIfNotFound();
 
-      invariant(subscription.account, "subscription account not fetched");
-
       // The row resolves its `team` as `Team!`: a personal account there would
       // break the response against the schema.
       if (!subscription.account.teamId) {

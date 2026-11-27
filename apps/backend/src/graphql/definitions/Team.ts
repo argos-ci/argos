@@ -76,12 +76,10 @@ import {
   getStaticIpAddresses,
 } from "@/github/static-ip";
 import {
-  createArgosSubscriptionFromStripe,
   createStripeCheckoutSession,
+  createStripeTrialSubscription,
   getCustomerIdFromUserAccount,
-  getDefaultTeamPlanItems,
   getStripeProPlanOrThrow,
-  getSubscriptionData,
   stripe,
   TRIAL_DAYS,
 } from "@/stripe";
@@ -551,11 +549,6 @@ async function addStripeProductToSubscription(input: {
   ]);
 
   invariant(
-    stripeSubscription,
-    `Subscription ${stripeSubscriptionId} not found`,
-  );
-  invariant(stripeProduct, `Product ${productId} not found`);
-  invariant(
     typeof stripeProduct.default_price === "string",
     "Product default_price is undefined",
   );
@@ -585,12 +578,6 @@ async function removeStripeProductFromSubscription(input: {
     stripe.subscriptions.retrieve(stripeSubscriptionId),
     stripe.products.retrieve(productId),
   ]);
-
-  invariant(
-    stripeSubscription,
-    `Subscription ${stripeSubscriptionId} not found`,
-  );
-  invariant(stripeProduct, `Product ${productId} not found`);
 
   const item = stripeSubscription.items.data.find(
     (item) => item.price.product === stripeProduct.id,
@@ -1074,7 +1061,6 @@ export const resolvers: IResolvers = {
         .findOne({ inviteSecret: encryptDeterministic(args.secret) });
 
       if (team) {
-        invariant(team.account, "Team account not loaded");
         return team.account;
       }
 
@@ -1171,23 +1157,11 @@ export const resolvers: IResolvers = {
       // Register the Stripe customer id to the team account
       await teamAccount.$query().patchAndFetch({ stripeCustomerId });
 
-      const items = await getDefaultTeamPlanItems(plan);
-
-      // Create a Stripe subscription for the user
-      const stripeSubscription = await stripe.subscriptions.create({
-        customer: stripeCustomerId,
-        items,
-        ...getSubscriptionData({
-          trialDays: TRIAL_DAYS,
-          accountId: teamAccount.id,
-          subscriberId: auth.user.id,
-        }),
-      });
-
-      await createArgosSubscriptionFromStripe({
-        stripeSubscription,
-        account: teamAccount,
+      await createStripeTrialSubscription({
+        teamAccount,
         subscriberId: auth.user.id,
+        stripeCustomerId,
+        days: TRIAL_DAYS,
       });
 
       return {
@@ -1239,22 +1213,11 @@ export const resolvers: IResolvers = {
         return { team: teamAccount, redirectUrl: session.url };
       }
 
-      const items = await getDefaultTeamPlanItems(plan);
-
-      const stripeSubscription = await stripe.subscriptions.create({
-        customer: stripeCustomerId,
-        items,
-        ...getSubscriptionData({
-          trialDays: TRIAL_DAYS,
-          accountId: teamAccount.id,
-          subscriberId: auth.user.id,
-        }),
-      });
-
-      await createArgosSubscriptionFromStripe({
-        stripeSubscription,
-        account: teamAccount,
+      await createStripeTrialSubscription({
+        teamAccount,
         subscriberId: auth.user.id,
+        stripeCustomerId,
+        days: TRIAL_DAYS,
       });
 
       await notifyDiscord({
@@ -1325,7 +1288,6 @@ export const resolvers: IResolvers = {
         .findOne({ inviteSecret: encryptDeterministic(args.secret) });
 
       invariant(team, "Invalid invite secret");
-      invariant(team.account, "Team account not loaded");
 
       const teamUser = await TeamUser.query().findOne({
         teamId: team.id,
@@ -1371,9 +1333,7 @@ export const resolvers: IResolvers = {
       }
 
       const { team } = teamInvite;
-      invariant(team, "Team relation not loaded");
       const teamAccount = team.account;
-      invariant(teamAccount, "Account relation not loaded");
       const email = sanitizeEmail(teamInvite.email);
 
       const { auth } = ctx;
@@ -1536,8 +1496,7 @@ export const resolvers: IResolvers = {
           getAdminAccount({
             id: args.input.teamAccountId,
             auth: ctx.auth,
-            withGraphFetched: "githubLightInstallation",
-          }),
+          }).then((account) => account.$fetchGraph("githubLightInstallation")),
         ]);
 
       if (!hasAccessToInstallation) {
@@ -1563,7 +1522,6 @@ export const resolvers: IResolvers = {
       invariant("type" in ghOrg, "GitHub enterprise not supported");
 
       const githubAccount = await getOrCreateGithubAccount(ghOrg);
-      invariant(githubAccount, "GitHub account not found");
 
       const octokit = await getInstallationOctokit(installation, appOctokit);
       invariant(octokit, "Invalid installation");
@@ -2007,8 +1965,7 @@ export const resolvers: IResolvers = {
       const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
         auth: ctx.auth,
-        withGraphFetched: "team",
-      });
+      }).then((account) => account.$fetchGraph("team"));
       const { team } = teamAccount;
       invariant(team, "not a team account");
       const { authMethod } = args.input;

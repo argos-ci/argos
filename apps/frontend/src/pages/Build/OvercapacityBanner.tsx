@@ -2,6 +2,7 @@ import { memo } from "react";
 import { PLAN_LIMIT_WARNING_RATIO } from "@argos/schemas/plan-limit";
 import { AlertTriangleIcon } from "lucide-react";
 
+import { TeamBillingPopover } from "@/containers/Team/TeamOwnersPopover";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { Banner } from "@/ui/Banner";
@@ -11,6 +12,7 @@ import { getAccountURL } from "../Account/AccountParams";
 
 const _AccountFragment = graphql(`
   fragment OvercapacityBanner_Account on Account {
+    slug
     permissions
     plan {
       id
@@ -30,7 +32,9 @@ export const OvercapacityBanner = memo(
     const { plan, consumptionRatio } = account;
     const visible =
       plan && !plan.usageBased && consumptionRatio >= PLAN_LIMIT_WARNING_RATIO;
-    if (!visible) {
+    // A visitor of a public project reads the team's account too, and its
+    // plan usage is not theirs.
+    if (!visible || !account.permissions.includes(AccountPermission.View)) {
       return null;
     }
 
@@ -49,7 +53,13 @@ export const OvercapacityBanner = memo(
             Upgrade plan
           </Link>
         ) : account.__typename === "Team" ? (
-          <span>Ask a team owner or billing member to upgrade the plan.</span>
+          <span>
+            Ask{" "}
+            <TeamBillingPopover account={account}>
+              a team owner or billing member
+            </TeamBillingPopover>{" "}
+            to upgrade the plan.
+          </span>
         ) : null}
       </Banner>
     );

@@ -366,13 +366,7 @@ export const resolvers: IResolvers = {
       }
     },
     deployment: async (build, _args, ctx) => {
-      const [compareBucket, project] = await Promise.all([
-        getCompareScreenshotBucket(ctx, build),
-        getProject(ctx, build),
-      ]);
-      if (!project.deploymentEnabled) {
-        return null;
-      }
+      const compareBucket = await getCompareScreenshotBucket(ctx, build);
       const commitShas: string[] = [compareBucket.commit];
       if (build.prHeadCommit) {
         commitShas.push(build.prHeadCommit);

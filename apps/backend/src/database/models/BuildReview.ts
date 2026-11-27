@@ -92,7 +92,7 @@ export class BuildReview extends Model {
   }
 
   build?: Build;
-  user?: User;
+  user?: User | null;
   dismissedBy?: User | null;
   screenshotDiffReviews?: ScreenshotDiffReview[];
   comments?: Comment[];

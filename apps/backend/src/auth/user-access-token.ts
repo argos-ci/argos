@@ -1,5 +1,3 @@
-import { invariant } from "@argos/util/invariant";
-
 import { waitUntil } from "@/api/request-context";
 import { UserAccessToken } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
@@ -35,8 +33,6 @@ export async function getAuthPayloadFromUserAccessToken(
   }
 
   const { user, scope } = userAccessToken;
-  invariant(scope);
-  invariant(user?.account);
 
   const tokenScope = await resolveTokenScope(user, scope);
 

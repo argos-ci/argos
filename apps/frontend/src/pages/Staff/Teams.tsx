@@ -7,7 +7,6 @@ import { SearchIcon } from "lucide-react";
 import { parseAsString, parseAsStringEnum, useQueryState } from "nuqs";
 import { Helmet } from "react-helmet";
 
-import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AuthGuard } from "@/containers/AuthGuard";
 import type { DocumentType } from "@/gql";
 import { graphql } from "@/gql";
@@ -27,7 +26,6 @@ import {
   PageHeaderContent,
   PageHeaderHeadline,
 } from "@/ui/Layout";
-import { Link } from "@/ui/Link";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { Loader } from "@/ui/Loader";
 import { Modal } from "@/ui/Modal";
@@ -48,10 +46,9 @@ import {
   type PricedPlan,
 } from "./pricing";
 import { StaffAccessRestricted } from "./StaffAccessRestricted";
-import { getStaffTeamURL } from "./StaffParams";
 import { StaffTeamActionsMenu } from "./StaffTeamActionsMenu";
+import { StaffTeamCell } from "./StaffTeamCell";
 import { StaffTrialDialog, type StaffTrialMode } from "./StaffTrialDialog";
-import { StripeCustomerLink } from "./stripe";
 import { SubscriptionLabel } from "./SubscriptionLabel";
 
 const StaffTeamsQuery = graphql(`
@@ -625,19 +622,7 @@ function StaffTeamRow(props: {
         }
       >
         <td className="p-4 text-sm">
-          <div className="flex min-w-0 items-center gap-3">
-            <AccountAvatar avatar={team.avatar} className="size-8 shrink-0" />
-            {/* `flex-1` is what pushes the Stripe link to the cell edge: this
-                wrapper takes the width the link does not, so the link lands at
-                the same offset on every row whatever the name is. */}
-            <Link
-              href={getStaffTeamURL(team.slug)}
-              className="min-w-0 flex-1 truncate font-medium"
-            >
-              {team.name || team.slug}
-            </Link>
-            <StripeCustomerLink stripeCustomerId={team.stripeCustomerId} />
-          </div>
+          <StaffTeamCell team={team} />
         </td>
         <td className="p-4 text-sm">
           <Time date={team.createdAt} format="date" tooltip="title" />

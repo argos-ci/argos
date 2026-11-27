@@ -9,9 +9,9 @@ import { Project, ProjectUser, TeamUser } from "@/database/models";
  * {@link Project.getPermissions}.
  */
 export async function getProjectMemberIds(project: Project): Promise<string[]> {
-  await project.$fetchGraph("account", { skipFetched: true });
-  invariant(project.account, "Project account not found");
-  const { account } = project;
+  const { account } = await project.$fetchGraph("account", {
+    skipFetched: true,
+  });
 
   // Personal project: only the owner can access it.
   if (account.type === "user") {

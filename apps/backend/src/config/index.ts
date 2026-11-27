@@ -329,6 +329,11 @@ export function createConfig() {
         default: "",
         env: "GITHUB_PROXY_URL",
       },
+      retryDelay: {
+        doc: "Milliseconds before retrying a GitHub request that failed with a server or network error. Doubles on each retry.",
+        format: "nat",
+        default: 1000,
+      },
       proxyIpAddresses: {
         doc: "Public IP addresses GitHub sees on requests sent through the proxy, which teams with Static IP add to their IP allow list",
         format: "string-array",

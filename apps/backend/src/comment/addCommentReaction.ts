@@ -1,5 +1,4 @@
 import { parseEmoji } from "@argos/util/emoji";
-import { invariant } from "@argos/util/invariant";
 
 import { knex } from "@/database";
 import { Comment, User } from "@/database/models";
@@ -82,7 +81,6 @@ async function notifyCommentThreadSubscribers(input: {
 
   const target = await resolveCommentTarget(comment);
   const project = await getCommentTargetProject(target);
-  invariant(project.account, "project account not found");
 
   const recipients = await getProjectNotificationRecipients({
     project,

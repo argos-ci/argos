@@ -7,8 +7,8 @@
  * operation to the OpenAPI document automatically adds the matching tool.
  *
  * Operations can customize their MCP projection with the `x-mcp` extension
- * ({@link XMcpExtension}): opt out entirely, or override the tool name and
- * agent-facing description.
+ * ({@link XMcpExtension}): opt out entirely, override the tool name and
+ * agent-facing description, or flag a `POST` as destructive.
  */
 import { z } from "zod";
 
@@ -219,7 +219,7 @@ function buildTool(
     outputSchema,
     annotations: {
       readOnlyHint: method === "get",
-      destructiveHint: method === "delete",
+      destructiveHint: xMcp?.destructive ?? method === "delete",
       idempotentHint:
         method === "get" || method === "put" || method === "delete",
       openWorldHint: false,

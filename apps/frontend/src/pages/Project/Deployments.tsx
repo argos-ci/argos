@@ -4,26 +4,18 @@ import { invariant } from "@argos/util/invariant";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
-import {
-  CircleArrowUpIcon,
-  ExternalLinkIcon,
-  GlobeIcon,
-  UploadCloudIcon,
-} from "lucide-react";
+import { CircleArrowUpIcon, GlobeIcon } from "lucide-react";
 
-import { DeploymentsIllustration } from "@/containers/EmptyStateIllustrations";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
-import type { DeploymentEnvironment, DeploymentStatus } from "@/gql/graphql";
+import {
+  ProjectPermission,
+  type DeploymentEnvironment,
+  type DeploymentStatus,
+} from "@/gql/graphql";
 import { Chip } from "@/ui/Chip";
 import { Heading } from "@/ui/Heading";
 import {
-  EmptyState,
-  EmptyStateDescription,
-  EmptyStateIllustration,
-  EmptyStateLearnMore,
-  EmptyStateStep,
-  EmptyStateSteps,
   Page,
   PageContainer,
   PageHeader,
@@ -40,8 +32,10 @@ import { bgSolidColorClassNames, type UIColor } from "@/util/colors";
 
 import { getBuildURL } from "../Build/BuildParams";
 import { NotFound } from "../NotFound";
+import { DeploymentsEmptyState } from "./DeploymentsEmptyState";
 import { ProjectBranchLink, ProjectCommitLink } from "./ProjectGitLink";
-import { useProjectParams } from "./ProjectParams";
+import { useProjectOutletContext } from "./ProjectOutletContext";
+import { getProjectURL, useProjectParams } from "./ProjectParams";
 import { ProjectTitle } from "./ProjectTitle";
 
 const ProjectDeploymentsQuery = graphql(`
@@ -393,6 +387,7 @@ function DeploymentsList(props: {
 function PageContent() {
   const params = useProjectParams();
   invariant(params, "it is a project route");
+  const { permissions } = useProjectOutletContext();
 
   const { fetchMore, data } = useSuspenseQuery(ProjectDeploymentsQuery, {
     variables: {
@@ -441,50 +436,21 @@ function PageContent() {
     });
   });
 
-  if (!project || !deployments || !project.deploymentEnabled) {
+  if (!project || !deployments) {
     return <NotFound />;
   }
 
   if (deployments.pageInfo.totalCount === 0) {
     return (
       <PageContainer>
-        <EmptyState>
-          <EmptyStateIllustration>
-            <DeploymentsIllustration />
-          </EmptyStateIllustration>
-          <Heading>No deployments yet</Heading>
-          <EmptyStateDescription>
-            Argos can track where each build was deployed, so a review links
-            straight to the running site the screenshots came from.
-          </EmptyStateDescription>
-          <EmptyStateLearnMore href="https://argos-ci.com/docs/learn/deployments" />
-          <EmptyStateSteps>
-            <EmptyStateStep
-              icon={<UploadCloudIcon />}
-              step="From your CI"
-              title="Report a deployment"
-            >
-              Tell Argos the URL and environment your branch was deployed to,
-              alongside the build it belongs to.
-            </EmptyStateStep>
-            <EmptyStateStep
-              icon={<GitBranchIcon />}
-              step="Per branch"
-              title="Follow every preview"
-            >
-              Each branch keeps its own history, so you can see which commit is
-              live on a preview and which one is in production.
-            </EmptyStateStep>
-            <EmptyStateStep
-              icon={<ExternalLinkIcon />}
-              step="Back here"
-              title="Jump to the real page"
-            >
-              Open the deployed page next to its build, instead of guessing
-              which environment a screenshot came from.
-            </EmptyStateStep>
-          </EmptyStateSteps>
-        </EmptyState>
+        <DeploymentsEmptyState
+          hostingEnabled={project.deploymentEnabled}
+          hostingSettingsUrl={
+            permissions.includes(ProjectPermission.Admin)
+              ? `${getProjectURL(params)}/settings/deployments`
+              : null
+          }
+        />
       </PageContainer>
     );
   }

@@ -62,6 +62,15 @@ const KNOWN_APPS: KnownApp[] = [
       redirectHosts: ["claude.ai", "claude.com"],
     },
   },
+  // Listed before Codex, whose rule also names chatgpt.com, so a connector
+  // added in ChatGPT (callback on chatgpt.com) or by OpenAI's plugin review
+  // (on platform.openai.com) reads as ChatGPT.
+  {
+    id: "chatgpt",
+    displayName: "ChatGPT",
+    homepage: "https://chatgpt.com",
+    match: { redirectHosts: ["chatgpt.com", "platform.openai.com"] },
+  },
   {
     id: "openai-codex",
     displayName: "OpenAI Codex",

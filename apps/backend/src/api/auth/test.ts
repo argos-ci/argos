@@ -1,5 +1,3 @@
-import { invariant } from "@argos/util/invariant";
-
 import type {
   AuthOAuthPayload,
   AuthPATPayload,
@@ -64,8 +62,6 @@ export async function loadTestForAuth<
   if (!test || test.project?.name.toUpperCase() !== parsed?.projectName) {
     throw boom(404, "Not found");
   }
-
-  invariant(test.project?.account, "Test project account not found");
 
   await assertProjectPermission(auth, test.project, access);
 

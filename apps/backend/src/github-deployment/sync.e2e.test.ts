@@ -133,6 +133,20 @@ describe("syncGitHubDeployment", () => {
     });
   });
 
+  test("leaves a deployment hosted elsewhere to its host", async ({
+    deployment,
+  }) => {
+    await deployment.$query().patch({
+      slug: null,
+      externalUrl: "https://docs-git-feature.vercel.app/",
+    });
+
+    await syncGitHubDeployment(deployment.id);
+
+    expect(octokit.repos.createDeployment).not.toHaveBeenCalled();
+    expect(octokit.repos.createDeploymentStatus).not.toHaveBeenCalled();
+  });
+
   test("creates one GitHub deployment when two syncs run at once", async ({
     deployment,
   }) => {

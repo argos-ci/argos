@@ -248,7 +248,7 @@ describe("webhooks", () => {
 
   webhookTest(
     "sends the deployment with deployment events",
-    async ({ project, account, createWebhook, deliver }) => {
+    async ({ project, createWebhook, deliver }) => {
       const webhook = await createWebhook({
         events: ["deployment.created", "deployment.ready"],
       });
@@ -256,11 +256,10 @@ describe("webhooks", () => {
         projectId: project.id,
         status: "ready",
       });
-      project.account = account;
       const { request } = await deliver(webhook, {
         name: "deployment.ready",
         deployment,
-        project,
+        project: await project.$fetchGraph("account"),
       });
 
       expect(JSON.parse(request.body)).toMatchObject({

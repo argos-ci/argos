@@ -12,18 +12,23 @@ export function getDeploymentUrl(slug: string) {
 type AliasLike = Pick<DeploymentAlias, "type" | "alias">;
 
 /**
+ * Whether a hostname is the deployments base domain or one of its subdomains,
+ * where Argos serves deployments.
+ */
+export function checkIsDeploymentsHostname(hostname: string): boolean {
+  const baseDomain = config.get("deployments.baseDomain").toLowerCase();
+  const value = hostname.toLowerCase();
+  return value === baseDomain || value.endsWith(`.${baseDomain}`);
+}
+
+/**
  * Whether an alias is a customer's own hostname rather than one of ours.
  *
  * `validateCustomDomain` refuses anything under the deployments base domain, so
  * not being under it is what makes an alias the customer's.
  */
 export function checkIsCustomDomainAlias(alias: AliasLike): boolean {
-  if (alias.type !== "domain") {
-    return false;
-  }
-  const baseDomain = config.get("deployments.baseDomain").toLowerCase();
-  const value = alias.alias.toLowerCase();
-  return value !== baseDomain && !value.endsWith(`.${baseDomain}`);
+  return alias.type === "domain" && !checkIsDeploymentsHostname(alias.alias);
 }
 
 /**
@@ -40,16 +45,15 @@ export function getDeploymentAliasUrl(alias: AliasLike): string {
  * The URL to show a human when only one will fit — a commit status, a pull
  * request comment.
  *
- * The custom domain wins even though, unlike the slug URL, it follows whatever
- * is deployed to production next. Falling back to the slug rather than to the
- * internal domain keeps that mutability to the case where it is the point.
+ * The custom domain wins even though, unlike the deployment's own URL, it
+ * follows whatever is deployed to production next. Falling back to the
+ * deployment's URL rather than to the internal domain keeps that mutability to
+ * the case where it is the point.
  */
 export function getDeploymentPreferredUrl(input: {
-  slug: string;
+  url: string;
   aliases: AliasLike[];
 }): string {
   const customDomain = input.aliases.find(checkIsCustomDomainAlias);
-  return customDomain
-    ? getDeploymentAliasUrl(customDomain)
-    : getDeploymentUrl(input.slug);
+  return customDomain ? getDeploymentAliasUrl(customDomain) : input.url;
 }

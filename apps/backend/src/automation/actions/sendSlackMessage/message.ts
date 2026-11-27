@@ -55,7 +55,6 @@ export async function buildSlackMessage(args: {
       ? Build.getAggregatedBuildStatuses([build])
       : [null],
   ]);
-  invariant(richBuild.project, "project not found");
 
   blocks.push(contextBlock({ build, buildUrl }));
   blocks.push(projectBlock({ project: richBuild.project }));

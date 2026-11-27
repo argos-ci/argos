@@ -128,7 +128,6 @@ export async function getOrCreateUserByVerifiedEmail(
   ]);
   const user = verifiedHolder ?? scimCreatedHolder;
   if (user) {
-    invariant(user.account, "Account not fetched");
     return { user, account: user.account, creation: false };
   }
   const created = await createAccount({
@@ -210,7 +209,6 @@ export async function getOrCreateUserAccountFromSaml(input: {
   ]);
 
   if (teamUser) {
-    invariant(teamUser.user?.account, "User and account not fetched");
     await teamUser.$query().patch({ ssoVerifiedAt: now });
     return { type: "login", account: teamUser.user.account, creation: false };
   }
@@ -459,7 +457,6 @@ async function getOrCreateUserAccountFromThirdParty<
     invariant(user, "Expected attachToAccount to be a user account");
 
     if (existingUser) {
-      invariant(existingUser.account, "Account not fetched");
       if (user.id !== existingUser.id) {
         throw boom(
           400,
@@ -483,7 +480,6 @@ async function getOrCreateUserAccountFromThirdParty<
       if ("user" in thirdPartyKey) {
         await user.$query().patch({ [thirdPartyKey.user]: model.id });
       } else if ("account" in thirdPartyKey) {
-        invariant(user.account, "Expected user.account to be defined");
         await user.account
           .$query()
           .patch({ [thirdPartyKey.account]: model.id });
@@ -536,14 +532,12 @@ async function getOrCreateUserAccountFromThirdParty<
       }
 
       // Then choose the user by order of potential emails
-      const userWithEmail = allEmails.reduce<User | null>((acc, email) => {
+      const userWithEmail = allEmails.reduce<
+        (typeof existingUsers)[number] | null
+      >((acc, email) => {
         return (
           acc ??
           existingUsers.find((user) => {
-            invariant(
-              user.verifiedEmails,
-              "Expected user.verifiedEmails to be defined",
-            );
             return user.verifiedEmails.some(
               (userEmail) => userEmail.email === email,
             );
@@ -560,8 +554,6 @@ async function getOrCreateUserAccountFromThirdParty<
   })();
 
   if (existingUser) {
-    invariant(existingUser.account, "Account not fetched");
-
     await transaction(async (trx) => {
       // Either update the id or the email if needed
       const userData = getPartialModelUpdate(existingUser, {
@@ -569,8 +561,6 @@ async function getOrCreateUserAccountFromThirdParty<
         deletedAt: null,
         ...("user" in thirdPartyKey ? { [thirdPartyKey.user]: model.id } : {}),
       });
-
-      invariant(existingUser.account, "account must be defined");
 
       const accountData = getPartialModelUpdate(
         existingUser.account,
@@ -731,7 +721,6 @@ export async function requestEmailSignup(args: {
   const code = await generateAuthEmailCode(email);
 
   if (user) {
-    invariant(user.account, "Account not fetched");
     await sendEmailTemplate({
       template: "signup_signin_verification",
       data: {
@@ -778,7 +767,6 @@ export async function requestEmailSignin(args: {
 
   const code = await generateAuthEmailCode(email);
 
-  invariant(user.account, "Account not fetched");
   await sendEmailTemplate({
     template: "signin_verification",
     data: {

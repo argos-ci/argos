@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import type { Request } from "express";
 
 import { waitUntil } from "@/api/request-context";
@@ -101,15 +100,11 @@ export async function getAuthPayloadFromOAuthAccessToken(
   }
 
   const { grant } = accessToken;
-  invariant(grant);
   if (grant.revokedAt) {
     throw boom(401, "Authorization has been revoked");
   }
 
   const { user, grantAccounts, client } = grant;
-  invariant(user?.account);
-  invariant(grantAccounts);
-  invariant(client);
 
   const tokenScope = await resolveTokenScope(user, grantAccounts);
 

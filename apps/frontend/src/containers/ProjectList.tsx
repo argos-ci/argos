@@ -2,7 +2,7 @@ import { GitBranchIcon } from "@primer/octicons-react";
 import { FolderIcon, PlusCircleIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
-import { DeploymentStatus } from "@/gql/graphql";
+import { AccountPermission, DeploymentStatus } from "@/gql/graphql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import { Heading } from "@/ui/Heading";
@@ -21,6 +21,7 @@ import { HeadlessLink, Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
 import { RepositoryIcons } from "./Repository";
+import { TeamOwnersPopover } from "./Team/TeamOwnersPopover";
 
 const _ProjectFragment = graphql(`
   fragment ProjectList_Project on Project {
@@ -44,11 +45,28 @@ const _ProjectFragment = graphql(`
       createdAt
       status
       branch
+      url
+      external
     }
   }
 `);
 
 type Project = DocumentType<typeof _ProjectFragment>;
+
+/**
+ * Where production is served: the project's own domain for a deployment Argos
+ * hosts, or the deployment's URL for one hosted elsewhere.
+ */
+function getProductionUrl(project: Project): string | null {
+  const deployment = project.latestProductionDeployment;
+  if (deployment?.status !== DeploymentStatus.Ready) {
+    return null;
+  }
+  if (deployment.external) {
+    return deployment.url;
+  }
+  return project.domain ? `https://${project.domain}` : null;
+}
 
 function RepositoryChip(props: { repository: Project["repository"] }) {
   const repositoryType = props.repository?.__typename;
@@ -73,6 +91,7 @@ function RepositoryChip(props: { repository: Project["repository"] }) {
 }
 
 function ProjectCard({ project }: { project: Project }) {
+  const productionUrl = getProductionUrl(project);
   return (
     <div
       key={project.id}
@@ -86,16 +105,15 @@ function ProjectCard({ project }: { project: Project }) {
       <div className="w-full min-w-0">
         <div className="truncate font-medium">{project.name}</div>
         <div className="text-low mt-1 truncate text-sm">
-          {project.latestProductionDeployment?.status ===
-            DeploymentStatus.Ready && project.domain ? (
+          {productionUrl ? (
             <Link
               className="relative"
               variant="neutral"
-              href={`https://${project.domain}`}
+              href={productionUrl}
               target="_blank"
               external={false}
             >
-              {project.domain}
+              {new URL(productionUrl).host}
             </Link>
           ) : (
             "Not deployed"
@@ -146,6 +164,13 @@ function CreateProjectButton(props: Omit<LinkButtonProps, "children">) {
 export function ProjectList(props: {
   projects: Project[];
   canCreateProject: boolean;
+  account: {
+    __typename: "Team" | "User";
+    slug: string;
+    permissions: AccountPermission[];
+  };
+  /** A contributor sees only the projects they were added to. */
+  isContributor: boolean;
 }) {
   const { projects } = props;
 
@@ -174,13 +199,26 @@ export function ProjectList(props: {
         </EmptyStateIcon>
         <Heading>No projects</Heading>
         <EmptyStateDescription>
-          You haven't created any project yet.
+          {props.account.__typename !== "Team" ? (
+            "This account has no projects yet."
+          ) : props.isContributor ? (
+            <>
+              You have not been added to any project yet. Ask{" "}
+              <TeamOwnersPopover account={props.account}>
+                a team owner
+              </TeamOwnersPopover>{" "}
+              to add you to one.
+            </>
+          ) : (
+            <>
+              Only{" "}
+              <TeamOwnersPopover account={props.account}>
+                team owners
+              </TeamOwnersPopover>{" "}
+              can create projects.
+            </>
+          )}
         </EmptyStateDescription>
-        {props.canCreateProject && (
-          <EmptyStateActions>
-            <CreateProjectButton />
-          </EmptyStateActions>
-        )}
       </EmptyState>
     );
   }

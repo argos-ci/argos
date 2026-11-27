@@ -113,6 +113,29 @@ describe("endTrialToUnlockUsage", () => {
     );
   });
 
+  it("turns tax on before ending a trial still waiting for it", async () => {
+    const update = mockStripeUpdate();
+    mockStripeRetrieve({
+      ...TRIALING_STRIPE_SUBSCRIPTION,
+      metadata: { automaticTaxPending: "true" },
+    } as unknown as Stripe.Subscription);
+    vi.spyOn(notification, "sendNotification").mockResolvedValue(undefined);
+    await createSubscription({});
+
+    await expect(endTrialToUnlockUsage(account)).resolves.toBe(true);
+
+    expect(update.mock.calls).toEqual([
+      [
+        TRIAL_STRIPE_SUBSCRIPTION_ID,
+        {
+          automatic_tax: { enabled: true },
+          metadata: { automaticTaxPending: "" },
+        },
+      ],
+      [TRIAL_STRIPE_SUBSCRIPTION_ID, { trial_end: "now" }],
+    ]);
+  });
+
   it("announces the amount due when the conversion payment fails", async () => {
     vi.spyOn(stripe.subscriptions, "update").mockResolvedValue(
       PAST_DUE_ENDED_TRIAL_STRIPE_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,

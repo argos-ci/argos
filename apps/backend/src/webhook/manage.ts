@@ -1,5 +1,4 @@
 import type { ProjectEventName } from "@argos/schemas/project-event";
-import { invariant } from "@argos/util/invariant";
 
 import type { AuthViewer } from "@/auth/payload";
 import config from "@/config";
@@ -282,7 +281,6 @@ export async function getProjectsByWebhookId(
     .whereColumn("project.accountId", "webhooks.accountId")
     .orderBy("project.name");
   for (const link of links) {
-    invariant(link.project, "Webhook link without project");
     const projects = projectsByWebhookId.get(link.webhookId) ?? [];
     projects.push(link.project);
     projectsByWebhookId.set(link.webhookId, projects);

@@ -56,6 +56,6 @@ export class TeamUser extends Model {
     };
   }
 
-  user?: User | null;
-  team?: Team | null;
+  user?: User;
+  team?: Team;
 }

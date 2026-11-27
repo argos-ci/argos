@@ -12,7 +12,7 @@
  */
 import type { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
 import { invariant } from "@argos/util/invariant";
-import type { QueryBuilder, TransactionOrKnex } from "objection";
+import type { TransactionOrKnex } from "objection";
 import type { z } from "zod";
 
 import type { AuthViewer } from "@/auth/payload";
@@ -100,7 +100,7 @@ export type TeamMemberFilters = {
 export function queryTeamMembers(args: {
   team: Team;
   filters?: TeamMemberFilters;
-}): QueryBuilder<TeamUser, TeamUser[]> {
+}) {
   const { team, filters = {} } = args;
   const { search, levels, sso, orderBy = "date" } = filters;
 

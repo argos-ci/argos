@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { CharacterCount, Placeholder } from "@tiptap/extensions";
 import { AllSelection, Plugin, TextSelection } from "@tiptap/pm/state";
 import {
@@ -6,6 +13,7 @@ import {
   Extension,
   useEditor,
   type JSONContent,
+  type UseEditorOptions,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { clsx } from "clsx";
@@ -163,6 +171,7 @@ export default function Editor(props: EditorProps) {
     mentions: mentionsProp,
     mentionedUsers,
     repositoryUrl,
+    "aria-label": ariaLabel,
   } = props;
 
   const mentionableUsers = useMentionableUsers();
@@ -189,48 +198,53 @@ export default function Editor(props: EditorProps) {
     repositoryUrlRef.current = repositoryUrl;
   });
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        link: {
-          openOnClick: false,
-          enableClickSelection: true,
-          autolink: false,
-        },
-      }),
-      CharacterCount.configure({ limit: MAX_COMMENT_CHARACTERS }),
-      CollapseAllSelectionDelete,
-      CollapseSelectionOnEscape,
-      LinkEditTrigger,
-      // The getters are invoked lazily by the suggestion plugin and node views,
-      // never during this render, so reading the refs here is safe.
-      /* oxlint-disable react/react-compiler */
-      createMentionExtension({
-        getSuggestions: () => mentionsRef.current,
-        resolveUser: (id) =>
-          mentionedUsersRef.current?.find((user) => user.id === id) ??
-          mentionsRef.current.find((user) => user.id === id),
-      }),
-      createCommitAutolinkExtension({
-        getRepositoryUrl: () => repositoryUrlRef.current,
-      }),
-      /* oxlint-enable react/react-compiler */
-      SlashCommand,
-      ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
-    ],
-    editable,
-    content: value ?? defaultValue,
-    autofocus: autoFocus ? "end" : false,
-    editorProps: {
+  // This component renders on every keystroke, since its parent holds the
+  // value, and `useEditor` pushes any option that changed identity back into
+  // ProseMirror (`setOptions` re-runs `updateState`). The editor reads its
+  // content and extensions only when it is created, so both are frozen here; a
+  // controlled `value` reaches it through `setContent` below.
+  const [initialContent] = useState(() => value ?? defaultValue);
+  const [extensions] = useState(() => [
+    StarterKit.configure({
+      link: {
+        openOnClick: false,
+        enableClickSelection: true,
+        autolink: false,
+      },
+    }),
+    CharacterCount.configure({ limit: MAX_COMMENT_CHARACTERS }),
+    CollapseAllSelectionDelete,
+    CollapseSelectionOnEscape,
+    LinkEditTrigger,
+    // The getters are invoked lazily by the suggestion plugin and node views,
+    // never during this render, so reading the refs here is safe.
+    /* oxlint-disable react/react-compiler */
+    createMentionExtension({
+      getSuggestions: () => mentionsRef.current,
+      resolveUser: (id) =>
+        mentionedUsersRef.current?.find((user) => user.id === id) ??
+        mentionsRef.current.find((user) => user.id === id),
+    }),
+    createCommitAutolinkExtension({
+      getRepositoryUrl: () => repositoryUrlRef.current,
+    }),
+    /* oxlint-enable react/react-compiler */
+    SlashCommand,
+    ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
+  ]);
+
+  const contentAttributeClass = clsx(
+    EDITOR_CONTENT_CLASS,
+    isBoxed && EDITOR_BOXED_CONTENT_PADDING_CLASS,
+    isBoxed
+      ? (contentClassName ?? EDITOR_DEFAULT_CONTENT_HEIGHT_CLASS)
+      : contentClassName,
+  );
+  const editorProps = useMemo(
+    (): UseEditorOptions["editorProps"] => ({
       attributes: {
-        class: clsx(
-          EDITOR_CONTENT_CLASS,
-          isBoxed && EDITOR_BOXED_CONTENT_PADDING_CLASS,
-          isBoxed
-            ? (contentClassName ?? EDITOR_DEFAULT_CONTENT_HEIGHT_CLASS)
-            : contentClassName,
-        ),
-        ...(props["aria-label"] ? { "aria-label": props["aria-label"] } : {}),
+        class: contentAttributeClass,
+        ...(ariaLabel ? { "aria-label": ariaLabel } : {}),
       },
       handleKeyDown: (_view, event) => {
         if (
@@ -244,7 +258,16 @@ export default function Editor(props: EditorProps) {
         }
         return false;
       },
-    },
+    }),
+    [contentAttributeClass, ariaLabel],
+  );
+
+  const editor = useEditor({
+    extensions,
+    editable,
+    content: initialContent,
+    autofocus: autoFocus ? "end" : false,
+    editorProps,
     onUpdate: ({ editor }) => {
       onChangeRef.current?.(editor.getJSON());
     },

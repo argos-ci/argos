@@ -1,7 +1,7 @@
 import type { ProjectEventName } from "@argos/schemas/project-event";
 import { assertNever } from "@argos/util/assertNever";
-import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
+import type { WithGraphModel } from "objection";
 
 import {
   serializeEventData,
@@ -30,18 +30,19 @@ const EVENT_INSERT_LOCK = 4_172_043_513;
  * it already: a build's relation is reused when fetched, and deployment
  * messages carry it.
  */
-async function getEventProject(message: EventMessage): Promise<Project> {
+async function getEventProject(
+  message: EventMessage,
+): Promise<WithGraphModel<Project, "account">> {
   switch (message.name) {
     case "build.completed":
     case "build.reviewed": {
-      const { build } = message;
-      await build.$fetchGraph("project.account", { skipFetched: true });
-      invariant(build.project?.account, "build project account not fetched");
-      return build.project;
+      const { project } = await message.build.$fetchGraph("project.account", {
+        skipFetched: true,
+      });
+      return project;
     }
     case "deployment.created":
     case "deployment.ready":
-      invariant(message.project.account, "project account not fetched");
       return message.project;
     default:
       return assertNever(message);

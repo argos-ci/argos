@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 
-import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AuthGuard } from "@/containers/AuthGuard";
 import { PeriodSelect, usePeriodState } from "@/containers/PeriodSelect";
 import type { DocumentType } from "@/gql";
@@ -33,7 +32,6 @@ import {
   PageHeaderContent,
   PageHeaderHeadline,
 } from "@/ui/Layout";
-import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { StatTile, StatTileGroup } from "@/ui/StatTile";
@@ -44,11 +42,10 @@ import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 
-import { getAccountURL } from "../Account/AccountParams";
 import { getCancellationEmail } from "./Cancellations.email";
 import { PRO_MONTHLY_PRICE, PRO_PLAN_NAME } from "./pricing";
 import { StaffAccessRestricted } from "./StaffAccessRestricted";
-import { StripeCustomerLink } from "./stripe";
+import { StaffTeamCell } from "./StaffTeamCell";
 import { getMailtoUrl } from "./Trials.email";
 
 const CancellationsQuery = graphql(`
@@ -525,19 +522,9 @@ function CancellationRow(props: { cancellation: Cancellation; index: number }) {
   return (
     <tr className={clsx("border-b", index % 2 === 0 ? "bg-app" : "bg-subtle")}>
       <td className="p-2 text-sm">
-        <div className="flex min-w-0 items-center gap-3">
-          <AccountAvatar avatar={team.avatar} className="size-8 shrink-0" />
-          <div className="min-w-0 flex-1">
-            <Link
-              href={getAccountURL({ accountSlug: team.slug })}
-              className="block truncate font-medium"
-            >
-              {team.name || team.slug}
-            </Link>
-            <PlanLine plan={cancellation.plan} />
-          </div>
-          <StripeCustomerLink stripeCustomerId={team.stripeCustomerId} />
-        </div>
+        <StaffTeamCell team={team}>
+          <PlanLine plan={cancellation.plan} />
+        </StaffTeamCell>
       </td>
       <td className="truncate p-2 text-sm">
         <Time date={team.createdAt} />
@@ -585,11 +572,11 @@ const COLUMNS: {
   align: keyof typeof ALIGN_CLASS_NAMES;
   width: string;
 }[] = [
-  { key: "team", label: "Team", align: "left", width: "w-[19%]" },
+  { key: "team", label: "Team", align: "left", width: "w-[22%]" },
   { key: "createdAt", label: "Created", align: "left", width: "w-[9%]" },
   { key: "canceledAt", label: "Canceled", align: "left", width: "w-[9%]" },
-  { key: "status", label: "Status", align: "left", width: "w-[10%]" },
-  { key: "reason", label: "Reason", align: "left", width: "w-[24%]" },
+  { key: "status", label: "Status", align: "left", width: "w-[9%]" },
+  { key: "reason", label: "Reason", align: "left", width: "w-[23%]" },
   {
     key: "lastActivity",
     label: "Last activity",
@@ -600,7 +587,7 @@ const COLUMNS: {
     key: "monthlyRevenue",
     label: "Monthly",
     align: "right",
-    width: "w-[10%]",
+    width: "w-[9%]",
   },
   { key: "contacted", label: "Contacted", align: "center", width: "w-[10%]" },
 ];

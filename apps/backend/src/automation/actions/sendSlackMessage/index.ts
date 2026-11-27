@@ -1,8 +1,6 @@
-import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
 import { SlackChannel, type SlackInstallation } from "@/database/models";
-import { UnretryableError } from "@/job-core";
 import { postMessageToSlackChannel } from "@/slack/channel";
 
 import { AutomationActionFailureError } from "../../automationActionError";
@@ -46,12 +44,6 @@ async function expandPayload(payload: Payload): Promise<ExpandedPayload> {
       `Slack channel archived ${channelId}`,
     );
   }
-
-  invariant(
-    slackChannel.slackInstallation,
-    "slackInstallation relation not found",
-    UnretryableError,
-  );
 
   return { slackChannel, slackInstallation: slackChannel.slackInstallation };
 }

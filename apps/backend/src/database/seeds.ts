@@ -4415,12 +4415,16 @@ export async function createInvoicesScenario(input: {
   await account.$query().patch({ stripeCustomerId });
 
   const invoices = [
+    // The only one taxed, as on an account Stripe Tax was turned on for
+    // midway: the older invoices carry no tax line.
     {
       stripeInvoiceId: `in_seed_${accountId}_5`,
       number: "ARGOS-0005",
       stripeCreatedAt: "2026-08-01T06:00:00.000Z",
       status: "open",
       total: 24_900,
+      totalExcludingTax: 20_750,
+      totalTaxesAmount: 4_150,
     },
     {
       stripeInvoiceId: `in_seed_${accountId}_4`,

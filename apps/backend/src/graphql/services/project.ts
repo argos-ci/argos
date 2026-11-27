@@ -46,18 +46,19 @@ import { sendNotification } from "@/notification";
 import { invalidId } from "../util";
 
 async function getProjectDeleteNotificationRecipients(project: Project) {
-  await project.$fetchGraph("account", { skipFetched: true });
-  invariant(project.account, "project.account is undefined");
+  const { account } = await project.$fetchGraph("account", {
+    skipFetched: true,
+  });
 
-  if (project.account.type !== "team") {
-    return project.account.$getOwnerIds();
+  if (account.type !== "team") {
+    return account.$getOwnerIds();
   }
 
-  const teamId = project.account.teamId;
+  const teamId = account.teamId;
   invariant(teamId, "project.account.teamId is undefined");
 
   const [ownerIds, teamContributors, projectContributors] = await Promise.all([
-    project.account.$getOwnerIds(),
+    account.$getOwnerIds(),
     TeamUser.query()
       .select("userId")
       .where("team_users.teamId", teamId)
@@ -91,17 +92,14 @@ async function getProjectDeleteNotificationRecipients(project: Project) {
 export async function getAdminProject(args: {
   id: string;
   auth: AuthViewer | null;
-  withGraphFetched?: string;
 }): Promise<Project> {
   if (!isValidPgBigInt(args.id)) {
     throw invalidId();
   }
   invariant(args.auth, "no user");
-  const query = Project.queryNotDeleted().findById(args.id).throwIfNotFound();
-  if (args.withGraphFetched) {
-    query.withGraphFetched(args.withGraphFetched);
-  }
-  const project = await query;
+  const project = await Project.queryNotDeleted()
+    .findById(args.id)
+    .throwIfNotFound();
   const permissions = await project.$getPermissions(args.auth);
   invariant(permissions.includes("admin"), "not admin");
   return project;
@@ -139,10 +137,8 @@ export async function deleteProject(args: {
   const project = await getAdminProject({
     id: args.id,
     auth: args.auth,
-    withGraphFetched: "account",
-  });
+  }).then((project) => project.$fetchGraph("account"));
   const recipients = await getProjectDeleteNotificationRecipients(project);
-  invariant(project.account, "project.account is undefined");
 
   const released = await transaction(async (trx) => {
     // The stamp goes first and carries its own `deletedAt IS NULL`, so it is

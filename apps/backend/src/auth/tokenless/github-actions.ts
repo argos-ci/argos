@@ -1,5 +1,5 @@
 import { invariant } from "@argos/util/invariant";
-import pRetry from "p-retry";
+import type { WithGraphModel } from "objection";
 import z from "zod";
 
 import {
@@ -54,11 +54,9 @@ function decodeToken(bearerToken: string, marker: string) {
 }
 
 /**
- * Compute the slug ("account/project-name") of a project. Requires the
- * `account` relation to be fetched.
+ * Compute the slug ("account/project-name") of a project.
  */
-function getProjectSlug(project: Project): string {
-  invariant(project.account, "account is not fetched");
+function getProjectSlug(project: WithGraphModel<Project, "account">): string {
   return `${project.account.slug}/${project.name}`;
 }
 
@@ -127,7 +125,7 @@ type WorkflowRunLookup = {
  */
 const inProgressRunStore = redisCache.createStore({
   maxAge: 60 * 1000,
-  // The default (3s) would cut the retries short.
+  // The default (3s) would cut short the GitHub client's retries.
   timeout: 20 * 1000,
   getCacheKey: (lookup: WorkflowRunLookup) => [
     "tokenless-github-run",
@@ -149,25 +147,19 @@ const inProgressRunStore = redisCache.createStore({
       );
     }
 
-    const githubRun = await pRetry(
-      async () => {
-        try {
-          const result = await octokit.actions.getWorkflowRun({
-            owner: lookup.owner,
-            repo: lookup.repository,
-            run_id: lookup.runId,
-            filter: "latest",
-          });
-          return result;
-        } catch (error) {
-          if (checkOctokitErrorStatus(404, error)) {
-            return null;
-          }
-          throw error;
+    const githubRun = await octokit.actions
+      .getWorkflowRun({
+        owner: lookup.owner,
+        repo: lookup.repository,
+        run_id: lookup.runId,
+        filter: "latest",
+      })
+      .catch((error: unknown) => {
+        if (checkOctokitErrorStatus(404, error)) {
+          return null;
         }
-      },
-      { retries: 3 },
-    );
+        throw error;
+      });
 
     if (!githubRun) {
       throw boom(404, `GitHub run not found (token: "${lookup.bearerToken}")`);
@@ -218,8 +210,6 @@ export async function resolveTokenlessGitHubActionsContext(
   if (!repository) {
     return null;
   }
-
-  invariant(repository.projects);
 
   // Dropped here rather than in the graph: the deleted rows still hold the
   // repository link, and leaving them in would let one shadow the live project

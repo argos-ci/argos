@@ -501,7 +501,6 @@ export function AnalyticsDashboard(props: {
             <ExportButton
               disabled={!metrics}
               onExport={() => {
-                invariant(metrics);
                 exportToCSV({
                   metric: metrics.builds,
                   name: getCSVName({
@@ -547,7 +546,6 @@ export function AnalyticsDashboard(props: {
             <ExportButton
               disabled={!metrics}
               onExport={() => {
-                invariant(metrics);
                 exportToCSV({
                   metric: metrics.screenshots,
                   name: getCSVName({

@@ -895,8 +895,6 @@ async function loadMediaForAuth(args: {
     return media;
   }
 
-  invariant(media.project?.account, "Media project account not fetched");
-
   const isMediaAccount = (account: Account) =>
     account.id === media.project?.accountId;
   if (!auth.scope.some(isMediaAccount)) {

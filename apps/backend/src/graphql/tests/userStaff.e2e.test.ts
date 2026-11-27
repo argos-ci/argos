@@ -47,7 +47,6 @@ async function createViewer(options: { staff: boolean }) {
   invariant(userAccount.user, "user not fetched");
   await userAccount.user.$query().patch({ staff: options.staff });
   await userAccount.$fetchGraph("user");
-  invariant(userAccount.user, "user not fetched");
 
   return { userAccount, user: userAccount.user };
 }

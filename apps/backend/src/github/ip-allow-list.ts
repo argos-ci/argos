@@ -101,7 +101,10 @@ export async function markInstallationIpAllowListBlocked(input: {
 
   // A repository reached by another, unblocked installation keeps working.
   const blockedProjects = projects.filter((project) => {
-    invariant(project.githubRepository, "githubRepository relation not loaded");
+    invariant(
+      project.githubRepository,
+      "Projects are selected by their GitHub repository",
+    );
     return (
       GithubRepository.pickBestInstallation(project.githubRepository)?.id ===
       installation.id
@@ -109,7 +112,6 @@ export async function markInstallationIpAllowListBlocked(input: {
   });
 
   const projectsByAccount = groupBy(blockedProjects, (project) => {
-    invariant(project.account, "account relation not loaded");
     return project.account.id;
   });
 

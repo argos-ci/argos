@@ -3,6 +3,7 @@ import { createAppAuth } from "@octokit/auth-app";
 import type { OctokitOptions } from "@octokit/core";
 import { Octokit } from "@octokit/rest";
 import { memoize } from "lodash-es";
+import pRetry from "p-retry";
 import { fetch, ProxyAgent, type RequestInit, type Response } from "undici";
 import z from "zod";
 
@@ -10,7 +11,7 @@ import config from "@/config";
 import { GithubInstallation } from "@/database/models";
 import { boom } from "@/util/error";
 
-import { checkOctokitErrorStatus } from "./error";
+import { checkIsOctokitServerError, checkOctokitErrorStatus } from "./error";
 import {
   createIpAllowListError,
   markInstallationIpAllowListBlocked,
@@ -72,17 +73,37 @@ interface GetOctokitOptions extends Omit<OctokitOptions, "debug" | "request"> {
 }
 
 /**
+ * Retry the requests GitHub failed to answer. Any other status is an answer,
+ * and callers rely on getting it at once (an empty repository's 409 during
+ * build creation).
+ */
+function retryServerErrors(octokit: Octokit) {
+  octokit.hook.wrap("request", (request, options) =>
+    pRetry(() => request(options), {
+      retries: 3,
+      minTimeout: config.get("github.retryDelay"),
+      // Blips only: a job times out after 20s, and longer outages are left to
+      // its own retries.
+      maxRetryTime: 10_000,
+      shouldRetry: ({ error }) => checkIsOctokitServerError(error),
+    }),
+  );
+}
+
+/**
  * Get an Octokit instance.
  */
 function getOctokit(options: GetOctokitOptions): Octokit {
   const { proxy, ...rest } = options;
-  return new Octokit({
+  const octokit = new Octokit({
     debug: config.get("env") === "development",
     request: {
       fetch: proxy ? proxyFetch : undefined,
     },
     ...rest,
   });
+  retryServerErrors(octokit);
+  return octokit;
 }
 
 interface GetAppOctokitOptions

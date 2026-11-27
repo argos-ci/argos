@@ -28,7 +28,6 @@ async function createOwner() {
     factory.Project.create({ accountId: userAccount.id, name: "web" }),
     factory.Project.create({ accountId: userAccount.id, name: "docs" }),
   ]);
-  invariant(web && docs);
   return { user: userAccount.user, teamAccount, web, docs };
 }
 

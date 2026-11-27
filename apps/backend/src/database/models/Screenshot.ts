@@ -178,7 +178,7 @@ export class Screenshot extends Model {
   }
 
   screenshotBucket?: ScreenshotBucket;
-  file?: File;
+  file?: File | null;
   test?: Test | null;
   playwrightTraceFile?: File | null;
 }

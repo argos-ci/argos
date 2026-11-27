@@ -316,7 +316,6 @@ export const listProjectTokensHandler: CreateAPIHandler = ({ get }) => {
       getProjectForAuth(req.ctx.auth(), req.ctx.params, null),
       req.ctx.auth(),
     ]);
-    invariant(project.account, "Project account not fetched");
     const tokens = await listProjectProjectTokens({ project, auth });
     if (!tokens) {
       throw boom(
@@ -362,7 +361,6 @@ export const createProjectTokenHandler: CreateAPIHandler = ({ post }) => {
       getProjectForAuth(req.ctx.auth(), req.ctx.params, null),
       req.ctx.auth(),
     ]);
-    invariant(project.account, "Project account not fetched");
     const created = await createProjectToken({
       account: project.account,
       auth,

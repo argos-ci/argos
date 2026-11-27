@@ -1,5 +1,3 @@
-import { invariant } from "@argos/util/invariant";
-
 import type {
   AuthOAuthPayload,
   AuthPATPayload,
@@ -42,11 +40,6 @@ export async function loadMediaForAuth<
       : null,
   ]);
 
-  invariant(
-    !media || media.project?.account,
-    "Media project account not fetched",
-  );
-
   assertProjectAccess(auth, {
     projectId: media?.projectId ?? null,
     // A media id carries no account, so the scope check uses the account the
@@ -58,8 +51,6 @@ export async function loadMediaForAuth<
   if (!media) {
     throw boom(404, "Not found");
   }
-
-  invariant(media.project?.account, "Media project account not found");
 
   return { auth, media, project: media.project };
 }

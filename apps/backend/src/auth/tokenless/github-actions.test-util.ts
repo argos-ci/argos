@@ -66,6 +66,41 @@ export function stubWorkflowRuns(runs: Record<number, Partial<WorkflowRun>>) {
   return lookups;
 }
 
+type WorkflowJob = {
+  name: string;
+  conclusion: string | null;
+  started_at: string;
+};
+
+/**
+ * Answer the lookups of attempt `attempt` of run `runId`: when it started and
+ * the jobs it lists, or the status GitHub fails with.
+ */
+export function stubWorkflowRunAttempt(
+  runId: number,
+  attempt: number,
+  answer: { startedAt: string; jobs: WorkflowJob[] } | { status: number },
+) {
+  const url = `https://api.github.com/repos/:owner/:repo/actions/runs/${runId}/attempts/${attempt}`;
+  const fail = (status: number) =>
+    HttpResponse.json({ message: "Server Error" }, { status });
+  githubServer.use(
+    http.get(url, () =>
+      "status" in answer
+        ? fail(answer.status)
+        : HttpResponse.json({ run_started_at: answer.startedAt }),
+    ),
+    http.get(`${url}/jobs`, () =>
+      "status" in answer
+        ? fail(answer.status)
+        : HttpResponse.json({
+            total_count: answer.jobs.length,
+            jobs: answer.jobs,
+          }),
+    ),
+  );
+}
+
 /**
  * Answer the lookups of a pull request of `argos-ci/argos`: GitHub reports
  * `head` as its head, and `parents` as the parents of its test merge commit.

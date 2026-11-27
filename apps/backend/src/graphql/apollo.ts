@@ -1,4 +1,8 @@
-import { ApolloServer, ApolloServerPlugin } from "@apollo/server";
+import {
+  ApolloServer,
+  ApolloServerPlugin,
+  type BaseContext,
+} from "@apollo/server";
 import { expressMiddleware } from "@as-integrations/express5";
 import * as Sentry from "@sentry/node";
 import { RequestHandler } from "express";
@@ -83,6 +87,23 @@ export const apolloServer = new ApolloServer<Context>({
   parseOptions: operationParseOptions,
   validationRules: [OperationLimitsRule],
 });
+
+const startedServers = new WeakMap<object, Promise<void>>();
+
+/**
+ * Start a server on the first call only. Apollo throws on a second `start()`,
+ * and tests mount the server in many apps within one process.
+ */
+export function startApolloServer<C extends BaseContext>(
+  server: ApolloServer<C>,
+): Promise<void> {
+  let started = startedServers.get(server);
+  if (!started) {
+    started = server.start();
+    startedServers.set(server, started);
+  }
+  return started;
+}
 
 export const createApolloMiddleware = (): RequestHandler =>
   expressMiddleware(apolloServer, {

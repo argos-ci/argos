@@ -88,8 +88,6 @@ if (!toProject) {
 
 const toProjectId = toProject.id;
 
-invariant(toProject.account, "Account must be fetched");
-
 const toProjectBaseUrl = `${config.get("server.url")}/${toProject.account.slug}/${toProject.name}`;
 
 spinner.text = `Fetching build`;
@@ -111,17 +109,8 @@ spinner.text = `Uploading screenshots for build`;
 const allScreenshots = (() => {
   const screenshots: Screenshot[] = [];
   if (build.baseScreenshotBucket) {
-    invariant(
-      build.baseScreenshotBucket.screenshots,
-      "Screenshots must be fetched",
-    );
     screenshots.push(...build.baseScreenshotBucket.screenshots);
   }
-
-  invariant(
-    build.compareScreenshotBucket?.screenshots,
-    "Screenshots must be fetched",
-  );
 
   screenshots.push(...build.compareScreenshotBucket.screenshots);
 
@@ -144,8 +133,6 @@ const allFiles = (() => {
       }
     }
   }
-
-  invariant(build.screenshotDiffs, "Screenshot diffs must be fetched");
 
   for (const diff of build.screenshotDiffs) {
     const file = diff.file;
@@ -185,11 +172,6 @@ const newBaseScreenshotBucket = await (async () => {
   }
   return null;
 })();
-
-invariant(
-  build.compareScreenshotBucket,
-  "Compare screenshot bucket must exist",
-);
 
 const newCompareScreenshotBucket =
   await ScreenshotBucket.query().insertAndFetch({
@@ -265,8 +247,6 @@ const newScreenshots = await Screenshot.query().insertAndFetch(
 spinner.text = "Inserting diffs...";
 
 const screenshotDiffs = build.screenshotDiffs;
-
-invariant(screenshotDiffs, "Screenshot diffs must be fetched");
 
 await ScreenshotDiff.query().insert(
   screenshotDiffs.map((diff) => {

@@ -31,10 +31,6 @@ function getBuildFromPayload(message: AutomationMessage) {
     case AutomationEvents.BuildCompleted:
     case AutomationEvents.BuildReviewed: {
       const build = payload.build;
-      invariant(
-        build,
-        `[AutomationEngine] Build not found in payload for event: ${event}`,
-      );
       return build;
     }
 
