@@ -11,6 +11,10 @@ const TEAM_OUTREACH_TYPES = [
   "trial",
   /** A staff member wrote to a team about its cancellation. Once per subscription. */
   "cancellation",
+  /** A staff member offered Enterprise to a Pro team. Once per subscription. */
+  "enterprise_offer",
+  /** A staff member wrote about renewing an annual contract. Every term. */
+  "enterprise_renewal",
 ] as const;
 
 export type TeamOutreachType = (typeof TEAM_OUTREACH_TYPES)[number];

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict E8xbLF0vqXoeXkvkMn7N0eaILnueg3YtZVkqyPkq8bmGgWYqhFmx2ynIKDHb32V
+\restrict J76JKZvkNpOtMbaggglLSBMePwpdoLHkUaSHnz9aaVGebHHRnNagp0pSdgbKOwR
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -2904,7 +2904,8 @@ CREATE TABLE public.team_outreach (
     type text NOT NULL,
     note text,
     CONSTRAINT team_outreach_cancellation_subscription CHECK (((type <> 'cancellation'::text) OR ("subscriptionId" IS NOT NULL))),
-    CONSTRAINT team_outreach_type_check CHECK ((type = ANY (ARRAY['trial'::text, 'cancellation'::text])))
+    CONSTRAINT team_outreach_enterprise_subscription CHECK (((type <> ALL (ARRAY['enterprise_offer'::text, 'enterprise_renewal'::text])) OR ("subscriptionId" IS NOT NULL))),
+    CONSTRAINT team_outreach_type_check CHECK ((type = ANY (ARRAY['trial'::text, 'cancellation'::text, 'enterprise_offer'::text, 'enterprise_renewal'::text])))
 );
 
 
@@ -6253,6 +6254,13 @@ CREATE UNIQUE INDEX team_outreach_cancellation_unique ON public.team_outreach US
 
 
 --
+-- Name: team_outreach_enterprise_offer_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX team_outreach_enterprise_offer_unique ON public.team_outreach USING btree ("subscriptionId") WHERE (type = 'enterprise_offer'::text);
+
+
+--
 -- Name: team_outreach_teamid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -7619,7 +7627,7 @@ ALTER TABLE ONLY public.webhooks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict E8xbLF0vqXoeXkvkMn7N0eaILnueg3YtZVkqyPkq8bmGgWYqhFmx2ynIKDHb32V
+\unrestrict J76JKZvkNpOtMbaggglLSBMePwpdoLHkUaSHnz9aaVGebHHRnNagp0pSdgbKOwR
 
 -- Knex migrations
 
@@ -7914,3 +7922,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026112
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261124150116_link-marketplace-teams-to-github.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261125120000_deployment-external-url.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261127150000_team-outreach.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261127160000_team-outreach-enterprise.js', 1, NOW());

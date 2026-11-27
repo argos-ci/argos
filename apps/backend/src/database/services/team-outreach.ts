@@ -34,6 +34,18 @@ export async function markTeamOutreach(
   }
 }
 
+/** Record an email staff can send many times, as each renewal email is. */
+export async function logTeamOutreach(
+  action: OneOffAction & { userId: string },
+): Promise<void> {
+  await TeamOutreach.query().insert({
+    teamId: action.teamId,
+    userId: action.userId,
+    subscriptionId: action.subscriptionId ?? null,
+    type: action.type,
+  });
+}
+
 /** Take back a one-off action, when it was marked by mistake. */
 export async function unmarkTeamOutreach(action: OneOffAction): Promise<void> {
   const query = TeamOutreach.query()

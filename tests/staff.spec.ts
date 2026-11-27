@@ -620,8 +620,11 @@ staffTest(
     // names the plan under the amount to say so.
     await expect(page.getByText("$875")).toBeVisible();
     // Both Enterprise rows name their plan: the one quoting its contract and
-    // the one falling back to a guess.
-    await expect(page.getByText("Enterprise")).toHaveCount(2);
+    // the one falling back to a guess. Counted in the table, since the staff
+    // tabs name "Enterprise offers" too.
+    await expect(page.getByRole("table").getByText("Enterprise")).toHaveCount(
+      2,
+    );
     // Hexagon is billed nothing at all, and the plan is the only thing that
     // says why — the price cell is an em dash.
     await expect(page.getByText("Open source")).toBeVisible();
@@ -1392,6 +1395,213 @@ revenueTest.describe("staff revenue", () => {
   });
 });
 
+staffTest("staff enterprise", async ({ page, user }, testInfo) => {
+  test.slow();
+  const prefix = `offer-${getUniqueTestIdentifier(testInfo)}`;
+  const createPlan = (name: string, interval: "month" | "year") =>
+    PlanModel.query().insertAndFetch({
+      name,
+      includedScreenshots: 35_000,
+      usageBased: true,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      samlIncluded: true,
+      interval,
+    });
+  const [proPlan, monthlyPlan, yearlyPlan, trialPlan] = await Promise.all([
+    createPlan("pro", "month"),
+    createPlan("enterprise", "month"),
+    createPlan("Entreprise Annual", "year"),
+    PlanModel.query().insertAndFetch({
+      name: "enterprise-trial",
+      includedScreenshots: 300_000,
+      usageBased: false,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      samlIncluded: true,
+      interval: "month",
+    }),
+  ]);
+  // Priced at $0.005 past the 35,000 included, on top of the $100 plan.
+  const common = {
+    planId: proPlan.id,
+    subscriberId: user.user.id,
+    createdDaysAgo: 120,
+    trialEndedDaysAgo: 110,
+    periodStart: daysFromNow(-10),
+    flatPrice: 100,
+  };
+  const [acme, globex, , , oscorp] = await Promise.all([
+    // Offered on the running period: $1,500 so far.
+    createBilledTeam({
+      ...common,
+      slug: `${prefix}-acme`,
+      name: "Acme",
+      screenshotsByClosedPeriod: [35_000],
+      screenshotsInRunningPeriod: 315_000,
+    }),
+    // Offered on the period before, $2,200, while this one starts over.
+    createBilledTeam({
+      ...common,
+      slug: `${prefix}-globex`,
+      name: "Globex",
+      screenshotsByClosedPeriod: [455_000],
+    }),
+    // $925 so far: not offered.
+    createBilledTeam({
+      ...common,
+      slug: `${prefix}-initech`,
+      name: "Initech",
+      screenshotsByClosedPeriod: [35_000],
+      screenshotsInRunningPeriod: 200_000,
+    }),
+    // On a monthly contract: 21,000 of its 35,000 used this month.
+    createBilledTeam({
+      ...common,
+      planId: monthlyPlan.id,
+      slug: `${prefix}-wonka`,
+      name: "Wonka",
+      flatPrice: 900,
+      screenshotsByClosedPeriod: [35_000],
+      screenshotsInRunningPeriod: 21_000,
+    }),
+    // On a yearly contract, 100 days into its term.
+    createBilledTeam({
+      ...common,
+      planId: yearlyPlan.id,
+      slug: `${prefix}-oscorp`,
+      name: "Oscorp",
+      flatPrice: 10_800,
+      periodStart: daysFromNow(-100),
+      screenshotsByClosedPeriod: [],
+      screenshotsInRunningPeriod: 14_000,
+    }),
+  ]);
+  if (!globex.teamId) {
+    throw new Error("team account has no team");
+  }
+  const globexSubscription = await Subscription.query()
+    .findOne({ accountId: globex.id })
+    .throwIfNotFound();
+  await TeamOutreach.query().insert({
+    createdAt: daysFromNow(-3),
+    teamId: globex.teamId,
+    userId: user.user.id,
+    subscriptionId: globexSubscription.id,
+    type: "enterprise_offer",
+  });
+  // Trying Enterprise on the granted trial plan: 45,000 of its 300,000.
+  const { account: gekko } = await createTeamAccount({
+    slug: `${prefix}-gekko`,
+    name: "Gekko",
+  });
+  await gekko.$query().patch({ forcedPlanId: trialPlan.id });
+  const gekkoProject = await createProject({
+    accountId: gekko.id,
+    name: "web",
+  });
+  await ScreenshotBucket.query().insert({
+    name: "default",
+    commit: "029b662f3ae57bae7a215301067262c1e95bbc95",
+    branch: "main",
+    projectId: gekkoProject.id,
+    complete: true,
+    valid: true,
+    screenshotCount: 45_000,
+    storybookScreenshotCount: 0,
+  });
+  // An owner, so the drafted email has someone to go to.
+  const owner = await createUserAccount({
+    email: `${prefix}-jane@example.com`,
+    slug: `${prefix}-jane`,
+    name: "Jane Cooper",
+  });
+  // And one for the yearly contract, which gets the renewal email.
+  const oscorpOwner = await createUserAccount({
+    email: `${prefix}-ola@example.com`,
+    slug: `${prefix}-ola`,
+    name: "Ola Nordmann",
+  });
+  if (!acme.teamId || !oscorp?.teamId) {
+    throw new Error("team account has no team");
+  }
+  await TeamUser.query().insert([
+    { teamId: acme.teamId, userId: owner.user.id, userLevel: "owner" },
+    { teamId: oscorp.teamId, userId: oscorpOwner.user.id, userLevel: "owner" },
+  ]);
+  // Already written to about this renewal.
+  const oscorpSubscription = await Subscription.query()
+    .findOne({ accountId: oscorp.id })
+    .throwIfNotFound();
+  await TeamOutreach.query().insert({
+    teamId: oscorp.teamId,
+    userId: user.user.id,
+    subscriptionId: oscorpSubscription.id,
+    type: "enterprise_renewal",
+  });
+
+  await page.goto("/staff/enterprise");
+  await expect(
+    page.getByRole("heading", { name: "Enterprise", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("searchbox").fill(prefix);
+  await expect(page.getByRole("row", { name: /Acme/ })).toBeVisible();
+  await expect(page.getByText("Initech")).toBeHidden();
+
+  await expect(page.getByRole("row", { name: /Gekko/ })).toContainText(
+    "45K of 300K",
+  );
+  const wonkaRow = page.getByRole("row", { name: /Wonka/ });
+  await expect(wonkaRow).toContainText("$900 / month");
+  await expect(wonkaRow).toContainText("21K of 35K");
+  const oscorpRow = page.getByRole("row", { name: /Oscorp/ });
+  await expect(oscorpRow).toContainText("$10,800 / year");
+  await expect(oscorpRow).toContainText("14K of 35K");
+  await expect(oscorpRow).toContainText("Emailed");
+  await expect(
+    oscorpRow.getByRole("link", { name: "Draft renewal email" }),
+  ).toHaveAttribute(
+    "href",
+    new RegExp(
+      `^mailto:${prefix}-ola@example.com\\?subject=Your%20Argos%20plan%20renews%20on%20`,
+    ),
+  );
+
+  const acmeRow = page.getByRole("row", { name: /Acme/ });
+  await expect(acmeRow).toContainText("$1,500");
+  await expect(acmeRow).toContainText("$100");
+  await expect(
+    acmeRow.getByRole("link", { name: "Draft Enterprise offer email" }),
+  ).toHaveAttribute(
+    "href",
+    new RegExp(
+      `^mailto:${prefix}-jane@example.com\\?subject=A%20better%20price%20for%20Acme%20on%20Argos&`,
+    ),
+  );
+  const globexRow = page.getByRole("row", { name: /Globex/ });
+  await expect(globexRow).toContainText("$2,200");
+  await expect(
+    globexRow.getByRole("switch", { name: "Enterprise offer email sent" }),
+  ).toBeChecked();
+
+  await screenshot(page, "staff-enterprise");
+
+  // The mark is kept on the server, not on the page.
+  const acmeSwitch = acmeRow.getByRole("switch", {
+    name: "Enterprise offer email sent",
+  });
+  await expect(acmeSwitch).not.toBeChecked();
+  await acmeSwitch.click();
+  await expect(acmeSwitch).toBeChecked();
+  await page.reload();
+  await page.getByRole("searchbox").fill(prefix);
+  await expect(
+    page
+      .getByRole("row", { name: /Acme/ })
+      .getByRole("switch", { name: "Enterprise offer email sent" }),
+  ).toBeChecked();
+});
+
 loggedTest("staff pages are refused to regular users", async ({ page }) => {
   // Every staff page, not just one: each owns its own query, so each has to
   // turn the refusal into something a reader can act on rather than into a
@@ -1399,6 +1609,7 @@ loggedTest("staff pages are refused to regular users", async ({ page }) => {
   for (const path of [
     "/staff/teams",
     "/staff/trials",
+    "/staff/enterprise",
     "/staff/cancellations",
     "/staff/revenue",
   ]) {

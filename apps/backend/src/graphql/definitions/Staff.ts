@@ -14,6 +14,7 @@ import {
   UserEmail,
 } from "@/database/models";
 import type { AccountSubscriptionStatus } from "@/database/models/Account";
+import { getStaffEnterprise } from "@/database/services/enterprise-offer";
 import {
   getInvoicedAmount,
   getPeriodAmount,
@@ -25,6 +26,7 @@ import {
 import { getStaffCancellations } from "@/database/services/staff-cancellations";
 import { getStaffTrialSubscriber } from "@/database/services/staff-trial";
 import {
+  logTeamOutreach,
   markTeamOutreach,
   unmarkTeamOutreach,
 } from "@/database/services/team-outreach";
@@ -41,11 +43,12 @@ import {
   MirrorCoverageError,
 } from "@/stripe/revenue";
 
-import type {
-  IAccountSubscriptionStatus,
-  IPlanInterval,
-  IResolvers,
-  IStaffTeamOrderBy,
+import {
+  ICurrency,
+  type IAccountSubscriptionStatus,
+  type IPlanInterval,
+  type IResolvers,
+  type IStaffTeamOrderBy,
 } from "../__generated__/resolver-types";
 import type { Context } from "../context";
 import type { AccountActivation } from "../loaders";
@@ -373,6 +376,107 @@ export const typeDefs = gql`
     staffContactedAt: DateTime
   }
 
+  """
+  A team on Pro at list prices whose running or previous billing period came
+  to $1,500 or more before tax: one the Billing page offers an Enterprise
+  plan to, as the staff Enterprise page lists it.
+  """
+  type StaffEnterpriseOffer {
+    "The id of the team's Pro subscription."
+    id: ID!
+    team: Team!
+    "The currency the amounts below are in."
+    currency: Currency!
+    """
+    What the running billing period comes to so far, before tax: the plan,
+    its add-ons and the overage counted until now. Null when it has nothing to
+    price, as during a trial.
+    """
+    currentPeriodAmount: Float
+    """
+    What the previous billing period came to, before tax: its mirrored invoice
+    when there is one, the estimate otherwise. Null when the team was not
+    billed for it.
+    """
+    previousPeriodAmount: Float
+    """
+    When a staff member emailed the team the Enterprise offer, null if nobody
+    did.
+    """
+    staffContactedAt: DateTime
+  }
+
+  """
+  A team on an Enterprise plan, as the staff Enterprise page lists it: the
+  contract it is billed on, and how far its running billing period went.
+  """
+  type StaffEnterpriseContract {
+    "The id of the team's Enterprise subscription."
+    id: ID!
+    team: Team!
+    plan: Plan!
+    "The currency the amounts below are in."
+    currency: Currency!
+    """
+    What the contract costs per billing period, a month or a year, before tax,
+    as Stripe states it. Null when Stripe has nothing to state.
+    """
+    amount: Float
+    "Screenshots included per billing period. Null when the plan sets none."
+    includedScreenshots: Int
+    "When the running billing period opened. Null when it is not billed yet."
+    periodStart: DateTime
+    """
+    When the running billing period ends, which is when a yearly contract
+    renews. Null when it is not billed yet.
+    """
+    periodEnd: DateTime
+    """
+    Screenshots used since the running billing period opened. Null when the
+    plan is not billed by usage.
+    """
+    periodScreenshots: Int
+    """
+    What the previous billing period came to, before tax: its mirrored invoice
+    when there is one, the estimate otherwise. Null when the team was not
+    billed for it.
+    """
+    previousPeriodAmount: Float
+    """
+    When a staff member last emailed the team about renewing, during the
+    running period. Null if nobody did yet this term.
+    """
+    renewalEmailedAt: DateTime
+  }
+
+  """
+  A team staff granted the Enterprise trial plan, as the staff Enterprise page
+  lists it. A granted plan's period is the calendar month.
+  """
+  type StaffEnterpriseTrial {
+    "The id of the team account."
+    id: ID!
+    team: Team!
+    "Screenshots the trial plan includes per month."
+    includedScreenshots: Int!
+    "The first day of the running month."
+    periodStart: DateTime!
+    "The first day of the next month."
+    periodEnd: DateTime!
+    "Screenshots used since the running month opened."
+    periodScreenshots: Int!
+  }
+
+  "What the staff Enterprise page lists."
+  type StaffEnterprise {
+    "Teams on an Enterprise plan, monthly and yearly."
+    contracts: [StaffEnterpriseContract!]!
+    "Pro teams the Billing page offers an Enterprise plan to."
+    candidates: [StaffEnterpriseOffer!]!
+    "Teams on the Enterprise trial plan."
+    trials: [StaffEnterpriseTrial!]!
+  }
+
   "One billing period of a team, priced from the usage it accumulated."
   type TeamStaffBillingPeriod {
     from: DateTime!
@@ -501,6 +605,15 @@ export const typeDefs = gql`
   input SetStaffCancellationContactInput {
     subscriptionId: ID!
     contacted: Boolean!
+  }
+
+  input SetStaffEnterpriseOfferContactInput {
+    subscriptionId: ID!
+    contacted: Boolean!
+  }
+
+  input LogStaffEnterpriseRenewalEmailInput {
+    subscriptionId: ID!
   }
 
   input StartStaffTrialInput {
@@ -832,6 +945,11 @@ export const typeDefs = gql`
     """
     staffCancellations(days: Int! = 90): [StaffCancellation!]!
     """
+    The teams on an Enterprise plan, and the Pro teams the Billing page offers
+    one to, for staff to follow and email by hand (staff only).
+    """
+    staffEnterprise: StaffEnterprise!
+    """
     What Argos invoiced over the last \`months\` calendar months, oldest first
     and the running one last, with the annual contracts the yearly rate is
     made of (staff only).
@@ -855,6 +973,20 @@ export const typeDefs = gql`
       input: SetStaffCancellationContactInput!
     ): StaffCancellation!
     """
+    Record or clear that a staff member emailed a team the Enterprise offer
+    (staff only)
+    """
+    setStaffEnterpriseOfferContact(
+      input: SetStaffEnterpriseOfferContactInput!
+    ): StaffEnterpriseOffer!
+    """
+    Record that a staff member emailed a team on an Enterprise plan about
+    renewing its contract (staff only)
+    """
+    logStaffEnterpriseRenewalEmail(
+      input: LogStaffEnterpriseRenewalEmailInput!
+    ): StaffEnterpriseContract!
+    """
     Put a team that holds no subscription back on a trial of the Pro plan, in
     the name of one of its owners (staff only). Like any trial, it is canceled
     at the end unless a payment method was added.
@@ -864,6 +996,11 @@ export const typeDefs = gql`
     extendStaffTrial(input: ExtendStaffTrialInput!): Team!
   }
 `;
+
+/** The billing period still running, or undefined while none is billed. */
+function getRunningPeriod(billing: AccountBilling) {
+  return billing.periodUsage?.billingPeriods.find((period) => !period.closed);
+}
 
 export const resolvers: IResolvers = {
   Team: {
@@ -980,6 +1117,85 @@ export const resolvers: IResolvers = {
         account.id,
       );
       return totals.count;
+    },
+  },
+  StaffEnterpriseOffer: {
+    team: async (subscription, _args, ctx) => {
+      const account = await ctx.loaders.Account.load(subscription.accountId);
+      invariant(account, "subscription account not found");
+      return account;
+    },
+    currency: (subscription) =>
+      subscription.currency === "eur" ? ICurrency.Eur : ICurrency.Usd,
+    currentPeriodAmount: async (subscription, _args, ctx) => {
+      const billing = await ctx.loaders.AccountBillingByAccountId.load(
+        subscription.accountId,
+      );
+      return getPeriodAmount(billing, "current");
+    },
+    previousPeriodAmount: async (subscription, _args, ctx) => {
+      const billing = await ctx.loaders.AccountBillingByAccountId.load(
+        subscription.accountId,
+      );
+      return getPeriodAmount(billing, "previous");
+    },
+    staffContactedAt: async (subscription, _args, ctx) => {
+      const offer = await ctx.loaders.EnterpriseOfferBySubscriptionId.load(
+        subscription.id,
+      );
+      return offer ? new Date(offer.createdAt) : null;
+    },
+  },
+  StaffEnterprise: {
+    contracts: (enterprise) => enterprise.contracts,
+    candidates: (enterprise, _args, ctx) => {
+      // Each team was priced to be listed: the amounts read that same billing
+      // instead of pricing the team a second time.
+      for (const { subscription, billing } of enterprise.candidates) {
+        ctx.loaders.AccountBillingByAccountId.prime(
+          subscription.accountId,
+          billing,
+        );
+      }
+      return enterprise.candidates.map(({ subscription }) => subscription);
+    },
+  },
+  StaffEnterpriseTrial: {
+    id: ({ account }) => account.id,
+    team: ({ account }) => account,
+    includedScreenshots: ({ plan }) => plan.includedScreenshots,
+  },
+  StaffEnterpriseContract: {
+    id: ({ subscription }) => subscription.id,
+    team: async ({ subscription }, _args, ctx) => {
+      const account = await ctx.loaders.Account.load(subscription.accountId);
+      invariant(account, "subscription account not found");
+      return account;
+    },
+    plan: ({ billing }) => {
+      invariant(billing.plan, "an Enterprise contract is on a plan");
+      return billing.plan;
+    },
+    currency: ({ subscription }) =>
+      subscription.currency === "eur" ? ICurrency.Eur : ICurrency.Usd,
+    amount: ({ subscription }) => subscription.flatPrice,
+    includedScreenshots: ({ billing }) => billing.includedScreenshots,
+    periodStart: ({ billing }) => getRunningPeriod(billing)?.from ?? null,
+    periodEnd: ({ billing }) => getRunningPeriod(billing)?.endsAt ?? null,
+    periodScreenshots: ({ billing }) =>
+      billing.periodUsage?.currentPeriodScreenshotsCount ?? null,
+    previousPeriodAmount: ({ billing }) => getPeriodAmount(billing, "previous"),
+    renewalEmailedAt: async ({ subscription, billing }, _args, ctx) => {
+      const email = await ctx.loaders.LastRenewalEmailBySubscriptionId.load(
+        subscription.id,
+      );
+      if (!email) {
+        return null;
+      }
+      // An email about the previous term's renewal is not one about this one.
+      const periodStart = getRunningPeriod(billing)?.from;
+      const emailedAt = new Date(email.createdAt);
+      return periodStart && emailedAt < periodStart ? null : emailedAt;
     },
   },
   StaffCancellation: {
@@ -1222,6 +1438,10 @@ export const resolvers: IResolvers = {
 
       return getStaffCancellations(args.days);
     },
+    staffEnterprise: async (_root, _args, ctx) => {
+      assertStaff(ctx);
+      return getStaffEnterprise();
+    },
   },
   Mutation: {
     setTeamStaffContact: async (_root, args, ctx) => {
@@ -1278,6 +1498,57 @@ export const resolvers: IResolvers = {
 
       ctx.loaders.CancellationOutreachBySubscriptionId.clear(subscription.id);
       return subscription;
+    },
+    setStaffEnterpriseOfferContact: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      const subscription = await Subscription.query()
+        .findById(args.input.subscriptionId)
+        .withGraphFetched("account")
+        .throwIfNotFound();
+
+      if (!subscription.account.teamId) {
+        throw badUserInput("Subscription is not a team's.");
+      }
+
+      const action = {
+        teamId: subscription.account.teamId,
+        subscriptionId: subscription.id,
+        type: "enterprise_offer" as const,
+      };
+      if (args.input.contacted) {
+        await markTeamOutreach({ ...action, userId: ctx.auth.user.id });
+      } else {
+        await unmarkTeamOutreach(action);
+      }
+
+      ctx.loaders.EnterpriseOfferBySubscriptionId.clear(subscription.id);
+      return subscription;
+    },
+    logStaffEnterpriseRenewalEmail: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      const subscription = await Subscription.query()
+        .findById(args.input.subscriptionId)
+        .withGraphFetched("account")
+        .throwIfNotFound();
+
+      if (!subscription.account.teamId) {
+        throw badUserInput("Subscription is not a team's.");
+      }
+
+      await logTeamOutreach({
+        teamId: subscription.account.teamId,
+        userId: ctx.auth.user.id,
+        subscriptionId: subscription.id,
+        type: "enterprise_renewal",
+      });
+
+      ctx.loaders.LastRenewalEmailBySubscriptionId.clear(subscription.id);
+      const billing = await ctx.loaders.AccountBillingByAccountId.load(
+        subscription.accountId,
+      );
+      return { subscription, billing };
     },
     startStaffTrial: async (_root, args, ctx) => {
       assertStaff(ctx);
