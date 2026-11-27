@@ -5,6 +5,7 @@ import { timestampsSchema } from "../util/schemas";
 import type { SubscriptionInterval } from "./Subscription";
 
 const FREE_PLAN_NAME = "free";
+const PRO_PLAN_NAME = "pro";
 
 export class Plan extends Model {
   static override tableName = "plans";
@@ -65,5 +66,10 @@ export class Plan extends Model {
 
   static checkIsFreePlan(plan: Plan) {
     return plan.name === FREE_PLAN_NAME;
+  }
+
+  /** The self-serve Pro plan, its legacy 15K version included. */
+  static checkIsProPlan(plan: Plan) {
+    return plan.name === PRO_PLAN_NAME;
   }
 }
