@@ -20,7 +20,7 @@ type OverageAlert = {
   threshold: OverageAlertThreshold;
   currency: NonNullable<Subscription["currency"]>;
   spendLimit: number | null;
-  blockWhenSpendLimitIsReached: boolean;
+  planName: string;
 };
 
 /**
@@ -61,6 +61,7 @@ export async function claimOverageAlert(
     subscription?.currency,
     "A currency should be set if there is an additional screenshot cost",
   );
+  invariant(subscription.plan, "An active subscription has a plan");
 
   // The loaded account may predate a claim by a concurrent run, so the update
   // makes the check itself: no row updated means the alert was already claimed.
@@ -82,6 +83,6 @@ export async function claimOverageAlert(
     threshold,
     currency: subscription.currency,
     spendLimit,
-    blockWhenSpendLimitIsReached: account.blockWhenSpendLimitIsReached,
+    planName: subscription.plan.displayName,
   };
 }

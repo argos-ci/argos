@@ -31,7 +31,7 @@ export const handler = defineNotificationHandler({
     accountName: z.string().nullish(),
     accountSlug: z.string(),
     spendLimit: z.number().nullable(),
-    blockWhenSpendLimitIsReached: z.boolean(),
+    planName: z.string(),
   }),
   previewData: {
     threshold: 200,
@@ -39,7 +39,7 @@ export const handler = defineNotificationHandler({
     accountName: "Acme",
     accountSlug: "acme",
     spendLimit: 5000,
-    blockWhenSpendLimitIsReached: true,
+    planName: "Pro",
   },
   // A heads-up, not a warning: the overage is what a usage-based plan is for,
   // so the copy informs about the coming invoice instead of urging a cap. It
@@ -49,18 +49,6 @@ export const handler = defineNotificationHandler({
     const { threshold, currency, spendLimit, ctx } = props;
     const accountName = props.accountName || props.accountSlug;
     const amount = formatAmount(threshold, currency);
-    // A team with a spend limit, as every new team has, already gets emails at
-    // 50%, 75% and 100% of it: the alert says so instead of offering one.
-    const spendLimitAlerts =
-      spendLimit === null ? null : (
-        <>
-          Argos lets you know at 50%, 75% and 100% of it
-          {props.blockWhenSpendLimitIsReached
-            ? ", and pauses builds once it is reached"
-            : ""}
-          .
-        </>
-      );
     const settingsHref = new URL(
       `/${props.accountSlug}/settings/billing`,
       baseUrl,
@@ -96,14 +84,7 @@ export const handler = defineNotificationHandler({
                     <strong>50%, 75% and 100%</strong> of the amount you choose,
                     and can pause builds at that point if you prefer.
                   </Paragraph>
-                ) : (
-                  <Paragraph>
-                    Your team&apos;s spend limit is{" "}
-                    <strong>{formatAmount(spendLimit, currency)}</strong> per
-                    billing period: {spendLimitAlerts} You can change it in
-                    Spend Management.
-                  </Paragraph>
-                )}
+                ) : null}
               </>
             ),
             outro: (
@@ -143,9 +124,10 @@ export const handler = defineNotificationHandler({
                     </>
                   ) : (
                     <>
-                      From here, your{" "}
-                      <strong>{formatAmount(spendLimit, currency)}</strong>{" "}
-                      spend limit takes over: {spendLimitAlerts}
+                      Your <strong>{props.planName}</strong> plan is capped at{" "}
+                      <strong>{formatAmount(spendLimit, currency)}</strong> of
+                      overage per billing period, and you can change this amount
+                      in Spend Management.
                     </>
                   )}
                 </Paragraph>
@@ -173,13 +155,17 @@ export const handler = defineNotificationHandler({
           <H1>{amount} of overage this billing period</H1>
           <Hi name={ctx.user.name} />
           {content.intro}
-          <Section className="my-4 text-center">
-            <Button href={spendManagementHref}>
-              {spendLimit === null
-                ? "Set up spend management"
-                : "Open Spend Management"}
-            </Button>
-          </Section>
+          {/* The first alert to a team with a spend limit is a note: nothing
+              in it asks for an action. */}
+          {spendLimit === null || threshold === 500 ? (
+            <Section className="my-4 text-center">
+              <Button href={spendManagementHref}>
+                {spendLimit === null
+                  ? "Set up spend management"
+                  : "Open Spend Management"}
+              </Button>
+            </Section>
+          ) : null}
           {content.outro}
           <Signature />
         </EmailLayout>

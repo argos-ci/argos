@@ -89,7 +89,7 @@ describe("claimOverageAlert", () => {
         threshold: 200,
         currency: "usd",
         spendLimit: null,
-        blockWhenSpendLimitIsReached: false,
+        planName: "Pro",
       });
       await expect(getLastThreshold(account)).resolves.toBe(200);
       await expect(claim(account)).resolves.toBeNull();
@@ -104,14 +104,14 @@ describe("claimOverageAlert", () => {
         threshold: 200,
         currency: "usd",
         spendLimit: null,
-        blockWhenSpendLimitIsReached: false,
+        planName: "Pro",
       });
       await spend(project, 300);
       await expect(claim(account)).resolves.toEqual({
         threshold: 500,
         currency: "usd",
         spendLimit: null,
-        blockWhenSpendLimitIsReached: false,
+        planName: "Pro",
       });
       await expect(claim(account)).resolves.toBeNull();
     },
@@ -125,7 +125,7 @@ describe("claimOverageAlert", () => {
         threshold: 500,
         currency: "usd",
         spendLimit: null,
-        blockWhenSpendLimitIsReached: false,
+        planName: "Pro",
       });
       await expect(claim(account)).resolves.toBeNull();
     },
@@ -142,7 +142,6 @@ describe("claimOverageAlert", () => {
       await expect(claim(account)).resolves.toMatchObject({
         threshold: 500,
         spendLimit: 5000,
-        blockWhenSpendLimitIsReached: true,
       });
     },
   );
