@@ -8,6 +8,14 @@ import { TeamUser } from "../models/TeamUser";
 import { transaction } from "../transaction";
 import { parseAccountName } from "./account";
 
+/**
+ * The spend limit a new team starts with, in its subscription's currency:
+ * past it, builds are paused until the period resets. Overage is charged only
+ * once a period closes, so without it nothing bounds what a card owes. The
+ * team can raise, lower or remove it from Spend Management.
+ */
+const DEFAULT_SPEND_LIMIT = 5000;
+
 const resolveTeamSlug = async (name: string, index = 0): Promise<string> => {
   const nameSlug = slugify(name);
   const slug = index
@@ -44,6 +52,8 @@ export const createTeamAccount = async (props: {
       name,
       slug,
       teamId: team.id,
+      meteredSpendLimitByPeriod: DEFAULT_SPEND_LIMIT,
+      blockWhenSpendLimitIsReached: true,
     };
     if (props.githubAccountId) {
       accountData.githubAccountId = props.githubAccountId;

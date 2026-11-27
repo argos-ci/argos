@@ -24,7 +24,10 @@ import {
   getProjectVisibility,
   queryAccountProjects,
 } from "@/database/services/project";
-import { getSpendLimitThreshold } from "@/database/services/spend-limit";
+import {
+  getSpendLimitAlertData,
+  getSpendLimitThreshold,
+} from "@/database/services/spend-limit";
 import { queryActiveTests } from "@/database/services/test";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab";
@@ -782,13 +785,10 @@ export const resolvers: IResolvers = {
           if (previousThreshold === null || threshold > previousThreshold) {
             await sendNotification({
               type: "spend_limit",
-              data: {
-                accountName: updatedAccount.name,
-                accountSlug: updatedAccount.slug,
-                blockWhenSpendLimitIsReached:
-                  updatedAccount.blockWhenSpendLimitIsReached,
+              data: await getSpendLimitAlertData({
+                account: updatedAccount,
                 threshold,
-              },
+              }),
               recipients:
                 await updatedAccount.$getUserIdsWithPermission("billing"),
             });

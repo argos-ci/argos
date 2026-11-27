@@ -1,17 +1,20 @@
 import { assertNever } from "@argos/util/assertNever";
+import { formatDate } from "@argos/util/date-format";
+import { Section } from "react-email";
 import { z } from "zod";
 
 import config from "@/config";
 import { SpendLimitThresholdSchema } from "@/database/services/spend-limit";
 
 import {
+  Button,
   EmailLayout,
   H1,
   Hi,
-  Link,
   Paragraph,
   Signature,
 } from "../../email/components";
+import { formatAmount } from "../../email/util";
 import { defineNotificationHandler } from "../workflow-types";
 
 const baseUrl = config.get("server.url");
@@ -24,110 +27,128 @@ export const handler = defineNotificationHandler({
     accountName: z.string().nullish(),
     accountSlug: z.string(),
     blockWhenSpendLimitIsReached: z.boolean(),
+    spendLimit: z.number(),
+    currency: z.enum(["usd", "eur"]),
+    periodEndDate: z.string(),
   }),
   previewData: {
-    threshold: 100,
-    accountName: "Argos",
-    accountSlug: "argos",
+    threshold: 50,
+    accountName: "Acme",
+    accountSlug: "acme",
     blockWhenSpendLimitIsReached: true,
+    spendLimit: 5000,
+    currency: "usd",
+    periodEndDate: "2026-12-12T00:00:00.000Z",
   },
+  // A new team starts with a spend limit it did not set, so every email says
+  // what the limit is, what it counts and how to change it.
   email: (props) => {
-    const { threshold, ctx } = props;
+    const { threshold, blockWhenSpendLimitIsReached: pauses, ctx } = props;
     const accountName = props.accountName || props.accountSlug;
-    const billingHref = new URL(
-      `/${props.accountSlug}/settings/billing`,
-      baseUrl,
-    ).href;
+    const limit = (
+      <strong>{formatAmount(props.spendLimit, props.currency)}</strong>
+    );
+    const resetDate = (
+      <strong>
+        {formatDate(new Date(props.periodEndDate), "longMonthDay")}
+      </strong>
+    );
     const spendManagementHref = new URL(
       `/${props.accountSlug}/settings/billing#spend-management`,
       baseUrl,
     ).href;
+
+    const content = (() => {
+      switch (threshold) {
+        case 50:
+        case 75:
+          return {
+            subject: `${accountName} has used ${threshold}% of its spend limit`,
+            title: `${threshold}% of your spend limit used`,
+            body: (
+              <>
+                <Paragraph>
+                  Your team, <strong>{accountName}</strong>, has used{" "}
+                  <strong>{threshold}%</strong> of its {limit} spend limit for
+                  this billing period. The limit counts what you pay for
+                  screenshots beyond the ones your plan includes.
+                </Paragraph>
+                <Paragraph>
+                  {pauses ? (
+                    <>
+                      Once it is reached, your team&apos;s builds are paused
+                      until the period resets on {resetDate}.
+                    </>
+                  ) : (
+                    <>
+                      Builds keep running once it is reached, and you get an
+                      email when it is.
+                    </>
+                  )}{" "}
+                  You can raise, lower or remove the limit in Spend Management.
+                </Paragraph>
+              </>
+            ),
+          };
+        case 100:
+          return pauses
+            ? {
+                subject: `${accountName} has reached its spend limit, builds are paused`,
+                title: "Spend limit reached, builds paused",
+                body: (
+                  <>
+                    <Paragraph>
+                      Your team, <strong>{accountName}</strong>, has reached its{" "}
+                      {limit} spend limit for this billing period, so{" "}
+                      <strong>its new builds and uploads are rejected</strong>{" "}
+                      and the CI jobs that upload screenshots to Argos fail.
+                    </Paragraph>
+                    <Paragraph>
+                      Builds resume on {resetDate}, when the period resets, or
+                      as soon as you raise or remove the limit in Spend
+                      Management.
+                    </Paragraph>
+                  </>
+                ),
+              }
+            : {
+                subject: `${accountName} has reached its spend limit`,
+                title: "Spend limit reached",
+                body: (
+                  <>
+                    <Paragraph>
+                      Your team, <strong>{accountName}</strong>, has reached its{" "}
+                      {limit} spend limit for this billing period. Builds keep
+                      running, so what you pay for additional screenshots keeps
+                      growing until the period resets on {resetDate}.
+                    </Paragraph>
+                    <Paragraph>
+                      To stop builds at the limit, turn on Pause builds in Spend
+                      Management.
+                    </Paragraph>
+                  </>
+                ),
+              };
+        default:
+          assertNever(threshold);
+      }
+    })();
+
     return {
-      subject: `Your team has reached ${threshold}% of its spend limit`,
+      subject: content.subject,
       body: (
         <EmailLayout
-          preview={`You’re at ${threshold}% of your spend limit for this cycle. Check your usage now.`}
+          preview={`${threshold}% of your ${formatAmount(props.spendLimit, props.currency)} spend limit used.`}
           preferencesUrl={ctx.preferencesUrl}
         >
-          <H1>Your team has reached {threshold}% of its spend limit</H1>
+          <H1>{content.title}</H1>
           <Hi name={ctx.user.name} />
-          {(() => {
-            switch (threshold) {
-              case 50: {
-                return (
-                  <>
-                    <Paragraph>
-                      We wanted to let you know that your team,{" "}
-                      <strong>{accountName}</strong>, has reached{" "}
-                      <strong>50%</strong> of its allocated spend for this
-                      billing cycle.
-                    </Paragraph>
-                    <Paragraph>
-                      This is just a friendly reminder to help you monitor your
-                      usage and avoid any surprises. If you’d like to review
-                      your current usage details or adjust your plan, feel free
-                      to visit your{" "}
-                      <Link href={billingHref}>team settings</Link>.
-                    </Paragraph>
-                  </>
-                );
-              }
-              case 75: {
-                return (
-                  <>
-                    <Paragraph>
-                      Heads up! Your team, <strong>{accountName}</strong>, has
-                      now reached <strong>75%</strong> of its allocated spend
-                      for this billing cycle.
-                    </Paragraph>
-                    <Paragraph>
-                      We recommend keeping an eye on your remaining usage. If
-                      you think you might exceed your limit, you can{" "}
-                      <Link href={spendManagementHref}>
-                        adjust your spend limit in the team settings
-                      </Link>
-                      .
-                    </Paragraph>
-                  </>
-                );
-              }
-              case 100: {
-                return (
-                  <>
-                    <Paragraph>
-                      Your team, <strong>{accountName}</strong>, has now reached{" "}
-                      <strong>100%</strong> of its allocated spend for this
-                      billing cycle.
-                    </Paragraph>
-                    {props.blockWhenSpendLimitIsReached ? (
-                      <Paragraph>
-                        To prevent any further charges,{" "}
-                        <strong>all builds have been paused</strong>. Please
-                        review your current usage or disable the pause in the{" "}
-                        <Link href={spendManagementHref}>team settings</Link> to
-                        continue to use Argos.
-                      </Paragraph>
-                    ) : (
-                      <Paragraph>
-                        <strong>
-                          You can continue to create builds and usage may
-                          increase above your limit.
-                        </strong>{" "}
-                        Please review your current usage or adjust your spend
-                        limit in the{" "}
-                        <Link href={spendManagementHref}>team settings</Link>.
-                      </Paragraph>
-                    )}
-                  </>
-                );
-              }
-              default:
-                assertNever(threshold);
-            }
-          })()}
+          {content.body}
+          <Section className="my-4 text-center">
+            <Button href={spendManagementHref}>Open Spend Management</Button>
+          </Section>
           <Paragraph>
-            If you have any questions or need assistance, don’t hesitate to
-            reach out.
+            Questions about your usage? Reply to this email.
           </Paragraph>
           <Signature />
         </EmailLayout>
