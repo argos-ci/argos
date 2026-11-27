@@ -3,7 +3,10 @@ import type { ErrorCode } from "@argos/error-types";
 
 import { APIError } from "./api";
 
-export const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
+const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
+
+/** An error whose message is written for the user, shown as is. */
+export class UserFacingError extends Error {}
 
 /**
  * Get a single error code from an error.
@@ -37,9 +40,14 @@ export function checkIsErrorCode(error: unknown, code: ErrorCode) {
 }
 
 /**
- * Get a user-friendly error message from an ApolloError.
+ * Get a user-friendly error message from an ApolloError or a
+ * {@link UserFacingError}.
  */
 export function getErrorMessage(error: unknown): string {
+  if (error instanceof UserFacingError) {
+    return error.message;
+  }
+
   if (CombinedGraphQLErrors.is(error) && error.errors[0]) {
     return error.errors[0].message ?? DEFAULT_ERROR_MESSAGE;
   }

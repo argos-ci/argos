@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import config from "@/config";
 import { GithubAccount, User, type Account } from "@/database/models";
+import { resolvePublicFileUrl } from "@/storage/public-files";
 
 const colors = [
   "#2a3b4c",
@@ -91,20 +92,31 @@ const directLoaders: AvatarLoaders = {
 };
 
 /**
- * Get the avatar for an account, either from GitHub, GitLab, or a default initial avatar.
+ * Get the avatar for an account: the one set on Argos, else from GitHub or
+ * GitLab, else a default initial avatar.
  */
 export async function getAccountAvatar(
   account: Account,
   loaders: AvatarLoaders = directLoaders,
 ) {
-  const ghAccount = account.githubAccountId
-    ? await loaders.GithubAccount.load(account.githubAccountId)
-    : null;
-
   const firstLetter = account.displayName[0];
   invariant(firstLetter, "Account should have a display name");
   const initial = firstLetter.toUpperCase();
   const color = getAvatarColor(account.id);
+
+  const { avatarKey } = account;
+  if (avatarKey) {
+    return {
+      // Stored at one size, small enough for every place that shows it.
+      url: () => resolvePublicFileUrl(avatarKey),
+      initial,
+      color,
+    };
+  }
+
+  const ghAccount = account.githubAccountId
+    ? await loaders.GithubAccount.load(account.githubAccountId)
+    : null;
 
   if (ghAccount) {
     return {

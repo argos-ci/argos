@@ -351,6 +351,8 @@ jobs:
             SERVER_URL=https://app.argos-ci.com
             SENTRY_RELEASE_VERSION=${{ github.sha }}
             ASSETS_BASE_URL=${{ env.ASSETS_BASE_URL }}
+            PUBLIC_FILES_BUCKET_NAME=argos-public-files-production
+            PUBLIC_FILES_BASE_URL=https://public.argos-ci.com/
           secrets: |
             AMQP_URL=/production/amqp_url
             AWS_ACCESS_KEY_ID=/production/aws_access_key_id

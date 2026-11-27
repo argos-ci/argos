@@ -23,6 +23,7 @@ import { useOriginEnabled } from "@/containers/Origin";
 import { PlanCancellationCard, PlanCard } from "@/containers/PlanCard";
 import { TeamAccessRole } from "@/containers/Team/AccessRole";
 import { TeamAddOns } from "@/containers/Team/AddOns";
+import { TeamChangeAvatar } from "@/containers/Team/ChangeAvatar";
 import { TeamDelete } from "@/containers/Team/Delete";
 import { TeamDiscord } from "@/containers/Team/Discord";
 import { TeamDomains } from "@/containers/Team/Domains";
@@ -85,6 +86,7 @@ const AccountQuery = graphql(`
       ...TeamDiscord_Account
       ...TeamMembers_Team
       ...TeamDelete_Team
+      ...TeamChangeAvatar_Team
       ...AccountChangeName_Account
       ...AccountChangeSlug_Account
       ...PlanCard_Account
@@ -226,6 +228,7 @@ function PageContent() {
                 description="This is your team’s URL namespace on Argos. Within it, your team
           can inspect their projects or configure settings."
               />
+              <TeamChangeAvatar team={account} />
             </>
           )}
           {isUser && <UserEmails account={account} />}

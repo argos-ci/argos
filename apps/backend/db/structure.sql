@@ -131,6 +131,7 @@ CREATE TABLE public.accounts (
     "lastMonthlyReportAt" timestamp with time zone,
     "lastPlanLimitAlertLevel" text,
     "lastPlanLimitAlertAt" timestamp with time zone,
+    "avatarKey" text,
     CONSTRAINT "accounts_lastPlanLimitAlertLevel_check" CHECK (("lastPlanLimitAlertLevel" = ANY (ARRAY['warning'::text, 'rejected'::text]))),
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
@@ -7921,5 +7922,6 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026112
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261123124108_build-auth-source.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261124150116_link-marketplace-teams-to-github.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261125120000_deployment-external-url.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261126130816_add-account-avatar-key.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261127150000_team-outreach.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261127160000_team-outreach-enterprise.js', 1, NOW());

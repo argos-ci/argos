@@ -9,6 +9,10 @@ import {
   ArgosDeploymentStack,
   ArgosDeploymentStackPropsSchema,
 } from "../lib/deployment-stack.ts";
+import {
+  ArgosPublicFilesStack,
+  ArgosPublicFilesStackPropsSchema,
+} from "../lib/public-files-stack.ts";
 import { ArgosReplicaStack } from "../lib/replica-stack.ts";
 
 const app = new cdk.App();
@@ -104,6 +108,34 @@ if (assetsConfig) {
       account: process.env["CDK_DEFAULT_ACCOUNT"],
       // Must be us-east-1: CloudFront only accepts an ACM certificate issued
       // there, whatever region the distribution serves from.
+      region: "us-east-1",
+    },
+  });
+}
+
+const publicFilesConfig = rawProps.publicFiles ?? null;
+
+// The app uploads and serves every public file from this bucket, so production
+// without it is uploads failing, not a stack left out.
+if (props.stage === "production" && !publicFilesConfig) {
+  throw new Error(
+    "Missing `publicFiles` in the production config: refusing to synth without the public files stack.",
+  );
+}
+
+if (publicFilesConfig) {
+  const publicFilesProps = ArgosPublicFilesStackPropsSchema.parse({
+    stage: props.stage,
+    ...publicFilesConfig,
+  });
+
+  new ArgosPublicFilesStack(app, `argos-public-files-${props.stage}`, {
+    ...publicFilesProps,
+    env: {
+      account: process.env["CDK_DEFAULT_ACCOUNT"],
+      // For the CloudFront certificate, like the assets stack. The app's S3
+      // client for this bucket assumes it (`PUBLIC_FILES_REGION` in
+      // `apps/backend/src/storage/public-files.ts`).
       region: "us-east-1",
     },
   });
