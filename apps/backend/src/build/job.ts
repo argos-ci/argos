@@ -86,8 +86,7 @@ async function updateUsage(project: Project) {
         data: {
           accountName: account.name,
           accountSlug: account.slug,
-          threshold: overageAlert.threshold,
-          currency: overageAlert.currency,
+          ...overageAlert,
         },
         recipients: await account.$getUserIdsWithPermission("billing"),
       });

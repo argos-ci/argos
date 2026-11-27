@@ -30,21 +30,37 @@ export const handler = defineNotificationHandler({
     currency: z.enum(["usd", "eur"]),
     accountName: z.string().nullish(),
     accountSlug: z.string(),
+    spendLimit: z.number().nullable(),
+    blockWhenSpendLimitIsReached: z.boolean(),
   }),
   previewData: {
     threshold: 200,
     currency: "usd",
-    accountName: "Argos",
-    accountSlug: "argos",
+    accountName: "Acme",
+    accountSlug: "acme",
+    spendLimit: 5000,
+    blockWhenSpendLimitIsReached: true,
   },
   // A heads-up, not a warning: the overage is what a usage-based plan is for,
   // so the copy informs about the coming invoice instead of urging a cap. It
   // says "overage", never what is metered, so billing something new does not
   // date it.
   email: (props) => {
-    const { threshold, currency, ctx } = props;
+    const { threshold, currency, spendLimit, ctx } = props;
     const accountName = props.accountName || props.accountSlug;
     const amount = formatAmount(threshold, currency);
+    // A team with a spend limit, as every new team has, already gets emails at
+    // 50%, 75% and 100% of it: the alert says so instead of offering one.
+    const spendLimitAlerts =
+      spendLimit === null ? null : (
+        <>
+          Argos lets you know at 50%, 75% and 100% of it
+          {props.blockWhenSpendLimitIsReached
+            ? ", and pauses builds once it is reached"
+            : ""}
+          .
+        </>
+      );
     const settingsHref = new URL(
       `/${props.accountSlug}/settings/billing`,
       baseUrl,
@@ -72,13 +88,22 @@ export const handler = defineNotificationHandler({
                   for what your team actually uses. We simply want to make sure
                   nothing on your invoice comes as a surprise.
                 </Paragraph>
-                <Paragraph>
-                  If you would like more visibility on this, you can{" "}
-                  <strong>set a spend limit</strong> from your team settings.
-                  Argos will then let you know when your overage reaches{" "}
-                  <strong>50%, 75% and 100%</strong> of the amount you choose,
-                  and can pause builds at that point if you prefer.
-                </Paragraph>
+                {spendLimit === null ? (
+                  <Paragraph>
+                    If you would like more visibility on this, you can{" "}
+                    <strong>set a spend limit</strong> from your team settings.
+                    Argos will then let you know when your overage reaches{" "}
+                    <strong>50%, 75% and 100%</strong> of the amount you choose,
+                    and can pause builds at that point if you prefer.
+                  </Paragraph>
+                ) : (
+                  <Paragraph>
+                    Your team&apos;s spend limit is{" "}
+                    <strong>{formatAmount(spendLimit, currency)}</strong> per
+                    billing period: {spendLimitAlerts} You can change it in
+                    Spend Management.
+                  </Paragraph>
+                )}
               </>
             ),
             outro: (
@@ -107,11 +132,22 @@ export const handler = defineNotificationHandler({
                 <Paragraph>
                   Argos sends this heads-up at {formatAmount(200, currency)} and{" "}
                   {amount} of overage, and{" "}
-                  <strong>this is the second and last one</strong>. If you would
-                  like to keep being notified as your usage grows, you can{" "}
-                  <strong>set a spend limit</strong>: Argos will then let you
-                  know at 50%, 75% and 100% of the amount you choose, and can
-                  pause builds at that point if you prefer.
+                  <strong>this is the second and last one</strong>.{" "}
+                  {spendLimit === null ? (
+                    <>
+                      If you would like to keep being notified as your usage
+                      grows, you can <strong>set a spend limit</strong>: Argos
+                      will then let you know at 50%, 75% and 100% of the amount
+                      you choose, and can pause builds at that point if you
+                      prefer.
+                    </>
+                  ) : (
+                    <>
+                      From here, your{" "}
+                      <strong>{formatAmount(spendLimit, currency)}</strong>{" "}
+                      spend limit takes over: {spendLimitAlerts}
+                    </>
+                  )}
                 </Paragraph>
               </>
             ),
@@ -138,7 +174,11 @@ export const handler = defineNotificationHandler({
           <Hi name={ctx.user.name} />
           {content.intro}
           <Section className="my-4 text-center">
-            <Button href={spendManagementHref}>Set up spend management</Button>
+            <Button href={spendManagementHref}>
+              {spendLimit === null
+                ? "Set up spend management"
+                : "Open Spend Management"}
+            </Button>
           </Section>
           {content.outro}
           <Signature />

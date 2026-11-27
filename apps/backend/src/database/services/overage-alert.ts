@@ -12,31 +12,31 @@ type OverageAlertThreshold = z.infer<typeof OverageAlertThresholdSchema>;
 
 /**
  * Additional screenshot costs, in the subscription currency, at which the
- * owners of an account without a spend limit are invited to set one up.
+ * owners are told about their overage before the invoice shows it.
  */
 const OVERAGE_ALERT_THRESHOLDS = [200, 500] satisfies OverageAlertThreshold[];
 
 type OverageAlert = {
   threshold: OverageAlertThreshold;
   currency: NonNullable<Subscription["currency"]>;
+  spendLimit: number | null;
+  blockWhenSpendLimitIsReached: boolean;
 };
 
 /**
- * Claim the overage alert due for an account without a spend limit: the
- * highest threshold its additional screenshot cost has reached and that the
- * owners have not been alerted about yet. Claiming records the threshold on
- * the account, so each alert is sent once per account.
+ * Claim the overage alert due for an account: the highest threshold its
+ * additional screenshot cost has reached and that the owners have not been
+ * alerted about yet. Claiming records the threshold on the account, so each
+ * alert is sent once per account.
  *
- * Returns null when a spend limit is set (its own alerts take over), when no
- * new threshold is reached, or when another run claimed it first.
+ * A threshold at or above the account's spend limit is skipped: the spend
+ * limit emails already cover that amount. Returns null when no new threshold
+ * is reached, or when another run claimed it first.
  */
 export async function claimOverageAlert(
   account: Account,
 ): Promise<OverageAlert | null> {
-  if (account.meteredSpendLimitByPeriod !== null) {
-    return null;
-  }
-
+  const spendLimit = account.meteredSpendLimitByPeriod;
   const manager = account.$getSubscriptionManager();
   const [cost, subscription] = await Promise.all([
     manager.getAdditionalScreenshotCost(),
@@ -44,7 +44,10 @@ export async function claimOverageAlert(
   ]);
 
   const threshold =
-    OVERAGE_ALERT_THRESHOLDS.findLast((candidate) => cost >= candidate) ?? null;
+    OVERAGE_ALERT_THRESHOLDS.findLast(
+      (candidate) =>
+        cost >= candidate && (spendLimit === null || candidate < spendLimit),
+    ) ?? null;
   // A claim only raises the value, so the loaded account, even stale, can hide
   // a claim but never invent one: skipping on it is safe, claiming on it is not.
   if (
@@ -64,7 +67,6 @@ export async function claimOverageAlert(
   const claimed = await Account.query()
     .patch({ lastOverageAlertThreshold: threshold })
     .where("id", account.id)
-    .whereNull("meteredSpendLimitByPeriod")
     .where((query) =>
       query
         .whereNull("lastOverageAlertThreshold")
@@ -76,5 +78,10 @@ export async function claimOverageAlert(
     return null;
   }
 
-  return { threshold, currency: subscription.currency };
+  return {
+    threshold,
+    currency: subscription.currency,
+    spendLimit,
+    blockWhenSpendLimitIsReached: account.blockWhenSpendLimitIsReached,
+  };
 }
