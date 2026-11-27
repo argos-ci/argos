@@ -880,10 +880,22 @@ function createAccountLast30DaysScreenshotsByAccountIdLoader() {
 
 function createAccountLastBuildDateByAccountIdLoader() {
   return new DataLoader<string, Date | null>(async (accountIds) => {
-    const rows = await Build.query()
-      .join("projects", "projects.id", "builds.projectId")
+    // One index probe per project for its newest build. A plain
+    // `max("createdAt")` grouped by account reads every build the account
+    // ever made: hundreds of megabytes for the biggest teams, which the staff
+    // Enterprise page lists all at once.
+    const rows = await knex
       .select("projects.accountId")
-      .select(knex.raw(`max(builds."createdAt") as "lastBuildDate"`))
+      .max({ lastBuildDate: "last.createdAt" })
+      .from("projects")
+      .joinRaw(
+        `cross join lateral (
+          select "createdAt" from builds
+          where builds."projectId" = projects.id
+          order by "createdAt" desc
+          limit 1
+        ) as last`,
+      )
       .whereIn("projects.accountId", accountIds as string[])
       .groupBy("projects.accountId");
 
