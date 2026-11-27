@@ -44,7 +44,7 @@ export const notificationCategoryMetadata: Record<
   billing: {
     label: "Billing",
     description:
-      "Plan limit, spend limit and overage alerts, and plan offers, for accounts you own.",
+      "Plan limit, spend limit and overage alerts for accounts you own.",
     configurable: true,
   },
   project: {
