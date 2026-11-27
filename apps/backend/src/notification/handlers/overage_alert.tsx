@@ -64,6 +64,10 @@ export const handler = defineNotificationHandler({
     const spendManagementLink = (
       <Link href={spendManagementHref}>Spend Management</Link>
     );
+    const teamSettingsLink = <Link href={settingsHref}>team settings</Link>;
+    // The first note to a team with a spend limit says where to see usage and
+    // change the limit in one line; the others give usage a line of its own.
+    const isCombined = spendLimit !== null && !isLast;
     const limit =
       spendLimit === null ? (
         <Paragraph>
@@ -83,7 +87,8 @@ export const handler = defineNotificationHandler({
         </Paragraph>
       ) : (
         <Paragraph>
-          You can change your spend limit in {spendManagementLink}.
+          You can check your current usage in your {teamSettingsLink} and you
+          can change your spend limit in {spendManagementLink}.
         </Paragraph>
       );
     return {
@@ -115,10 +120,12 @@ export const handler = defineNotificationHandler({
               </Button>
             </Section>
           ) : null}
-          <Paragraph>
-            You can check your current usage at any time in your{" "}
-            <Link href={settingsHref}>team settings</Link>.
-          </Paragraph>
+          {isCombined ? null : (
+            <Paragraph>
+              You can check your current usage at any time in your{" "}
+              {teamSettingsLink}.
+            </Paragraph>
+          )}
           <Paragraph>
             If you have any questions about your usage or your plan, reply to
             this email.
