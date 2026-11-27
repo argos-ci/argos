@@ -235,6 +235,24 @@ function getChangedDiffIds(runs: JourneyRun[]): string[] {
   return runs.flatMap((run) => run.changedDiffIds);
 }
 
+/** One detail of a run on its card, after the separator from the one before. */
+function RunDetail(props: {
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <span className="flex items-center whitespace-nowrap">
+      <span aria-hidden className="w-3.5 shrink-0 text-center">
+        ·
+      </span>
+      <span className="flex items-center gap-1.5">
+        {props.icon}
+        {props.children}
+      </span>
+    </span>
+  );
+}
+
 /** An icon that says what it means on hover, for whoever does not know it. */
 function ExplainedIcon(props: {
   description: string;
@@ -836,31 +854,44 @@ function JourneyRunItem(props: {
                 )}
               />
             </div>
-            <div className="text-low text-xxs flex items-center gap-1.5 px-2.5 pt-1.5 pb-2 font-medium tabular-nums">
-              {ViewportIcon ? (
-                <ViewportIcon className="size-3.5 shrink-0" />
-              ) : null}
-              <span className="truncate">
-                {viewport ? formatViewport(viewport) : "Unknown viewport"}
-              </span>
-              {browser ? (
-                <>
-                  <span aria-hidden>·</span>
-                  <BrowserIcon
-                    browser={{ name: browser }}
-                    className="size-3.5 shrink-0"
-                  />
-                  <span className="truncate">{getBrowserLabel(browser)}</span>
-                </>
-              ) : null}
-              {ColorSchemeIcon && colorScheme ? (
-                <>
-                  <span aria-hidden>·</span>
-                  <ColorSchemeIcon className="size-3.5 shrink-0" />
-                  <span className="truncate">{capitalize(colorScheme)}</span>
-                </>
-              ) : null}
-              <span className="ml-auto flex shrink-0 items-center gap-1.5">
+            <div className="text-low text-xxs flex items-start gap-1.5 px-2.5 pt-1.5 pb-2 font-medium tabular-nums">
+              {/* The details wrap on a narrow card rather than truncate. Each
+                  one leads with its separator, and the box clips the one that
+                  starts a line. */}
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <div className="-ml-3.5 flex flex-wrap gap-y-0.5">
+                  <RunDetail
+                    icon={
+                      ViewportIcon ? (
+                        <ViewportIcon className="size-3.5 shrink-0" />
+                      ) : null
+                    }
+                  >
+                    {viewport ? formatViewport(viewport) : "Unknown viewport"}
+                  </RunDetail>
+                  {browser ? (
+                    <RunDetail
+                      icon={
+                        <BrowserIcon
+                          browser={{ name: browser }}
+                          className="size-3.5 shrink-0"
+                        />
+                      }
+                    >
+                      {getBrowserLabel(browser)}
+                    </RunDetail>
+                  ) : null}
+                  {ColorSchemeIcon && colorScheme ? (
+                    <RunDetail
+                      icon={<ColorSchemeIcon className="size-3.5 shrink-0" />}
+                    >
+                      {capitalize(colorScheme)}
+                    </RunDetail>
+                  ) : null}
+                  <RunDetail>{plural(screens.length, "screenshot")}</RunDetail>
+                </div>
+              </div>
+              <span className="flex h-4 shrink-0 items-center gap-1.5">
                 {changed.length === 0 ? (
                   <StatusMark
                     group={ScreenshotDiffStatus.Unchanged}
@@ -885,11 +916,6 @@ function JourneyRunItem(props: {
                     }
                   />
                 )}
-                <ExplainedIcon
-                  description={`A journey of ${plural(screens.length, "screen")}`}
-                >
-                  <WaypointsIcon className="size-3.5" />
-                </ExplainedIcon>
               </span>
             </div>
           </div>

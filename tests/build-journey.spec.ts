@@ -226,8 +226,8 @@ loggedTest(
         .getByRole("listitem")
         .filter({ has: walkLink(title), hasNot: page.getByRole("heading") });
     await expect(runRow("complete a purchase")).toHaveText([
-      /375×812.*Chromium/,
-      /1280×720.*Chromium/,
+      /375×812.*4 screenshots/,
+      /1280×720.*4 screenshots/,
     ]);
     // Journeys come by file, as a pull request shows them, each file with
     // the build's review progress for its changed screens.
