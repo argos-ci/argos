@@ -9,8 +9,10 @@ import config from "@/config";
 import {
   Account,
   StaffTeamContact,
+  StripeInvoice,
   Subscription,
-  type TeamUser,
+  TeamUser,
+  UserEmail,
 } from "@/database/models";
 import type { AccountSubscriptionStatus } from "@/database/models/Account";
 import {
@@ -802,7 +804,11 @@ export const typeDefs = gql`
     staffTeams(
       after: Int! = 0
       first: Int! = 100
-      "Matches a team's name or slug, case-insensitively."
+      """
+      Matches a team's name or slug, case-insensitively, or its exact Stripe
+      customer or subscription ID. A search containing \`@\` also matches the
+      email addresses of the team's members.
+      """
       search: String
       "Keeps only teams billed on that interval. Teams with no plan are dropped."
       interval: PlanInterval
@@ -1033,7 +1039,47 @@ export const resolvers: IResolvers = {
             builder.where((where) => {
               where
                 .whereRaw(`name ilike ? escape '\\'`, [pattern])
-                .orWhereRaw(`slug ilike ? escape '\\'`, [pattern]);
+                .orWhereRaw(`slug ilike ? escape '\\'`, [pattern])
+                // Stripe ids are pasted whole from the dashboard: a fragment
+                // of one would match unrelated teams.
+                .orWhere("stripeCustomerId", search)
+                .orWhereIn(
+                  "accounts.id",
+                  Subscription.query()
+                    .select("accountId")
+                    .where("stripeSubscriptionId", search)
+                    // The account keeps one customer, but a team can be
+                    // billed on another (a trial extended by another member
+                    // bills theirs): the mirrored invoices tie each customer
+                    // to the subscriptions it paid for.
+                    .orWhereIn(
+                      "stripeSubscriptionId",
+                      StripeInvoice.query()
+                        .select("stripeSubscriptionId")
+                        .where("stripeCustomerId", search),
+                    ),
+                );
+              // Members only answer a search that looks like an email, or a
+              // name search would also list every team with a member whose
+              // address contains it.
+              if (search.includes("@")) {
+                where.orWhereExists(
+                  TeamUser.query()
+                    .join("users", "users.id", "team_users.userId")
+                    .whereColumn("team_users.teamId", "accounts.teamId")
+                    .where((emails) => {
+                      emails
+                        .whereRaw(`users.email ilike ? escape '\\'`, [pattern])
+                        .orWhereExists(
+                          UserEmail.query()
+                            .whereColumn("user_emails.userId", "users.id")
+                            .whereRaw(`user_emails.email ilike ? escape '\\'`, [
+                              pattern,
+                            ]),
+                        );
+                    }),
+                );
+              }
             });
           }
         });
