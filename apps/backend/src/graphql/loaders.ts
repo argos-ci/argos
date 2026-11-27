@@ -54,7 +54,7 @@ import {
   ScreenshotBucket,
   ScreenshotDiff,
   SlackInstallation,
-  StaffTeamContact,
+  TeamOutreach,
   Subscription,
   Team,
   TeamUser,
@@ -1084,17 +1084,33 @@ function createTeamOwnersByTeamIdLoader() {
   });
 }
 
-function createStaffTeamContactByTeamIdLoader() {
-  return new DataLoader<string, StaffTeamContact | null>(async (teamIds) => {
-    const contacts = await StaffTeamContact.query().whereIn(
-      "teamId",
-      teamIds as string[],
+function createTrialOutreachByTeamIdLoader() {
+  return new DataLoader<string, TeamOutreach | null>(async (teamIds) => {
+    const actions = await TeamOutreach.query()
+      .where("type", "trial")
+      .whereIn("teamId", teamIds as string[]);
+    const actionByTeamId = new Map(
+      actions.map((action) => [action.teamId, action]),
     );
-    const contactByTeamId = new Map(
-      contacts.map((contact) => [contact.teamId, contact]),
-    );
-    return teamIds.map((teamId) => contactByTeamId.get(String(teamId)) ?? null);
+    return teamIds.map((teamId) => actionByTeamId.get(String(teamId)) ?? null);
   });
+}
+
+function createCancellationOutreachBySubscriptionIdLoader() {
+  return new DataLoader<string, TeamOutreach | null>(
+    async (subscriptionIds) => {
+      const actions = await TeamOutreach.query()
+        .where("type", "cancellation")
+        .whereIn("subscriptionId", subscriptionIds as string[]);
+      const actionBySubscriptionId = new Map(
+        actions.map((action) => [action.subscriptionId, action]),
+      );
+      return subscriptionIds.map(
+        (subscriptionId) =>
+          actionBySubscriptionId.get(String(subscriptionId)) ?? null,
+      );
+    },
+  );
 }
 
 function createSubscriptionRevenueLoader() {
@@ -2226,7 +2242,9 @@ export const createLoaders = () => ({
   AccountStorybookTotalsByAccountId:
     createAccountStorybookTotalsByAccountIdLoader(),
   TeamOwnersByTeamId: createTeamOwnersByTeamIdLoader(),
-  StaffTeamContactByTeamId: createStaffTeamContactByTeamIdLoader(),
+  TrialOutreachByTeamId: createTrialOutreachByTeamIdLoader(),
+  CancellationOutreachBySubscriptionId:
+    createCancellationOutreachBySubscriptionIdLoader(),
   SubscriptionRevenue: createSubscriptionRevenueLoader(),
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),

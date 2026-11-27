@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import type Stripe from "stripe";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Plan, Subscription } from "@/database/models";
+import { Account, Plan, Subscription, TeamOutreach } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import * as discord from "@/discord";
 
@@ -67,6 +67,58 @@ describe("handleStripeEvent", () => {
       const content = send.mock.calls[0][0].content;
       expect(content).toContain("Subscription has been marked to cancel");
       expect(content).toContain("Reason: too_expensive");
+    });
+
+    describe("with a staff follow-up on the cancellation", () => {
+      const scheduled = CANCELLATION_FEEDBACK_UPDATED_SUBSCRIPTION_EVENT_PAYLOAD
+        .data.object as Stripe.Subscription;
+
+      async function followUp() {
+        const subscription = await Subscription.query()
+          .findOne({ stripeSubscriptionId: scheduled.id })
+          .throwIfNotFound();
+        await subscription
+          .$query()
+          .patch({ endDate: new Date(Date.now() + 86_400_000).toISOString() });
+        const account = await Account.query()
+          .findById(subscription.accountId)
+          .throwIfNotFound();
+        invariant(account.teamId, "team account has no team");
+        await TeamOutreach.query().insert({
+          teamId: account.teamId,
+          userId: null,
+          subscriptionId: subscription.id,
+          type: "cancellation",
+        });
+        return subscription;
+      }
+
+      async function sync(stripeSubscription: Stripe.Subscription) {
+        vi.spyOn(discord, "notifyDiscord").mockResolvedValue(undefined);
+        vi.spyOn(stripe.subscriptions, "retrieve").mockResolvedValue(
+          stripeSubscription as Stripe.Response<Stripe.Subscription>,
+        );
+        await handleStripeEvent({
+          type: "customer.subscription.updated",
+          data: { object: stripeSubscription },
+        });
+      }
+
+      it("takes the follow-up back when the cancellation is called off", async () => {
+        const subscription = await followUp();
+        await sync({ ...scheduled, cancel_at: null, ended_at: null });
+        await expect(
+          TeamOutreach.query().where("subscriptionId", subscription.id),
+        ).resolves.toHaveLength(0);
+      });
+
+      it("keeps the follow-up while the cancellation stands", async () => {
+        const subscription = await followUp();
+        await sync(scheduled);
+        await expect(
+          TeamOutreach.query().where("subscriptionId", subscription.id),
+        ).resolves.toHaveLength(1);
+      });
     });
 
     it("ends the past due notification with the amount due", async () => {

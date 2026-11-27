@@ -596,8 +596,10 @@ function ActivityCard(props: { team: StaffTeam }) {
           label: "Contacted by staff",
           value: staff.contact ? (
             <>
-              <Time date={staff.contact.date} format="date" /> by{" "}
-              {staff.contact.user.name || staff.contact.user.slug}
+              <Time date={staff.contact.date} format="date" />
+              {staff.contact.user
+                ? ` by ${staff.contact.user.name || staff.contact.user.slug}`
+                : null}
             </>
           ) : (
             never

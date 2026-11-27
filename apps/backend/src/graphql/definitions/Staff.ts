@@ -8,7 +8,6 @@ import gqlTag from "graphql-tag";
 import config from "@/config";
 import {
   Account,
-  StaffTeamContact,
   StripeInvoice,
   Subscription,
   TeamUser,
@@ -25,6 +24,10 @@ import {
 } from "@/database/services/period-usage";
 import { getStaffCancellations } from "@/database/services/staff-cancellations";
 import { getStaffTrialSubscriber } from "@/database/services/staff-trial";
+import {
+  markTeamOutreach,
+  unmarkTeamOutreach,
+} from "@/database/services/team-outreach";
 import { formatDiscordLink, notifyDiscord } from "@/discord";
 import {
   createStripeTrialSubscription,
@@ -310,7 +313,8 @@ export const typeDefs = gql`
   type TeamStaffContact {
     id: ID!
     date: DateTime!
-    user: User!
+    "The staff member who reached out. Null once their account is deleted."
+    user: User
   }
 
   """
@@ -897,7 +901,7 @@ export const resolvers: IResolvers = {
     },
     contact: async (account, _args, ctx) => {
       invariant(account.teamId, "not a team account");
-      return ctx.loaders.StaffTeamContactByTeamId.load(account.teamId);
+      return ctx.loaders.TrialOutreachByTeamId.load(account.teamId);
     },
     plan: async (account, _args, ctx) => {
       const billing = await ctx.loaders.AccountBillingByAccountId.load(
@@ -979,6 +983,13 @@ export const resolvers: IResolvers = {
     },
   },
   StaffCancellation: {
+    staffContactedAt: async (subscription, _args, ctx) => {
+      const followUp =
+        await ctx.loaders.CancellationOutreachBySubscriptionId.load(
+          subscription.id,
+        );
+      return followUp ? new Date(followUp.createdAt) : null;
+    },
     team: async (subscription, _args, ctx) => {
       const account = await ctx.loaders.Account.load(subscription.accountId);
       invariant(account, "subscription account not found");
@@ -1007,6 +1018,9 @@ export const resolvers: IResolvers = {
   TeamStaffContact: {
     date: (contact) => new Date(contact.createdAt),
     user: async (contact, _args, ctx) => {
+      if (!contact.userId) {
+        return null;
+      }
       const account = await ctx.loaders.AccountFromRelation.load({
         userId: contact.userId,
       });
@@ -1223,20 +1237,17 @@ export const resolvers: IResolvers = {
         throw badUserInput("Account is not a team.");
       }
 
+      const action = {
+        teamId: teamAccount.teamId,
+        type: "trial" as const,
+      };
       if (args.input.contacted) {
-        // Idempotent: marking an already-contacted team keeps the original
-        // author and date rather than rewriting them.
-        await StaffTeamContact.query()
-          .insert({ teamId: teamAccount.teamId, userId: ctx.auth.user.id })
-          .onConflict("teamId")
-          .ignore();
+        await markTeamOutreach({ ...action, userId: ctx.auth.user.id });
       } else {
-        await StaffTeamContact.query()
-          .delete()
-          .where("teamId", teamAccount.teamId);
+        await unmarkTeamOutreach(action);
       }
 
-      ctx.loaders.StaffTeamContactByTeamId.clear(teamAccount.teamId);
+      ctx.loaders.TrialOutreachByTeamId.clear(teamAccount.teamId);
 
       return teamAccount;
     },
@@ -1254,19 +1265,19 @@ export const resolvers: IResolvers = {
         throw badUserInput("Subscription is not a team's.");
       }
 
+      const action = {
+        teamId: subscription.account.teamId,
+        subscriptionId: subscription.id,
+        type: "cancellation" as const,
+      };
       if (args.input.contacted) {
-        // Idempotent like the trial mark: the first date stays.
-        await Subscription.query()
-          .patch({ staffContactedAt: new Date().toISOString() })
-          .where("id", subscription.id)
-          .whereNull("staffContactedAt");
+        await markTeamOutreach({ ...action, userId: ctx.auth.user.id });
       } else {
-        await Subscription.query()
-          .patch({ staffContactedAt: null })
-          .where("id", subscription.id);
+        await unmarkTeamOutreach(action);
       }
 
-      return subscription.$query();
+      ctx.loaders.CancellationOutreachBySubscriptionId.clear(subscription.id);
+      return subscription;
     },
     startStaffTrial: async (_root, args, ctx) => {
       assertStaff(ctx);

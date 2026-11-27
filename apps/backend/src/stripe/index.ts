@@ -11,6 +11,7 @@ import {
   CANCELLATION_REASONS,
   Plan,
   Subscription,
+  TeamOutreach,
 } from "@/database/models";
 import { computeAdditionalScreenshots } from "@/database/services/additional-screenshots";
 import {
@@ -470,9 +471,6 @@ function getCancellationDataFromStripe(
 
   return {
     endDate: rawEndDate ? timestampToISOString(rawEndDate) : null,
-    // A cancellation called off takes the staff follow-up with it: if the team
-    // cancels again, nobody has written to it about that one yet.
-    ...(!rawEndDate && { staffContactedAt: null }),
     canceledAt: stripeSubscription.canceled_at
       ? timestampToISOString(stripeSubscription.canceled_at)
       : null,
@@ -1120,6 +1118,14 @@ async function updateArgosSubscriptionFromStripe(
         await notifyPaymentMethodAdded({ provider: "stripe", account });
       }
     })(),
+    // A cancellation called off takes the staff follow-up with it: if the team
+    // cancels again, nobody has written to it about that one yet.
+    argosSubscription.endDate !== null && data.endDate === null
+      ? TeamOutreach.query().delete().where({
+          subscriptionId: argosSubscription.id,
+          type: "cancellation",
+        })
+      : null,
   ]);
   return updatedSubscription;
 }
