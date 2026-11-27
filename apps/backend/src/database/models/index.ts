@@ -62,7 +62,7 @@ export * from "./StripeInvoice";
 export * from "./StripeInvoiceSync";
 export * from "./Subscription";
 export * from "./Team";
-export * from "./TeamCrmAction";
+export * from "./TeamOutreach";
 export * from "./TeamDomain";
 export * from "./TeamInvite";
 export * from "./TeamSamlConfig";

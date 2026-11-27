@@ -54,7 +54,7 @@ import {
   ScreenshotBucket,
   ScreenshotDiff,
   SlackInstallation,
-  TeamCrmAction,
+  TeamOutreach,
   Subscription,
   Team,
   TeamUser,
@@ -1085,9 +1085,9 @@ function createTeamOwnersByTeamIdLoader() {
 }
 
 function createTrialOutreachByTeamIdLoader() {
-  return new DataLoader<string, TeamCrmAction | null>(async (teamIds) => {
-    const actions = await TeamCrmAction.query()
-      .where("type", "trial_outreach")
+  return new DataLoader<string, TeamOutreach | null>(async (teamIds) => {
+    const actions = await TeamOutreach.query()
+      .where("type", "trial")
       .whereIn("teamId", teamIds as string[]);
     const actionByTeamId = new Map(
       actions.map((action) => [action.teamId, action]),
@@ -1096,11 +1096,11 @@ function createTrialOutreachByTeamIdLoader() {
   });
 }
 
-function createCancellationFollowUpBySubscriptionIdLoader() {
-  return new DataLoader<string, TeamCrmAction | null>(
+function createCancellationOutreachBySubscriptionIdLoader() {
+  return new DataLoader<string, TeamOutreach | null>(
     async (subscriptionIds) => {
-      const actions = await TeamCrmAction.query()
-        .where("type", "cancellation_follow_up")
+      const actions = await TeamOutreach.query()
+        .where("type", "cancellation")
         .whereIn("subscriptionId", subscriptionIds as string[]);
       const actionBySubscriptionId = new Map(
         actions.map((action) => [action.subscriptionId, action]),
@@ -2243,8 +2243,8 @@ export const createLoaders = () => ({
     createAccountStorybookTotalsByAccountIdLoader(),
   TeamOwnersByTeamId: createTeamOwnersByTeamIdLoader(),
   TrialOutreachByTeamId: createTrialOutreachByTeamIdLoader(),
-  CancellationFollowUpBySubscriptionId:
-    createCancellationFollowUpBySubscriptionIdLoader(),
+  CancellationOutreachBySubscriptionId:
+    createCancellationOutreachBySubscriptionIdLoader(),
   SubscriptionRevenue: createSubscriptionRevenueLoader(),
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),

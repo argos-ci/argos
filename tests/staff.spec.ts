@@ -10,7 +10,7 @@ import {
   StripeInvoice,
   StripeInvoiceSync,
   Subscription,
-  TeamCrmAction,
+  TeamOutreach,
   TeamUser,
 } from "../apps/backend/src/database/models";
 import {
@@ -690,12 +690,12 @@ async function createCanceledTeams(input: {
       ...data,
     });
     if (contactedDaysAgo !== undefined) {
-      await TeamCrmAction.query().insert({
+      await TeamOutreach.query().insert({
         createdAt: daysFromNow(-contactedDaysAgo),
         teamId: team.id,
         userId: subscriberId,
         subscriptionId: created.id,
-        type: "cancellation_follow_up",
+        type: "cancellation",
       });
     }
     // Monthly bills, the most recent last, each one month further back.

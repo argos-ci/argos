@@ -194,11 +194,11 @@ relation is loaded:
   types. `User.account` and `Team.account` are typed non-null with a suppression:
   the app creates each in the same transaction as its owner.
 
-**What staff do with a customer goes in `team_crm_actions`.** An email sent, a
-follow-up, a mark on a staff page: one row with its `type`, its author and an
-optional `note`, never a timestamp column on the account or the subscription,
-nor a table per page. A new kind of action is a new type in `TeamCrmAction` and
-in the column's check constraint.
+**The emails staff send a team go in `team_outreach`.** A welcome to a trial, a
+follow-up on a cancellation, an offer: one row with its `type`, its author and
+an optional `note`, never a timestamp column on the account or the
+subscription, nor a table per page. A new kind of email is a new type in
+`TeamOutreach` and in the column's check constraint.
 
 **Idempotent inserts:** never gate an insert on a prior existence check — two
 concurrent requests can both pass it and race on the primary key. Insert

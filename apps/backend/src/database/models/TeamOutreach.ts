@@ -6,22 +6,23 @@ import { Subscription } from "./Subscription";
 import { Team } from "./Team";
 import { User } from "./User";
 
-const TEAM_CRM_ACTION_TYPES = [
+const TEAM_OUTREACH_TYPES = [
   /** A staff member wrote to a team trying Argos. Once per team. */
-  "trial_outreach",
+  "trial",
   /** A staff member wrote to a team about its cancellation. Once per subscription. */
-  "cancellation_follow_up",
+  "cancellation",
 ] as const;
 
-export type TeamCrmActionType = (typeof TEAM_CRM_ACTION_TYPES)[number];
+export type TeamOutreachType = (typeof TEAM_OUTREACH_TYPES)[number];
 
 /**
- * Something staff did with a customer: an email, a follow-up. One table for
- * every kind, told apart by `type`, so a new kind of action is a new type
- * rather than a new column, and the history of a team reads in one place.
+ * An email staff sent a team: a welcome to a trial, a follow-up on a
+ * cancellation. One table for every kind, told apart by `type`, so a new kind
+ * of email is a new type rather than a new column, and what was sent to a team
+ * reads in one place.
  */
-export class TeamCrmAction extends Model {
-  static override tableName = "team_crm_actions";
+export class TeamOutreach extends Model {
+  static override tableName = "team_outreach";
 
   static override jsonSchema = {
     allOf: [
@@ -33,7 +34,7 @@ export class TeamCrmAction extends Model {
           teamId: { type: "string" },
           userId: { type: ["string", "null"] },
           subscriptionId: { type: ["string", "null"] },
-          type: { type: "string", enum: [...TEAM_CRM_ACTION_TYPES] },
+          type: { type: "string", enum: [...TEAM_OUTREACH_TYPES] },
           note: { type: ["string", "null"] },
         },
       },
@@ -41,11 +42,11 @@ export class TeamCrmAction extends Model {
   };
 
   teamId!: string;
-  /** The staff member who acted. Null when unknown, or once they are deleted. */
+  /** The staff member who wrote. Null when unknown, or once they are deleted. */
   userId!: string | null;
-  /** The subscription the action is about, when it is about one. */
+  /** The subscription the email is about, when it is about one. */
   subscriptionId!: string | null;
-  type!: TeamCrmActionType;
+  type!: TeamOutreachType;
   note!: string | null;
 
   static override get relationMappings(): RelationMappings {
@@ -53,18 +54,18 @@ export class TeamCrmAction extends Model {
       team: {
         relation: Model.BelongsToOneRelation,
         modelClass: Team,
-        join: { from: "team_crm_actions.teamId", to: "teams.id" },
+        join: { from: "team_outreach.teamId", to: "teams.id" },
       },
       user: {
         relation: Model.BelongsToOneRelation,
         modelClass: User,
-        join: { from: "team_crm_actions.userId", to: "users.id" },
+        join: { from: "team_outreach.userId", to: "users.id" },
       },
       subscription: {
         relation: Model.BelongsToOneRelation,
         modelClass: Subscription,
         join: {
-          from: "team_crm_actions.subscriptionId",
+          from: "team_outreach.subscriptionId",
           to: "subscriptions.id",
         },
       },

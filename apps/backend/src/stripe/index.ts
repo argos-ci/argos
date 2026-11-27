@@ -11,7 +11,7 @@ import {
   CANCELLATION_REASONS,
   Plan,
   Subscription,
-  TeamCrmAction,
+  TeamOutreach,
 } from "@/database/models";
 import { computeAdditionalScreenshots } from "@/database/services/additional-screenshots";
 import {
@@ -1121,9 +1121,9 @@ async function updateArgosSubscriptionFromStripe(
     // A cancellation called off takes the staff follow-up with it: if the team
     // cancels again, nobody has written to it about that one yet.
     argosSubscription.endDate !== null && data.endDate === null
-      ? TeamCrmAction.query().delete().where({
+      ? TeamOutreach.query().delete().where({
           subscriptionId: argosSubscription.id,
-          type: "cancellation_follow_up",
+          type: "cancellation",
         })
       : null,
   ]);

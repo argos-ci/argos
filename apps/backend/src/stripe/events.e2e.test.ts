@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import type Stripe from "stripe";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Account, Plan, Subscription, TeamCrmAction } from "@/database/models";
+import { Account, Plan, Subscription, TeamOutreach } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import * as discord from "@/discord";
 
@@ -84,11 +84,11 @@ describe("handleStripeEvent", () => {
           .findById(subscription.accountId)
           .throwIfNotFound();
         invariant(account.teamId, "team account has no team");
-        await TeamCrmAction.query().insert({
+        await TeamOutreach.query().insert({
           teamId: account.teamId,
           userId: null,
           subscriptionId: subscription.id,
-          type: "cancellation_follow_up",
+          type: "cancellation",
         });
         return subscription;
       }
@@ -108,7 +108,7 @@ describe("handleStripeEvent", () => {
         const subscription = await followUp();
         await sync({ ...scheduled, cancel_at: null, ended_at: null });
         await expect(
-          TeamCrmAction.query().where("subscriptionId", subscription.id),
+          TeamOutreach.query().where("subscriptionId", subscription.id),
         ).resolves.toHaveLength(0);
       });
 
@@ -116,7 +116,7 @@ describe("handleStripeEvent", () => {
         const subscription = await followUp();
         await sync(scheduled);
         await expect(
-          TeamCrmAction.query().where("subscriptionId", subscription.id),
+          TeamOutreach.query().where("subscriptionId", subscription.id),
         ).resolves.toHaveLength(1);
       });
     });

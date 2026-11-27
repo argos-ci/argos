@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { TeamCrmAction } from "@/database/models";
+import { TeamOutreach } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
@@ -260,9 +260,9 @@ describe("GraphQL staff team contact", () => {
     }
 
     // The unique constraint would otherwise blow up on the second click.
-    const contacts = await TeamCrmAction.query().where({
+    const contacts = await TeamOutreach.query().where({
       teamId: teamAccount.teamId!,
-      type: "trial_outreach",
+      type: "trial",
     });
     expect(contacts).toHaveLength(1);
   });

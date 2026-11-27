@@ -1,9 +1,9 @@
 import { isUniqueViolationError } from "../error";
-import { TeamCrmAction, type TeamCrmActionType } from "../models";
+import { TeamOutreach, type TeamOutreachType } from "../models";
 
 type OneOffAction = {
   teamId: string;
-  type: TeamCrmActionType;
+  type: TeamOutreachType;
   subscriptionId?: string;
 };
 
@@ -16,11 +16,11 @@ type OneOffAction = {
  * `ON CONFLICT` target would have to restate its predicate: the violation is
  * caught instead, which keeps the insert atomic all the same.
  */
-export async function markTeamCrmAction(
+export async function markTeamOutreach(
   action: OneOffAction & { userId: string },
 ): Promise<void> {
   try {
-    await TeamCrmAction.query().insert({
+    await TeamOutreach.query().insert({
       teamId: action.teamId,
       userId: action.userId,
       subscriptionId: action.subscriptionId ?? null,
@@ -35,8 +35,8 @@ export async function markTeamCrmAction(
 }
 
 /** Take back a one-off action, when it was marked by mistake. */
-export async function unmarkTeamCrmAction(action: OneOffAction): Promise<void> {
-  const query = TeamCrmAction.query()
+export async function unmarkTeamOutreach(action: OneOffAction): Promise<void> {
+  const query = TeamOutreach.query()
     .delete()
     .where({ teamId: action.teamId, type: action.type });
   if (action.subscriptionId) {

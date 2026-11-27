@@ -25,9 +25,9 @@ import {
 import { getStaffCancellations } from "@/database/services/staff-cancellations";
 import { getStaffTrialSubscriber } from "@/database/services/staff-trial";
 import {
-  markTeamCrmAction,
-  unmarkTeamCrmAction,
-} from "@/database/services/team-crm-action";
+  markTeamOutreach,
+  unmarkTeamOutreach,
+} from "@/database/services/team-outreach";
 import { formatDiscordLink, notifyDiscord } from "@/discord";
 import {
   createStripeTrialSubscription,
@@ -985,7 +985,7 @@ export const resolvers: IResolvers = {
   StaffCancellation: {
     staffContactedAt: async (subscription, _args, ctx) => {
       const followUp =
-        await ctx.loaders.CancellationFollowUpBySubscriptionId.load(
+        await ctx.loaders.CancellationOutreachBySubscriptionId.load(
           subscription.id,
         );
       return followUp ? new Date(followUp.createdAt) : null;
@@ -1239,12 +1239,12 @@ export const resolvers: IResolvers = {
 
       const action = {
         teamId: teamAccount.teamId,
-        type: "trial_outreach" as const,
+        type: "trial" as const,
       };
       if (args.input.contacted) {
-        await markTeamCrmAction({ ...action, userId: ctx.auth.user.id });
+        await markTeamOutreach({ ...action, userId: ctx.auth.user.id });
       } else {
-        await unmarkTeamCrmAction(action);
+        await unmarkTeamOutreach(action);
       }
 
       ctx.loaders.TrialOutreachByTeamId.clear(teamAccount.teamId);
@@ -1268,15 +1268,15 @@ export const resolvers: IResolvers = {
       const action = {
         teamId: subscription.account.teamId,
         subscriptionId: subscription.id,
-        type: "cancellation_follow_up" as const,
+        type: "cancellation" as const,
       };
       if (args.input.contacted) {
-        await markTeamCrmAction({ ...action, userId: ctx.auth.user.id });
+        await markTeamOutreach({ ...action, userId: ctx.auth.user.id });
       } else {
-        await unmarkTeamCrmAction(action);
+        await unmarkTeamOutreach(action);
       }
 
-      ctx.loaders.CancellationFollowUpBySubscriptionId.clear(subscription.id);
+      ctx.loaders.CancellationOutreachBySubscriptionId.clear(subscription.id);
       return subscription;
     },
     startStaffTrial: async (_root, args, ctx) => {
