@@ -1,4 +1,3 @@
-import { assertNever } from "@argos/util/assertNever";
 import { Section } from "react-email";
 import { z } from "zod";
 
@@ -62,61 +61,27 @@ export const handler = defineNotificationHandler({
         A quick update on your usage, so your next invoice holds no surprise.
       </Paragraph>
     );
-    const content = (() => {
-      switch (threshold) {
-        case 200: {
-          return (
-            <>
-              {opening}
-              <Paragraph>
-                Your team, <strong>{accountName}</strong>, now has {amount} of
-                usage beyond its plan this billing period. It is billed at your
-                plan’s rates and will appear on your next invoice.
-              </Paragraph>
-              {spendLimit === null ? (
-                <Paragraph>
-                  If you would like more visibility on your usage, you can set a
-                  spend limit from your team settings. Argos then lets you know
-                  at 50%, 75% and 100% of the amount you choose, and can pause
-                  builds at that point if you prefer. Learn more about{" "}
-                  <Link href={spendManagementDocsHref}>spend management</Link>.
-                </Paragraph>
-              ) : null}
-            </>
-          );
-        }
-        case 500: {
-          return (
-            <>
-              {opening}
-              <Paragraph>
-                Your team, <strong>{accountName}</strong>, now has {amount} of
-                usage beyond its plan this billing period, billed at your plan’s
-                rates on your next invoice. This is the last of these notes.
-              </Paragraph>
-              <Paragraph>
-                {spendLimit === null ? (
-                  <>
-                    If you would like to keep track of your usage as it grows,
-                    you can set a spend limit: Argos then lets you know at 50%,
-                    75% and 100% of the amount you choose, and can pause builds
-                    at that point if you prefer.
-                  </>
-                ) : (
-                  <>
-                    Your {props.planName} plan is capped at{" "}
-                    {formatAmount(spendLimit, currency)} of overage per billing
-                    period, and you can change this amount in Spend Management.
-                  </>
-                )}
-              </Paragraph>
-            </>
-          );
-        }
-        default:
-          assertNever(threshold);
-      }
-    })();
+    const spendManagementLink = (
+      <Link href={spendManagementHref}>Spend Management</Link>
+    );
+    const limit =
+      spendLimit === null ? (
+        <Paragraph>
+          {isLast
+            ? "If you would like to keep track of your usage as it grows, you can set a spend limit in "
+            : "If you would like more visibility on your usage, you can set a spend limit in "}
+          {spendManagementLink}. Argos then lets you know at 50%, 75% and 100%
+          of the amount you choose, and can pause builds at that point if you
+          prefer. Learn more in the{" "}
+          <Link href={spendManagementDocsHref}>documentation</Link>.
+        </Paragraph>
+      ) : (
+        <Paragraph>
+          The {props.planName} plan is limited to{" "}
+          {formatAmount(spendLimit, currency)} of overage. You can change this
+          amount in {spendManagementLink}.
+        </Paragraph>
+      );
     return {
       subject: isLast
         ? `A last note on ${accountName}’s usage this billing period`
@@ -130,22 +95,29 @@ export const handler = defineNotificationHandler({
             {isLast ? "A last note on your usage" : "A note on your usage"}
           </H1>
           <Hi name={ctx.user.name} />
-          {content}
-          {/* The first note to a team with a spend limit asks for nothing, so
-              it has no button. */}
-          {spendLimit === null || isLast ? (
+          {opening}
+          <Paragraph>
+            Your team, <strong>{accountName}</strong>, now has {amount} of usage
+            beyond its plan this billing period.
+            {isLast ? " This is the last of these notes." : null}
+          </Paragraph>
+          {limit}
+          {/* A team with a spend limit is told where to change it, in a
+              link: a button would turn the note into a call to action. */}
+          {spendLimit === null ? (
             <Section className="my-4 text-center">
               <Button href={spendManagementHref}>
-                {spendLimit === null
-                  ? "Set up spend management"
-                  : "Open Spend Management"}
+                Set up spend management
               </Button>
             </Section>
           ) : null}
           <Paragraph>
             You can check your current usage at any time in your{" "}
-            <Link href={settingsHref}>team settings</Link>. If you have any
-            questions about your usage or your plan, reply to this email.
+            <Link href={settingsHref}>team settings</Link>.
+          </Paragraph>
+          <Paragraph>
+            If you have any questions about your usage or your plan, reply to
+            this email.
           </Paragraph>
           <Signature />
         </EmailLayout>
