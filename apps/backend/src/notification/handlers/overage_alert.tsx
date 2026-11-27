@@ -75,11 +75,15 @@ export const handler = defineNotificationHandler({
           prefer. Learn more in the{" "}
           <Link href={spendManagementDocsHref}>documentation</Link>.
         </Paragraph>
-      ) : (
+      ) : isLast ? (
         <Paragraph>
           The {props.planName} plan is limited to{" "}
           {formatAmount(spendLimit, currency)} of overage. You can change this
           amount in {spendManagementLink}.
+        </Paragraph>
+      ) : (
+        <Paragraph>
+          You can change your spend limit in {spendManagementLink}.
         </Paragraph>
       );
     return {
