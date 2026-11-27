@@ -8,15 +8,6 @@ import { factory, setupDatabase } from "@/database/testing";
 import { createTestHandlerApp } from "../test-util";
 import { createBuild } from "./createBuild";
 
-vi.mock("@/storage/s3", async () => {
-  const { S3Client } = await import("@aws-sdk/client-s3");
-  const client = new S3Client({
-    region: "us-east-1",
-    credentials: { accessKeyId: "test", secretAccessKey: "test" },
-  });
-  return { getS3Client: () => client };
-});
-
 const app = createTestHandlerApp(createBuild);
 
 const test = base.extend<{ project: Project }>({
@@ -43,6 +34,10 @@ const test = base.extend<{ project: Project }>({
 describe("createBuild", () => {
   beforeAll(() => {
     z.globalRegistry.clear();
+    // Signing a POST needs credentials, but the policy is computed locally.
+    vi.stubEnv("AWS_ACCESS_KEY_ID", "test");
+    vi.stubEnv("AWS_SECRET_ACCESS_KEY", "test");
+    vi.stubEnv("AWS_REGION", "us-east-1");
   });
 
   describe("with more than 5000 screenshots", () => {

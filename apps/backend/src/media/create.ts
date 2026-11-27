@@ -14,7 +14,7 @@ import { endTrialToUnlockUsage } from "@/stripe";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
-import { mediaObjectMatchesHash, sha256HexToBase64 } from "./checksum";
+import { sha256HexToBase64 } from "./checksum";
 import { finalizeMedia } from "./finalize";
 import { getMediaKey } from "./key";
 import { getMediaLimits, resolveExpiresAt, type MediaLimits } from "./limits";
@@ -117,42 +117,33 @@ export async function createMedia(
   });
   const expiresAt = resolveExpiresAt({ limits });
 
-  const { media, version: foundVersion } = await upsertMediaVersion({
+  const { media, version } = await upsertMediaVersion({
     ...params,
     key,
     defaultVisibility,
     expiresAt,
   });
 
+  if (version.uploadedAt) {
+    return { media, version, upload: null };
+  }
+
   // The key is content-addressed, so bytes uploaded once, by this media or by
   // any earlier one, are already in the bucket. Re-running the same command
-  // costs one HEAD instead of re-transferring a 500 MB video. The hash has to
-  // check out first: a key is only as good as the bytes stored under it.
+  // costs one HEAD instead of re-transferring a 500 MB video. Only a stored
+  // SHA-256 proves the object is the content the key names.
   const existingObject = await headMediaObject(key);
-  if (
-    existingObject &&
-    (await mediaObjectMatchesHash({
-      key,
-      hash: params.hash,
-      checksumSha256: existingObject.checksumSha256,
-    }))
-  ) {
+  if (existingObject?.checksumSha256 === sha256HexToBase64(params.hash)) {
     return {
       media,
-      version: await finalizeMedia(foundVersion, media),
+      version: await finalizeMedia(version, media),
       upload: null,
     };
   }
 
-  // Bytes that are gone, or that turned out not to be the declared content,
-  // cannot be finalized after a re-upload while the row still says they landed.
-  const version =
-    foundVersion.uploadedAt || existingObject
-      ? await foundVersion
-          .$query()
-          .patchAndFetch({ uploadedAt: null, billedUnits: 0 })
-      : foundVersion;
-
+  // An object without a checksum predates signed checksum uploads, and one with
+  // a different checksum is not this content. A signed POST to the same key
+  // replaces it atomically with bytes S3 has verified.
   const upload = await createUploadTarget({
     key,
     hash: params.hash,

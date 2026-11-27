@@ -1,10 +1,4 @@
-import { createHash } from "node:crypto";
-import type { Readable } from "node:stream";
-import {
-  DeleteObjectsCommand,
-  GetObjectCommand,
-  HeadObjectCommand,
-} from "@aws-sdk/client-s3";
+import { DeleteObjectsCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import type { TransactionOrKnex } from "objection";
 
 import config from "@/config";
@@ -43,26 +37,6 @@ export async function headMediaObject(key: string): Promise<{
     }
     throw error;
   }
-}
-
-/**
- * SHA-256 of an existing object, base64 encoded like S3's checksum metadata.
- *
- * Streamed rather than buffered: a video can be hundreds of megabytes, and only
- * objects uploaded before the bucket started storing SHA-256 checksums need it.
- */
-export async function hashMediaObject(key: string): Promise<string> {
-  const result = await getS3Client().send(
-    new GetObjectCommand({
-      Bucket: config.get("s3.screenshotsBucket"),
-      Key: key,
-    }),
-  );
-  const hash = createHash("sha256");
-  for await (const chunk of result.Body as Readable) {
-    hash.update(chunk as Buffer);
-  }
-  return hash.digest("base64");
 }
 
 /**

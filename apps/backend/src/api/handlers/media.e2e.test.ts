@@ -288,6 +288,63 @@ describe("createMedia", () => {
     });
   });
 
+  test("treats an object without a checksum as a cache miss", async ({
+    projectToken,
+  }) => {
+    createPresignedPost.mockClear();
+    headMediaObject.mockResolvedValueOnce({
+      size: 2048,
+      contentType: "image/png",
+    });
+
+    const res = await request(app)
+      .post("/media")
+      .set("Authorization", `Bearer ${projectToken}`)
+      .send({
+        name: "legacy.png",
+        contentType: "image/png",
+        size: 2048,
+        hash: HASH,
+      })
+      .expect(201);
+
+    expect(res.body.media.status).toBe("pending");
+    expect(res.body.upload).toMatchObject({
+      url: "https://s3.example.com/bucket",
+    });
+    // The signed POST writes to the same key, replacing the legacy object with
+    // bytes S3 has verified against the checksum.
+    expect(createPresignedPost.mock.calls[0]?.[1].Fields).toMatchObject({
+      "x-amz-checksum-algorithm": "SHA256",
+      "x-amz-checksum-sha256": Buffer.from(HASH, "hex").toString("base64"),
+    });
+  });
+
+  test("returns an uploaded version without calling S3", async ({
+    projectToken,
+    project,
+  }) => {
+    await factory.createMediaWithVersion({
+      media: { projectId: project.id, name: "early.png" },
+      version: { key: `media/${project.id}/${HASH}.png` },
+    });
+
+    const res = await request(app)
+      .post("/media")
+      .set("Authorization", `Bearer ${projectToken}`)
+      .send({
+        name: "early.png",
+        contentType: "image/png",
+        size: 2048,
+        hash: HASH,
+      })
+      .expect(201);
+
+    expect(res.body.upload).toBeNull();
+    expect(res.body.media.status).toBe("ready");
+    expect(headMediaObject).not.toHaveBeenCalled();
+  });
+
   test("rejects a content type that is not an accepted media type", async ({
     projectToken,
   }) => {

@@ -50,17 +50,13 @@ async function pendingVersion(bytes: Buffer) {
   return { media, version, key };
 }
 
-/** Commands that read the whole object, which only the hash fallback does. */
-function fullReads(): number {
-  return send.mock.calls.filter((call) => {
-    const command = call[0] as {
-      constructor: { name: string };
-      input: { Range?: string };
-    };
-    return (
-      command.constructor.name === "GetObjectCommand" && !command.input.Range
-    );
-  }).length;
+/** Any GetObject call would mean the backend downloaded the whole object. */
+function getObjectCalls(): number {
+  return send.mock.calls.filter(
+    (call) =>
+      (call[0] as { constructor: { name: string } }).constructor.name ===
+      "GetObjectCommand",
+  ).length;
 }
 
 beforeEach(async () => {
@@ -131,7 +127,7 @@ describe("finalizeMedia SHA-256 integrity", () => {
     });
   });
 
-  it("finalizes bytes whose SHA-256 matches the key without re-hashing", async () => {
+  it("finalizes bytes whose SHA-256 matches the key without downloading them", async () => {
     const bytes = await png(8, 8);
     const { media, version, key } = await pendingVersion(bytes);
     put(key, bytes);
@@ -139,7 +135,15 @@ describe("finalizeMedia SHA-256 integrity", () => {
     await expect(finalizeMedia(version, media)).resolves.toMatchObject({
       uploadedAt: expect.any(Date),
     });
-    expect(fullReads()).toBe(0);
+    expect(getObjectCalls()).toBe(1); // The 64 KB inspection read only.
+    const inspection = send.mock.calls.find(
+      (call) =>
+        (call[0] as { constructor: { name: string } }).constructor.name ===
+        "GetObjectCommand",
+    );
+    expect(inspection?.[0]).toMatchObject({
+      input: { Range: "bytes=0-65535" },
+    });
     await expect(
       MediaVersion.query().findById(version.id),
     ).resolves.toMatchObject({
@@ -153,38 +157,55 @@ describe("finalizeMedia SHA-256 integrity", () => {
     const declared = await png(8, 8);
     const other = await png(16, 16);
     const { media, version, key } = await pendingVersion(declared);
-    // Image B landed under image A's key. S3 stores B's checksum with it, so
-    // the mismatch has to be caught before the version is finalized.
     put(key, other, base64(other));
 
     await expect(finalizeMedia(version, media)).rejects.toThrow(/SHA-256/);
     expect(objects.has(key)).toBe(false);
     await expect(
       MediaVersion.query().findById(version.id),
-    ).resolves.toMatchObject({
-      uploadedAt: null,
-    });
+    ).resolves.toMatchObject({ uploadedAt: null });
   });
 
-  it("verifies an older object that has no stored checksum by streaming it", async () => {
+  it("keeps a shared object when a mismatched upload is rejected", async () => {
+    const declared = await png(8, 8);
+    const other = await png(16, 16);
+    const { media, version, key } = await pendingVersion(declared);
+    await factory.MediaVersion.create({
+      mediaId: media.id,
+      number: 2,
+      key,
+    });
+    put(key, other, base64(other));
+
+    await expect(finalizeMedia(version, media)).rejects.toThrow(/SHA-256/);
+    expect(objects.has(key)).toBe(true);
+  });
+
+  it("rejects an object without a checksum and asks for a re-upload", async () => {
     const bytes = await png(8, 8);
     const { media, version, key } = await pendingVersion(bytes);
     put(key, bytes, null);
 
+    await expect(finalizeMedia(version, media)).rejects.toThrow(
+      /no stored SHA-256 checksum.*Upload the file again/s,
+    );
+    expect(objects.has(key)).toBe(true);
+    await expect(
+      MediaVersion.query().findById(version.id),
+    ).resolves.toMatchObject({ uploadedAt: null });
+  });
+
+  it("finalizes after a legacy object is replaced by a checksummed upload", async () => {
+    const bytes = await png(8, 8);
+    const { media, version, key } = await pendingVersion(bytes);
+    put(key, bytes, null);
+    await expect(finalizeMedia(version, media)).rejects.toThrow(/checksum/);
+
+    put(key, bytes);
     await expect(finalizeMedia(version, media)).resolves.toMatchObject({
       uploadedAt: expect.any(Date),
     });
-    expect(fullReads()).toBe(1);
-  });
-
-  it("rejects older bytes that do not match the key either", async () => {
-    const declared = await png(8, 8);
-    const other = await png(16, 16);
-    const { media, version, key } = await pendingVersion(declared);
-    put(key, other, null);
-
-    await expect(finalizeMedia(version, media)).rejects.toThrow(/SHA-256/);
-    expect(objects.has(key)).toBe(false);
+    expect(getObjectCalls()).toBe(1);
   });
 
   it("still rejects malformed files with matching checksums", async () => {
@@ -203,7 +224,9 @@ describe("finalizeMedia SHA-256 integrity", () => {
     const { media, version, key } = await pendingVersion(bytes);
     put(key, bytes);
     const finalized = await finalizeMedia(version, media);
+    send.mockClear();
 
     await expect(finalizeMedia(finalized, media)).resolves.toBe(finalized);
+    expect(send).not.toHaveBeenCalled();
   });
 });

@@ -3,7 +3,7 @@ import { getMediaUnits } from "@argos/schemas/media";
 import { Media, MediaVersion } from "@/database/models";
 import { boom } from "@/util/error";
 
-import { mediaObjectMatchesHash } from "./checksum";
+import { sha256HexToBase64 } from "./checksum";
 import { scheduleMediaDiff } from "./diff-schedule";
 import { inspectMediaObject, MediaContentMismatchError } from "./inspect";
 import { getMediaHashFromKey } from "./key";
@@ -25,11 +25,10 @@ const POSTER_WAIT_MS = 10_000;
  * Everything here is cheap enough to run inside the request: one `HEAD` for the
  * real size and S3's stored checksum, and one 64 KB ranged read to check the file
  * is what it claims and to pick up an image's dimensions, plus, for a video, a
- * bounded wait for the CDN's poster frame. An object uploaded before S3 stored
- * SHA-256 checksums is streamed through the hash once instead. Bytes are served
- * exactly as uploaded, and the CDN derives WebP/AVIF variants and video posters
- * on request. The one background step is the before/after comparison, which
- * produces a separate mask and leaves the upload itself alone.
+ * bounded wait for the CDN's poster frame. Bytes are served exactly as uploaded,
+ * and the CDN derives WebP/AVIF variants and video posters on request. The one
+ * background step is the before/after comparison, which produces a separate mask
+ * and leaves the upload itself alone.
  *
  * Doing the check inline rather than in a worker is also better behaviour: a file
  * that isn't what it claims is rejected *before* the caller is handed a working
@@ -57,13 +56,16 @@ export async function finalizeMedia(
     );
   }
 
-  const matchesHash = await mediaObjectMatchesHash({
-    key: version.key,
-    hash: getMediaHashFromKey(version.key),
-    checksumSha256: head.checksumSha256,
-  });
+  if (!head.checksumSha256) {
+    throw boom(
+      400,
+      "This file has no stored SHA-256 checksum. Upload the file again.",
+    );
+  }
 
-  if (!matchesHash) {
+  if (
+    head.checksumSha256 !== sha256HexToBase64(getMediaHashFromKey(version.key))
+  ) {
     await deleteUnreferencedMediaObjects({
       keys: [version.key],
       excludeVersionIds: [version.id],
