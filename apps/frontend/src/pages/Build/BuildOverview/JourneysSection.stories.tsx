@@ -41,7 +41,6 @@ const page: Props["page"] = {
   params: { accountSlug: "acme", projectName: "shop", buildNumber: 42 },
   statuses: {},
   filters: new Set(),
-  onOpenRun: () => {},
 };
 
 const meta = {

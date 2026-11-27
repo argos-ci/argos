@@ -418,6 +418,66 @@ loggedTest(
 );
 
 loggedTest(
+  "lists a test filtered alone journey by journey, as the strip walks it",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build } = await createJourneysScenario({ projectId: project.id });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+    await page
+      .getByRole("button", { name: /^(Start review|Browse snapshots)/ })
+      .click();
+    // The reader lists the build by status.
+    await page.getByRole("button", { name: "Display options" }).click();
+    await page.getByRole("option", { name: "Status", exact: true }).click();
+    await page.keyboard.press("Escape");
+
+    // Filtered on one test, the list follows the test whatever the grouping:
+    // one journey after the other, each screen in the order it was taken,
+    // not the changed screens first nor the runs alternating.
+    await page.locator("button:has(.lucide-filter)").click();
+    await page.getByRole("option", { name: "Test", exact: true }).click();
+    await page
+      .getByRole("option", {
+        name: /^checkout\.spec\.ts › complete a purchase/,
+      })
+      .click();
+    await page.keyboard.press("Escape");
+    const rows = page.locator("[role='button'][data-index]");
+    await expect(rows).toHaveText([
+      /desktop\/checkout\/cart/,
+      /desktop\/checkout\/shipping/,
+      /desktop\/checkout\/payment/,
+      /desktop\/checkout\/confirmation/,
+      /mobile\/checkout\/cart/,
+      /mobile\/checkout\/shipping/,
+      /mobile\/checkout\/payment/,
+      /mobile\/checkout\/confirmation/,
+    ]);
+    // There is no grouping to pick then.
+    await page.getByRole("button", { name: "Display options" }).click();
+    await expect(
+      page.getByRole("option", { name: "Status", exact: true }),
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
+
+    // The strip walks the same screens, in the same order.
+    await rows.first().click();
+    await page.getByRole("button", { name: "Journey", exact: true }).click();
+    await expect(
+      page.getByTestId("journey-drawer").getByRole("button"),
+    ).toHaveText([
+      "1 · cart",
+      "2 · shipping",
+      "3 · payment",
+      "4 · confirmation",
+    ]);
+  },
+);
+
+loggedTest(
   "keeps each build's journeys when going from one build to another",
   async ({ page, team, project }) => {
     // Two builds of the same tests: their journeys share their ids.

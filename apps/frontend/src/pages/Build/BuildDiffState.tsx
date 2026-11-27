@@ -48,6 +48,7 @@ import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
 import { FilterStateContext } from "./metadata/filters/FilterState";
 import {
+  checkFiltersOneTest,
   diffMatchesFilters,
   useCreateFilterState,
   withFilters,
@@ -704,15 +705,45 @@ function getTestGroupName(test: JourneyIdentity | null): string {
 }
 
 /**
- * Groups the diffs by the test they come from, in the order the test took
- * them. Tests are listed by the most pressing status among their diffs, then
- * by name, and the ones with a diff to look at start open, as does a test
- * listed alone.
+ * Groups the diffs by the test they come from, journey by journey in the
+ * order the test took them. Tests are listed by the most pressing status
+ * among their diffs, then by name, and the ones with a diff to look at start
+ * open, as does a test listed alone.
  *
  * Built from the statuses the build came with, not from the review: a test
  * does not move as its diffs are marked, and marking one does not regroup the
  * build. The header reads the review on its own.
  */
+/**
+ * A test's diffs journey by journey, each as the journey strip walks it: one
+ * run at a time, one variant of it at a time (a viewport, a color scheme),
+ * its steps in order. Sorted by capture alone, the runs and the variants of a
+ * test would alternate on every step.
+ */
+function sortTestDiffs(
+  steps: { key: string; captureIndex: number | null; diff: Diff }[],
+): Diff[] {
+  const inCaptureOrder = steps.toSorted(compareSteps).map((step) => step.diff);
+  const sorted: Diff[] = [];
+  for (const journey of groupJourneys(inCaptureOrder, resolveDiffMetadata)) {
+    const signatures = new Set(
+      journey.steps.flatMap((step) => step.diffs.map(getVariantSignature)),
+    );
+    for (const signature of signatures) {
+      for (const step of journey.steps) {
+        sorted.push(
+          ...step.diffs.filter(
+            (diff) => getVariantSignature(diff) === signature,
+          ),
+        );
+      }
+    }
+  }
+  // Diffs from no test have no journey: they keep the capture order.
+  const listed = new Set(sorted);
+  return [...sorted, ...inCaptureOrder.filter((diff) => !listed.has(diff))];
+}
+
 function groupDiffsByTest(
   diffs: Diff[],
   context: { isSubsetBuild: boolean; searchMode: boolean },
@@ -748,7 +779,7 @@ function groupDiffsByTest(
       type: "test" as const,
       name,
       test,
-      diffs: steps.toSorted(compareSteps).map((step) => step.diff),
+      diffs: sortTestDiffs(steps),
       // A list filtered on one test, as a run of the overview opens it, shows
       // its snapshots whatever their status.
       defaultExpanded:
@@ -1013,7 +1044,7 @@ export function BuildDiffProvider(props: {
   const deferredSearch = useDeferredValue(search);
   const [searchMode, setSearchMode] = useState(false);
   const navigate = useNavigate();
-  const [grouping, setGroupingPreference] = useSnapshotGrouping();
+  const [groupingPreference, setGroupingPreference] = useSnapshotGrouping();
   const [, setDisplayPreference] = useSnapshotDisplay();
   const listToggles = useGroupToggles();
   const searchToggles = useGroupToggles();
@@ -1085,6 +1116,12 @@ export function BuildDiffProvider(props: {
     [screenshotDiffs],
   );
   const filterState = useCreateFilterState(screenshotDiffs);
+  // A single test is listed in the order it took its screenshots, whatever
+  // the grouping picked: a run of the overview, or a link to one, opens
+  // the list on its journey.
+  const grouping: SnapshotGrouping = checkFiltersOneTest(filterState.active)
+    ? "test"
+    : groupingPreference;
 
   const filteredDiffs = useMemo(() => {
     let diffs = searchMode

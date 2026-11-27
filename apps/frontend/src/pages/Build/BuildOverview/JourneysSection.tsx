@@ -56,7 +56,6 @@ import { formatViewport } from "../metadata/viewports/util";
 import { ReviewProgressBadge } from "../ReviewProgressBadge";
 import { getRepositoryFileURL } from "../sidebar/metadata/LocationChip";
 import { ScreenshotDiffThumbnail } from "../sidebar/ScreenshotDiffThumbnail";
-import { useSnapshotGrouping } from "../SnapshotListPreferences";
 
 const _JourneyFragment = graphql(`
   fragment JourneysSection_Journey on BuildJourney {
@@ -303,8 +302,6 @@ type JourneyPageContext = {
   statuses: Record<string, EvaluationStatus>;
   /** The filters of the list: the test it is filtered on is shown first. */
   filters: ReadonlySet<string>;
-  /** Lists the snapshots by test, in the order each test took them. */
-  onOpenRun: () => void;
 };
 
 function getTestFilterKey(test: Pick<JourneyTest, "key">): string {
@@ -372,7 +369,6 @@ export function JourneysSection(props: {
   const statuses = useReviewStatuses();
   const filterState = use(FilterStateContext);
   invariant(filterState, "journeys are shown on a build page");
-  const [, setGrouping] = useSnapshotGrouping();
   return (
     <JourneysSectionView
       {...props}
@@ -380,7 +376,6 @@ export function JourneysSection(props: {
         params,
         statuses,
         filters: filterState.active,
-        onOpenRun: () => setGrouping("test"),
       }}
     />
   );
@@ -673,7 +668,6 @@ function JourneyTestItem(props: {
             <HeadlessLink
               key={`${screen.run.key}:${screen.key}`}
               href={getRunScreenURL(page, screen.run, test, screen.diffId)}
-              onClick={page.onOpenRun}
               aria-label={`Screen ${screen.stepIndex + 1}, ${screen.name}, changed`}
               className="border-thin bg-app hover:bg-hover focus-ring text-xxs max-w-full truncate rounded-full px-1.5 transition"
             >
@@ -804,7 +798,6 @@ function JourneyRunItem(props: {
     <li className="isolate">
       <HeadlessLink
         href={getRunScreenURL(page, run, test, firstScreen.diffId)}
-        onClick={page.onOpenRun}
         aria-label={`Walk “${test.title}”${label ? ` at ${label}` : ""}`}
         className="group/item block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-(--ring-color-default)"
       >

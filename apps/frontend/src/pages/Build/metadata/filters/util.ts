@@ -69,6 +69,18 @@ export function withFilters(url: string, filters: ReadonlySet<string>): string {
 }
 
 /**
+ * Whether `filters` narrow the list to a single test: it then reads in the
+ * order the test took its screenshots, which is the journey's.
+ */
+export function checkFiltersOneTest(filters: ReadonlySet<string>): boolean {
+  return (
+    Array.from(filters).filter(
+      (key) => parseFilterKey(key).category === MetadataCategory.test,
+    ).length === 1
+  );
+}
+
+/**
  * The test a screenshot comes from, as the Test filter names it. Stories have
  * the Story kind filter.
  */
