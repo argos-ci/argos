@@ -8,7 +8,7 @@ import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
-import type { Diff } from "../../BuildDiffState";
+import { useGetSiblingDiffURL, type Diff } from "../../BuildDiffState";
 import { BrowserIcon } from "../browser/BrowserIcon";
 import { getBrowserLabel } from "../browser/browserLabels";
 import { FilterContextMenu } from "../filters/FilterContextMenu";
@@ -18,7 +18,6 @@ import {
   getUniqueBrowsers,
   hashBrowser,
   resolveDiffMetadata,
-  useGetDiffPath,
   type MetadataBrowser,
 } from "../utils";
 import { findVariantSibling } from "./sibling";
@@ -35,7 +34,7 @@ export function BrowserSwitcher(props: {
   isSubsetBuild: boolean;
 }) {
   const { diff, siblingDiffs, isSubsetBuild } = props;
-  const getDiffPath = useGetDiffPath();
+  const getSiblingURL = useGetSiblingDiffURL(diff);
   const metadata = resolveDiffMetadata(diff);
   const browsers = getUniqueBrowsers(
     siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
@@ -66,7 +65,7 @@ export function BrowserSwitcher(props: {
             browser={browser}
             status={getVariantStatus(resolvedDiff, { isSubsetBuild })}
             isActive={isActive}
-            href={getDiffPath(resolvedDiff.id) ?? ""}
+            href={getSiblingURL(resolvedDiff.id)}
             shortcutEnabled={isNextActive}
           />
         );

@@ -92,6 +92,40 @@ export function checkIsJourneyDiff(
   return journey.variants.some((variant) => variant.diffIds.includes(diffId));
 }
 
+/**
+ * The journeys walked, by id, once a variant switcher goes from `fromDiffId`
+ * to its sibling `toDiffId`, or `null` for none. The walk goes on: a sibling in
+ * a walked journey keeps it (a test taking each screen at several sizes), one
+ * in another run of the test walks that run instead (a Playwright project per
+ * browser). A sibling in no journey leaves the walk.
+ */
+export function getWalkAfterSwitch<
+  J extends { id: string } & Parameters<typeof checkIsJourneyDiff>[0],
+>(input: {
+  journeys: readonly J[];
+  walked: readonly J[];
+  fromDiffId: string;
+  toDiffId: string;
+}): Set<string> | null {
+  const { journeys, walked, fromDiffId, toDiffId } = input;
+  if (walked.length === 0) {
+    return null;
+  }
+  if (walked.some((journey) => checkIsJourneyDiff(journey, toDiffId))) {
+    return new Set(walked.map((journey) => journey.id));
+  }
+  const run = journeys.find((journey) => checkIsJourneyDiff(journey, toDiffId));
+  if (!run) {
+    return null;
+  }
+  return new Set([
+    ...walked
+      .filter((journey) => !checkIsJourneyDiff(journey, fromDiffId))
+      .map((journey) => journey.id),
+    run.id,
+  ]);
+}
+
 /** How many screenshots a journey has, in every variant. */
 export function countJourneyDiffs(journey: {
   variants: readonly { diffIds: readonly (string | null)[] }[];

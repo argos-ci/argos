@@ -48,6 +48,7 @@ import {
 } from "./BuildParams";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
+import { getWalkAfterSwitch } from "./journey-hints";
 import { FilterStateContext } from "./metadata/filters/FilterState";
 import {
   createFilterMatcher,
@@ -502,6 +503,31 @@ export function useGoToBuildOverview() {
       navigate(getBuildOverviewURL(params), { replace: true });
     }
   });
+}
+
+/**
+ * The link from `diff` to one of its siblings, for the variant switchers: a
+ * journey walked goes on through the switch.
+ */
+export function useGetSiblingDiffURL(
+  diff: Diff,
+): (siblingId: string) => string {
+  const { journeys, walkedJourneys } = useBuildDiffState();
+  const params = useBuildParams();
+  invariant(params, "a snapshot is shown on a build page");
+  return useCallback(
+    (siblingId: string) => {
+      const url = getBuildURL({ ...params, diffId: siblingId });
+      const journey = getWalkAfterSwitch({
+        journeys,
+        walked: walkedJourneys,
+        fromDiffId: diff.id,
+        toDiffId: siblingId,
+      });
+      return journey ? serializeJourneySearch(url, { journey }) : url;
+    },
+    [params, diff.id, journeys, walkedJourneys],
+  );
 }
 
 /**

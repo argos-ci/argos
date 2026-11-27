@@ -8,7 +8,7 @@ import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
-import type { Diff } from "../../BuildDiffState";
+import { useGetSiblingDiffURL, type Diff } from "../../BuildDiffState";
 import { FilterContextMenu } from "../filters/FilterContextMenu";
 import { getFilterKey } from "../filters/util";
 import { MetadataCategory } from "../metadataCategories";
@@ -16,7 +16,6 @@ import {
   getUniqueViewports,
   hashViewport,
   resolveDiffMetadata,
-  useGetDiffPath,
   type MetadataViewport,
 } from "../utils";
 import { formatViewport } from "../viewports/util";
@@ -34,7 +33,7 @@ export function ViewportSwitcher(props: {
   isSubsetBuild: boolean;
 }) {
   const { diff, siblingDiffs, isSubsetBuild } = props;
-  const getDiffPath = useGetDiffPath();
+  const getSiblingURL = useGetSiblingDiffURL(diff);
   const metadata = resolveDiffMetadata(diff);
   const viewports = getUniqueViewports(
     siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
@@ -65,7 +64,7 @@ export function ViewportSwitcher(props: {
             viewport={viewport}
             status={getVariantStatus(resolvedDiff, { isSubsetBuild })}
             isActive={isActive}
-            href={getDiffPath(resolvedDiff.id) ?? ""}
+            href={getSiblingURL(resolvedDiff.id)}
             shortcutEnabled={isNextActive}
           />
         );

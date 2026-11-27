@@ -8,7 +8,7 @@ import { LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Tooltip } from "@/ui/Tooltip";
 
-import type { Diff } from "../../BuildDiffState";
+import { useGetSiblingDiffURL, type Diff } from "../../BuildDiffState";
 import { FilterContextMenu } from "../filters/FilterContextMenu";
 import { getFilterKey } from "../filters/util";
 import { MetadataCategory } from "../metadataCategories";
@@ -17,7 +17,6 @@ import {
   getUniqueColorSchemes,
   resolveColorScheme,
   resolveDiffMetadata,
-  useGetDiffPath,
 } from "../utils";
 import { findVariantSibling } from "./sibling";
 import {
@@ -48,7 +47,7 @@ export function ColorSchemeSwitcher(props: {
   isSubsetBuild: boolean;
 }) {
   const { diff, siblingDiffs, isSubsetBuild } = props;
-  const getDiffPath = useGetDiffPath();
+  const getSiblingURL = useGetSiblingDiffURL(diff);
   const metadata = resolveDiffMetadata(diff);
   const colorSchemes = getUniqueColorSchemes(
     siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
@@ -76,7 +75,7 @@ export function ColorSchemeSwitcher(props: {
             colorScheme={colorScheme}
             status={getVariantStatus(resolvedDiff, { isSubsetBuild })}
             isActive={isActive}
-            href={getDiffPath(resolvedDiff.id) ?? ""}
+            href={getSiblingURL(resolvedDiff.id)}
           />
         );
       })}

@@ -1,5 +1,3 @@
-import { generatePath, useMatch } from "react-router";
-
 import {
   ScreenshotDiffStatus,
   ScreenshotMetadataColorScheme,
@@ -107,26 +105,6 @@ export function getUniqueStoryModes(metadataList: Metadata[]): string[] {
     }
   }
   return Array.from(modes).sort();
-}
-
-export function useGetDiffPath() {
-  const path = "/:accountSlug/:projectName/builds/:buildNumber/:diffId";
-  const match = useMatch(path);
-  return (diffId: string) => {
-    if (!match) {
-      return null;
-    }
-    const { accountSlug, projectName, buildNumber } = match.params;
-    if (!accountSlug || !projectName || !buildNumber) {
-      return null;
-    }
-    return generatePath(path, {
-      accountSlug,
-      projectName,
-      buildNumber,
-      diffId,
-    });
-  };
 }
 
 export function resolvePreviewUrlFromDeployment(input: {

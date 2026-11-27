@@ -440,6 +440,21 @@ loggedTest(
     await expect(journeyHeader).toContainText("Journey 2 of 3");
     await expect(page).toHaveURL(/[?&]journey=[0-9a-f]{8}(&|$)/);
 
+    // The run takes each screen at two sizes: switching size goes on with
+    // the walk, on the same screen.
+    await expect(
+      page.getByRole("heading", { name: "search/results vw-375.png" }),
+    ).toBeVisible();
+    await page
+      .getByRole("group", { name: "Snapshot variants" })
+      .getByRole("link", { name: /^1280px/ })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "search/results vw-1280.png" }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/[?&]journey=[0-9a-f]{8}(&|$)/);
+    await expect(journeyHeader).toContainText("finds a product");
+
     // Or to any journey, from the title.
     await journeyHeader
       .getByRole("button", { name: "finds a product" })
