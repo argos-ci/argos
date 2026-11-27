@@ -47,6 +47,7 @@ import {
   checkIsYearlyPlan,
 } from "@/database/services/add-ons";
 import { encryptDeterministic } from "@/database/services/encrypt";
+import { getIsEnterpriseOfferShown } from "@/database/services/enterprise-offer";
 import { setMonthlyReportSubscription } from "@/database/services/monthly-report";
 import { createTeamAccount } from "@/database/services/team";
 import {
@@ -80,12 +81,10 @@ import {
   getStaticIpAddresses,
 } from "@/github/static-ip";
 import {
-  createArgosSubscriptionFromStripe,
   createStripeCheckoutSession,
+  createStripeTrialSubscription,
   getCustomerIdFromUserAccount,
-  getDefaultTeamPlanItems,
   getStripeProPlanOrThrow,
-  getSubscriptionData,
   stripe,
   TRIAL_DAYS,
 } from "@/stripe";
@@ -174,6 +173,8 @@ export const typeDefs = gql`
     blockWhenSpendLimitIsReached: Boolean!
     invoices(after: Int = 0, first: Int = 20): InvoiceConnection!
     upcomingInvoice: UpcomingInvoice
+    "Whether the Billing page offers the team an Enterprise plan: it is on Pro, billed monthly at list prices with no discount, and its current or previous billing period came to $1,500 or more before tax, euros converted at a fixed rate. Always false for members who cannot manage billing."
+    showEnterpriseOffer: Boolean!
 
     me: TeamMember
     members(
@@ -736,6 +737,19 @@ export const resolvers: IResolvers = {
         ? GRAPHQL_TEAM_AUTH_METHODS[team.enforcedAuthMethod]
         : null;
     },
+    showEnterpriseOffer: async (account, _args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      const permissions = await ctx.loaders.AccountPermissions.load({
+        account,
+        auth: ctx.auth,
+      });
+      if (!permissions.includes("billing")) {
+        return false;
+      }
+      return getIsEnterpriseOfferShown(account);
+    },
     viewerAuthMethod: async (account, _args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
@@ -1170,23 +1184,11 @@ export const resolvers: IResolvers = {
       // Register the Stripe customer id to the team account
       await teamAccount.$query().patchAndFetch({ stripeCustomerId });
 
-      const items = await getDefaultTeamPlanItems(plan);
-
-      // Create a Stripe subscription for the user
-      const stripeSubscription = await stripe.subscriptions.create({
-        customer: stripeCustomerId,
-        items,
-        ...getSubscriptionData({
-          trialDays: TRIAL_DAYS,
-          accountId: teamAccount.id,
-          subscriberId: auth.user.id,
-        }),
-      });
-
-      await createArgosSubscriptionFromStripe({
-        stripeSubscription,
-        account: teamAccount,
+      await createStripeTrialSubscription({
+        teamAccount,
         subscriberId: auth.user.id,
+        stripeCustomerId,
+        days: TRIAL_DAYS,
       });
 
       return {
@@ -1238,22 +1240,11 @@ export const resolvers: IResolvers = {
         return { team: teamAccount, redirectUrl: session.url };
       }
 
-      const items = await getDefaultTeamPlanItems(plan);
-
-      const stripeSubscription = await stripe.subscriptions.create({
-        customer: stripeCustomerId,
-        items,
-        ...getSubscriptionData({
-          trialDays: TRIAL_DAYS,
-          accountId: teamAccount.id,
-          subscriberId: auth.user.id,
-        }),
-      });
-
-      await createArgosSubscriptionFromStripe({
-        stripeSubscription,
-        account: teamAccount,
+      await createStripeTrialSubscription({
+        teamAccount,
         subscriberId: auth.user.id,
+        stripeCustomerId,
+        days: TRIAL_DAYS,
       });
 
       await notifyDiscord({

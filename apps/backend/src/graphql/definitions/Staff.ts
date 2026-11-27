@@ -8,19 +8,29 @@ import gqlTag from "graphql-tag";
 import config from "@/config";
 import {
   Account,
-  StaffTeamContact,
+  Plan,
+  StripeInvoice,
   Subscription,
-  type StripeInvoice,
-  type TeamUser,
+  TeamUser,
+  UserEmail,
 } from "@/database/models";
 import type { AccountSubscriptionStatus } from "@/database/models/Account";
+import { getStaffEnterprise } from "@/database/services/enterprise-offer";
+import {
+  getInvoicedAmount,
+  getPeriodAmount,
+} from "@/database/services/period-amount";
 import {
   getAccountBillings,
-  getEstimatedPeriodAmount,
   type AccountBilling,
 } from "@/database/services/period-usage";
 import { getStaffCancellations } from "@/database/services/staff-cancellations";
 import { getStaffTrialSubscriber } from "@/database/services/staff-trial";
+import {
+  logTeamOutreach,
+  markTeamOutreach,
+  unmarkTeamOutreach,
+} from "@/database/services/team-outreach";
 import { formatDiscordLink, notifyDiscord } from "@/discord";
 import {
   createStripeTrialSubscription,
@@ -29,17 +39,17 @@ import {
 } from "@/stripe";
 import {
   getStaffRevenue,
-  getInvoiceRevenue,
   getStaffRevenueMonthTeams,
   MAX_MONTHS,
   MirrorCoverageError,
 } from "@/stripe/revenue";
 
-import type {
-  IAccountSubscriptionStatus,
-  IPlanInterval,
-  IResolvers,
-  IStaffTeamOrderBy,
+import {
+  ICurrency,
+  type IAccountSubscriptionStatus,
+  type IPlanInterval,
+  type IResolvers,
+  type IStaffTeamOrderBy,
 } from "../__generated__/resolver-types";
 import type { Context } from "../context";
 import type { AccountActivation } from "../loaders";
@@ -200,60 +210,6 @@ const AMOUNT_ORDERINGS: Partial<
 };
 
 /**
- * What a team billed over one period, or null when it billed nothing.
- *
- * The flat price is taken in the period's own unit, exactly as the column that
- * displays it does — a yearly subscription's period is a year. This exists so
- * the ordering and the figure on screen come out of one rule; a team ordered
- * above another has to read higher than it too.
- *
- * A closed period reads the invoice it closed on when the mirror holds one:
- * that is what was billed, add-ons and all, where the sum below is only an
- * estimate of it.
- */
-function getPeriodAmount(
-  billing: AccountBilling,
-  period: "previous" | "current",
-): number | null {
-  const { periodUsage, plan } = billing;
-
-  if (!periodUsage || !plan) {
-    return null;
-  }
-
-  const billed =
-    period === "previous"
-      ? periodUsage.billingPeriods.find((item) => item.closed)
-      : periodUsage.billingPeriods.find((item) => !item.closed);
-
-  if (!billed) {
-    return null;
-  }
-
-  return (
-    getInvoicedAmount(billed) ??
-    getEstimatedPeriodAmount({
-      // Null when Stripe was never asked for the amount. Ordered as nothing
-      // rather than guessed at: the guess belongs to the display, which says it
-      // is one.
-      flatPrice: billing.flatPrice ?? 0,
-      addOns: billing.addOns,
-      period: billed,
-    })
-  );
-}
-
-/**
- * What Stripe invoiced for a period, before tax and net of credit notes, as the
- * revenue page counts it. Null when no invoice of it is mirrored.
- */
-function getInvoicedAmount(period: {
-  invoice: StripeInvoice | null;
-}): number | null {
-  return period.invoice ? getInvoiceRevenue(period.invoice).amount : null;
-}
-
-/**
  * Narrow a batch of teams to an interval and a subscription state, then order
  * them by what they bill.
  *
@@ -361,7 +317,8 @@ export const typeDefs = gql`
   type TeamStaffContact {
     id: ID!
     date: DateTime!
-    user: User!
+    "The staff member who reached out. Null once their account is deleted."
+    user: User
   }
 
   """
@@ -418,6 +375,112 @@ export const typeDefs = gql`
     nobody did.
     """
     staffContactedAt: DateTime
+  }
+
+  """
+  A team on Pro at list prices whose running or previous billing period came
+  to $1,500 or more before tax: one the Billing page offers an Enterprise
+  plan to, as the staff Enterprise page lists it.
+  """
+  type StaffEnterpriseOffer {
+    "The id of the team's Pro subscription."
+    id: ID!
+    team: Team!
+    "The currency the amounts below are in."
+    currency: Currency!
+    """
+    What the running billing period comes to so far, before tax: the plan,
+    its add-ons and the overage counted until now. Null when it has nothing to
+    price, as during a trial.
+    """
+    currentPeriodAmount: Float
+    """
+    What the previous billing period came to, before tax: its mirrored invoice
+    when there is one, the estimate otherwise. Null when the team was not
+    billed for it.
+    """
+    previousPeriodAmount: Float
+    """
+    When a staff member emailed the team the Enterprise offer, null if nobody
+    did.
+    """
+    staffContactedAt: DateTime
+  }
+
+  """
+  A team on an Enterprise plan, as the staff Enterprise page lists it: the
+  contract it is billed on, and how far its running billing period went.
+  """
+  type StaffEnterpriseContract {
+    "The id of the team's Enterprise subscription."
+    id: ID!
+    team: Team!
+    plan: Plan!
+    "The currency the amounts below are in."
+    currency: Currency!
+    """
+    What the contract costs per billing period, a month or a year, before tax,
+    as Stripe states it. Null when Stripe has nothing to state.
+    """
+    amount: Float
+    "Screenshots included per billing period. Null when the plan sets none."
+    includedScreenshots: Int
+    "When the running billing period opened. Null when it is not billed yet."
+    periodStart: DateTime
+    """
+    When the running billing period ends, which is when a yearly contract
+    renews. Null when it is not billed yet.
+    """
+    periodEnd: DateTime
+    """
+    When the subscription is set to end: the contract does not renew then.
+    Null while it renews.
+    """
+    endDate: DateTime
+    """
+    Screenshots used since the running billing period opened. Null when the
+    plan is not billed by usage.
+    """
+    periodScreenshots: Int
+    """
+    What the previous billing period came to, before tax: its mirrored invoice
+    when there is one, the estimate otherwise. Null when the team was not
+    billed for it.
+    """
+    previousPeriodAmount: Float
+    """
+    When a staff member last emailed the team about renewing, during the
+    running period. Null if nobody did yet this term.
+    """
+    renewalEmailedAt: DateTime
+  }
+
+  """
+  A team staff granted the Enterprise trial plan, as the staff Enterprise page
+  lists it. A granted plan's period is the calendar month.
+  """
+  type StaffEnterpriseTrial {
+    "The id of the team account."
+    id: ID!
+    team: Team!
+    "Screenshots the trial plan includes per month."
+    includedScreenshots: Int!
+    "The first day of the running month."
+    periodStart: DateTime!
+    "The first day of the next month."
+    periodEnd: DateTime!
+    "Screenshots used since the running month opened."
+    periodScreenshots: Int!
+  }
+
+  "What the staff Enterprise page lists."
+  type StaffEnterprise {
+    "Teams on an Enterprise plan, monthly and yearly."
+    contracts: [StaffEnterpriseContract!]!
+    "Pro teams the Billing page offers an Enterprise plan to."
+    candidates: [StaffEnterpriseOffer!]!
+    "Teams on the Enterprise trial plan."
+    trials: [StaffEnterpriseTrial!]!
   }
 
   "One billing period of a team, priced from the usage it accumulated."
@@ -548,6 +611,15 @@ export const typeDefs = gql`
   input SetStaffCancellationContactInput {
     subscriptionId: ID!
     contacted: Boolean!
+  }
+
+  input SetStaffEnterpriseOfferContactInput {
+    subscriptionId: ID!
+    contacted: Boolean!
+  }
+
+  input LogStaffEnterpriseRenewalEmailInput {
+    subscriptionId: ID!
   }
 
   input StartStaffTrialInput {
@@ -855,7 +927,11 @@ export const typeDefs = gql`
     staffTeams(
       after: Int! = 0
       first: Int! = 100
-      "Matches a team's name or slug, case-insensitively."
+      """
+      Matches a team's name or slug, case-insensitively, or its exact Stripe
+      customer or subscription ID. A search containing \`@\` also matches the
+      email addresses of the team's members.
+      """
       search: String
       "Keeps only teams billed on that interval. Teams with no plan are dropped."
       interval: PlanInterval
@@ -874,6 +950,11 @@ export const typeDefs = gql`
     (staff only).
     """
     staffCancellations(days: Int! = 90): [StaffCancellation!]!
+    """
+    The teams on an Enterprise plan, and the Pro teams the Billing page offers
+    one to, for staff to follow and email by hand (staff only).
+    """
+    staffEnterprise: StaffEnterprise!
     """
     What Argos invoiced over the last \`months\` calendar months, oldest first
     and the running one last, with the annual contracts the yearly rate is
@@ -898,6 +979,20 @@ export const typeDefs = gql`
       input: SetStaffCancellationContactInput!
     ): StaffCancellation!
     """
+    Record or clear that a staff member emailed a team the Enterprise offer
+    (staff only)
+    """
+    setStaffEnterpriseOfferContact(
+      input: SetStaffEnterpriseOfferContactInput!
+    ): StaffEnterpriseOffer!
+    """
+    Record that a staff member emailed a team on an Enterprise plan about
+    renewing its contract (staff only)
+    """
+    logStaffEnterpriseRenewalEmail(
+      input: LogStaffEnterpriseRenewalEmailInput!
+    ): StaffEnterpriseContract!
+    """
     Put a team that holds no subscription back on a trial of the Pro plan, in
     the name of one of its owners (staff only). Like any trial, it is canceled
     at the end unless a payment method was added.
@@ -907,6 +1002,11 @@ export const typeDefs = gql`
     extendStaffTrial(input: ExtendStaffTrialInput!): Team!
   }
 `;
+
+/** The billing period still running, or undefined while none is billed. */
+function getRunningPeriod(billing: AccountBilling) {
+  return billing.periodUsage?.billingPeriods.find((period) => !period.closed);
+}
 
 export const resolvers: IResolvers = {
   Team: {
@@ -944,7 +1044,7 @@ export const resolvers: IResolvers = {
     },
     contact: async (account, _args, ctx) => {
       invariant(account.teamId, "not a team account");
-      return ctx.loaders.StaffTeamContactByTeamId.load(account.teamId);
+      return ctx.loaders.TrialOutreachByTeamId.load(account.teamId);
     },
     plan: async (account, _args, ctx) => {
       const billing = await ctx.loaders.AccountBillingByAccountId.load(
@@ -1025,7 +1125,95 @@ export const resolvers: IResolvers = {
       return totals.count;
     },
   },
+  StaffEnterpriseOffer: {
+    team: async (subscription, _args, ctx) => {
+      const account = await ctx.loaders.Account.load(subscription.accountId);
+      invariant(account, "subscription account not found");
+      return account;
+    },
+    currency: (subscription) =>
+      subscription.currency === "eur" ? ICurrency.Eur : ICurrency.Usd,
+    currentPeriodAmount: async (subscription, _args, ctx) => {
+      const billing = await ctx.loaders.AccountBillingByAccountId.load(
+        subscription.accountId,
+      );
+      return getPeriodAmount(billing, "current");
+    },
+    previousPeriodAmount: async (subscription, _args, ctx) => {
+      const billing = await ctx.loaders.AccountBillingByAccountId.load(
+        subscription.accountId,
+      );
+      return getPeriodAmount(billing, "previous");
+    },
+    staffContactedAt: async (subscription, _args, ctx) => {
+      const offer = await ctx.loaders.EnterpriseOfferBySubscriptionId.load(
+        subscription.id,
+      );
+      return offer ? new Date(offer.createdAt) : null;
+    },
+  },
+  StaffEnterprise: {
+    contracts: (enterprise) => enterprise.contracts,
+    candidates: (enterprise, _args, ctx) => {
+      // Each team was priced to be listed: the amounts read that same billing
+      // instead of pricing the team a second time.
+      for (const { subscription, billing } of enterprise.candidates) {
+        ctx.loaders.AccountBillingByAccountId.prime(
+          subscription.accountId,
+          billing,
+        );
+      }
+      return enterprise.candidates.map(({ subscription }) => subscription);
+    },
+  },
+  StaffEnterpriseTrial: {
+    id: ({ account }) => account.id,
+    team: ({ account }) => account,
+    includedScreenshots: ({ plan }) => plan.includedScreenshots,
+  },
+  StaffEnterpriseContract: {
+    id: ({ subscription }) => subscription.id,
+    team: async ({ subscription }, _args, ctx) => {
+      const account = await ctx.loaders.Account.load(subscription.accountId);
+      invariant(account, "subscription account not found");
+      return account;
+    },
+    plan: ({ billing }) => {
+      invariant(billing.plan, "an Enterprise contract is on a plan");
+      return billing.plan;
+    },
+    currency: ({ subscription }) =>
+      subscription.currency === "eur" ? ICurrency.Eur : ICurrency.Usd,
+    amount: ({ subscription }) => subscription.flatPrice,
+    includedScreenshots: ({ billing }) => billing.includedScreenshots,
+    periodStart: ({ billing }) => getRunningPeriod(billing)?.from ?? null,
+    periodEnd: ({ billing }) => getRunningPeriod(billing)?.endsAt ?? null,
+    endDate: ({ subscription }) =>
+      subscription.endDate ? new Date(subscription.endDate) : null,
+    periodScreenshots: ({ billing }) =>
+      billing.periodUsage?.currentPeriodScreenshotsCount ?? null,
+    previousPeriodAmount: ({ billing }) => getPeriodAmount(billing, "previous"),
+    renewalEmailedAt: async ({ subscription, billing }, _args, ctx) => {
+      const email = await ctx.loaders.LastRenewalEmailBySubscriptionId.load(
+        subscription.id,
+      );
+      if (!email) {
+        return null;
+      }
+      // An email about the previous term's renewal is not one about this one.
+      const periodStart = getRunningPeriod(billing)?.from;
+      const emailedAt = new Date(email.createdAt);
+      return periodStart && emailedAt < periodStart ? null : emailedAt;
+    },
+  },
   StaffCancellation: {
+    staffContactedAt: async (subscription, _args, ctx) => {
+      const followUp =
+        await ctx.loaders.CancellationOutreachBySubscriptionId.load(
+          subscription.id,
+        );
+      return followUp ? new Date(followUp.createdAt) : null;
+    },
     team: async (subscription, _args, ctx) => {
       const account = await ctx.loaders.Account.load(subscription.accountId);
       invariant(account, "subscription account not found");
@@ -1054,6 +1242,9 @@ export const resolvers: IResolvers = {
   TeamStaffContact: {
     date: (contact) => new Date(contact.createdAt),
     user: async (contact, _args, ctx) => {
+      if (!contact.userId) {
+        return null;
+      }
       const account = await ctx.loaders.AccountFromRelation.load({
         userId: contact.userId,
       });
@@ -1086,7 +1277,47 @@ export const resolvers: IResolvers = {
             builder.where((where) => {
               where
                 .whereRaw(`name ilike ? escape '\\'`, [pattern])
-                .orWhereRaw(`slug ilike ? escape '\\'`, [pattern]);
+                .orWhereRaw(`slug ilike ? escape '\\'`, [pattern])
+                // Stripe ids are pasted whole from the dashboard: a fragment
+                // of one would match unrelated teams.
+                .orWhere("stripeCustomerId", search)
+                .orWhereIn(
+                  "accounts.id",
+                  Subscription.query()
+                    .select("accountId")
+                    .where("stripeSubscriptionId", search)
+                    // The account keeps one customer, but a team can be
+                    // billed on another (a trial extended by another member
+                    // bills theirs): the mirrored invoices tie each customer
+                    // to the subscriptions it paid for.
+                    .orWhereIn(
+                      "stripeSubscriptionId",
+                      StripeInvoice.query()
+                        .select("stripeSubscriptionId")
+                        .where("stripeCustomerId", search),
+                    ),
+                );
+              // Members only answer a search that looks like an email, or a
+              // name search would also list every team with a member whose
+              // address contains it.
+              if (search.includes("@")) {
+                where.orWhereExists(
+                  TeamUser.query()
+                    .join("users", "users.id", "team_users.userId")
+                    .whereColumn("team_users.teamId", "accounts.teamId")
+                    .where((emails) => {
+                      emails
+                        .whereRaw(`users.email ilike ? escape '\\'`, [pattern])
+                        .orWhereExists(
+                          UserEmail.query()
+                            .whereColumn("user_emails.userId", "users.id")
+                            .whereRaw(`user_emails.email ilike ? escape '\\'`, [
+                              pattern,
+                            ]),
+                        );
+                    }),
+                );
+              }
             });
           }
         });
@@ -1215,6 +1446,10 @@ export const resolvers: IResolvers = {
 
       return getStaffCancellations(args.days);
     },
+    staffEnterprise: async (_root, _args, ctx) => {
+      assertStaff(ctx);
+      return getStaffEnterprise();
+    },
   },
   Mutation: {
     setTeamStaffContact: async (_root, args, ctx) => {
@@ -1230,20 +1465,17 @@ export const resolvers: IResolvers = {
         throw badUserInput("Account is not a team.");
       }
 
+      const action = {
+        teamId: teamAccount.teamId,
+        type: "trial" as const,
+      };
       if (args.input.contacted) {
-        // Idempotent: marking an already-contacted team keeps the original
-        // author and date rather than rewriting them.
-        await StaffTeamContact.query()
-          .insert({ teamId: teamAccount.teamId, userId: ctx.auth.user.id })
-          .onConflict("teamId")
-          .ignore();
+        await markTeamOutreach({ ...action, userId: ctx.auth.user.id });
       } else {
-        await StaffTeamContact.query()
-          .delete()
-          .where("teamId", teamAccount.teamId);
+        await unmarkTeamOutreach(action);
       }
 
-      ctx.loaders.StaffTeamContactByTeamId.clear(teamAccount.teamId);
+      ctx.loaders.TrialOutreachByTeamId.clear(teamAccount.teamId);
 
       return teamAccount;
     },
@@ -1261,19 +1493,80 @@ export const resolvers: IResolvers = {
         throw badUserInput("Subscription is not a team's.");
       }
 
+      const action = {
+        teamId: subscription.account.teamId,
+        subscriptionId: subscription.id,
+        type: "cancellation" as const,
+      };
       if (args.input.contacted) {
-        // Idempotent like the trial mark: the first date stays.
-        await Subscription.query()
-          .patch({ staffContactedAt: new Date().toISOString() })
-          .where("id", subscription.id)
-          .whereNull("staffContactedAt");
+        await markTeamOutreach({ ...action, userId: ctx.auth.user.id });
       } else {
-        await Subscription.query()
-          .patch({ staffContactedAt: null })
-          .where("id", subscription.id);
+        await unmarkTeamOutreach(action);
       }
 
-      return subscription.$query();
+      ctx.loaders.CancellationOutreachBySubscriptionId.clear(subscription.id);
+      return subscription;
+    },
+    setStaffEnterpriseOfferContact: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      const subscription = await Subscription.query()
+        .findById(args.input.subscriptionId)
+        .withGraphFetched("[account, plan]")
+        .throwIfNotFound();
+
+      if (!subscription.account.teamId) {
+        throw badUserInput("Subscription is not a team's.");
+      }
+      // Clearing stays possible on any plan: the team may have moved since.
+      if (args.input.contacted && !Plan.checkIsProPlan(subscription.plan)) {
+        throw badUserInput("The Enterprise offer is made to Pro teams.");
+      }
+
+      const action = {
+        teamId: subscription.account.teamId,
+        subscriptionId: subscription.id,
+        type: "enterprise_offer" as const,
+      };
+      if (args.input.contacted) {
+        await markTeamOutreach({ ...action, userId: ctx.auth.user.id });
+      } else {
+        await unmarkTeamOutreach(action);
+      }
+
+      ctx.loaders.EnterpriseOfferBySubscriptionId.clear(subscription.id);
+      return subscription;
+    },
+    logStaffEnterpriseRenewalEmail: async (_root, args, ctx) => {
+      assertStaff(ctx);
+
+      const subscription = await Subscription.query()
+        .findById(args.input.subscriptionId)
+        .withGraphFetched("[account, plan]")
+        .throwIfNotFound();
+
+      if (!subscription.account.teamId) {
+        throw badUserInput("Subscription is not a team's.");
+      }
+      if (
+        !Plan.checkIsEnterprisePlan(subscription.plan) ||
+        subscription.plan.interval !== "year"
+      ) {
+        throw badUserInput("Only a yearly Enterprise contract renews.");
+      }
+
+      await logTeamOutreach({
+        teamId: subscription.account.teamId,
+        userId: ctx.auth.user.id,
+        subscriptionId: subscription.id,
+        type: "enterprise_renewal",
+      });
+
+      ctx.loaders.LastRenewalEmailBySubscriptionId.clear(subscription.id);
+      const billing = await ctx.loaders.AccountBillingByAccountId.load(
+        subscription.accountId,
+      );
+      return { subscription, billing };
     },
     startStaffTrial: async (_root, args, ctx) => {
       assertStaff(ctx);

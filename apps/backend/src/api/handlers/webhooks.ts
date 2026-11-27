@@ -483,6 +483,7 @@ export const resendWebhookDeliveryOperation = {
     "Send a delivery's event to its webhook again, as a new delivery. It keeps the event's `webhook-id`, so an endpoint that already processed the event can skip it. While the event is still being sent to the webhook, returns that delivery instead of sending it twice. Requires administrator access to the account.",
   tags: ["Webhooks"],
   security,
+  "x-mcp": { destructive: true },
   requestParams: { path: DeliveryPathSchema },
   responses: {
     "200": {

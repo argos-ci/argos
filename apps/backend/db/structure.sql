@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict X4pyAcHVxNOgL2im5kQjxN9RT4dhrHzCcfV7zDabw2ik6fULCRlqlDclbcpWDwU
+\restrict J76JKZvkNpOtMbaggglLSBMePwpdoLHkUaSHnz9aaVGebHHRnNagp0pSdgbKOwR
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -2892,6 +2892,48 @@ CREATE TABLE public.team_invites (
 ALTER TABLE public.team_invites OWNER TO postgres;
 
 --
+-- Name: team_outreach; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.team_outreach (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "teamId" bigint NOT NULL,
+    "userId" bigint,
+    "subscriptionId" bigint,
+    type text NOT NULL,
+    note text,
+    CONSTRAINT team_outreach_cancellation_subscription CHECK (((type <> 'cancellation'::text) OR ("subscriptionId" IS NOT NULL))),
+    CONSTRAINT team_outreach_enterprise_subscription CHECK (((type <> ALL (ARRAY['enterprise_offer'::text, 'enterprise_renewal'::text])) OR ("subscriptionId" IS NOT NULL))),
+    CONSTRAINT team_outreach_type_check CHECK ((type = ANY (ARRAY['trial'::text, 'cancellation'::text, 'enterprise_offer'::text, 'enterprise_renewal'::text])))
+);
+
+
+ALTER TABLE public.team_outreach OWNER TO postgres;
+
+--
+-- Name: team_outreach_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.team_outreach_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.team_outreach_id_seq OWNER TO postgres;
+
+--
+-- Name: team_outreach_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.team_outreach_id_seq OWNED BY public.team_outreach.id;
+
+
+--
 -- Name: team_saml_configs; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -3992,6 +4034,13 @@ ALTER TABLE ONLY public.team_domains ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
+-- Name: team_outreach id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_outreach ALTER COLUMN id SET DEFAULT nextval('public.team_outreach_id_seq'::regclass);
+
+
+--
 -- Name: team_saml_configs id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -5006,6 +5055,14 @@ ALTER TABLE ONLY public.team_invites
 
 ALTER TABLE ONLY public.team_invites
     ADD CONSTRAINT team_invites_secret_unique UNIQUE (secret);
+
+
+--
+-- Name: team_outreach team_outreach_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_outreach
+    ADD CONSTRAINT team_outreach_pkey PRIMARY KEY (id);
 
 
 --
@@ -6191,6 +6248,34 @@ CREATE INDEX team_domains_domain_index ON public.team_domains USING btree (domai
 
 
 --
+-- Name: team_outreach_cancellation_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX team_outreach_cancellation_unique ON public.team_outreach USING btree ("subscriptionId") WHERE (type = 'cancellation'::text);
+
+
+--
+-- Name: team_outreach_enterprise_offer_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX team_outreach_enterprise_offer_unique ON public.team_outreach USING btree ("subscriptionId") WHERE (type = 'enterprise_offer'::text);
+
+
+--
+-- Name: team_outreach_teamid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX team_outreach_teamid_index ON public.team_outreach USING btree ("teamId");
+
+
+--
+-- Name: team_outreach_trial_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX team_outreach_trial_unique ON public.team_outreach USING btree ("teamId") WHERE (type = 'trial'::text);
+
+
+--
 -- Name: team_scim_users_teamid_lower_username_unique; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -7300,6 +7385,30 @@ ALTER TABLE ONLY public.team_invites
 
 
 --
+-- Name: team_outreach team_outreach_subscriptionid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_outreach
+    ADD CONSTRAINT team_outreach_subscriptionid_foreign FOREIGN KEY ("subscriptionId") REFERENCES public.subscriptions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: team_outreach team_outreach_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_outreach
+    ADD CONSTRAINT team_outreach_teamid_foreign FOREIGN KEY ("teamId") REFERENCES public.teams(id) ON DELETE CASCADE;
+
+
+--
+-- Name: team_outreach team_outreach_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_outreach
+    ADD CONSTRAINT team_outreach_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
 -- Name: team_saml_configs team_saml_configs_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -7519,7 +7628,7 @@ ALTER TABLE ONLY public.webhooks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict X4pyAcHVxNOgL2im5kQjxN9RT4dhrHzCcfV7zDabw2ik6fULCRlqlDclbcpWDwU
+\unrestrict J76JKZvkNpOtMbaggglLSBMePwpdoLHkUaSHnz9aaVGebHHRnNagp0pSdgbKOwR
 
 -- Knex migrations
 
@@ -7814,3 +7923,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026112
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261124150116_link-marketplace-teams-to-github.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261125120000_deployment-external-url.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261126130816_add-account-avatar-key.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261127150000_team-outreach.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261127160000_team-outreach-enterprise.js', 1, NOW());

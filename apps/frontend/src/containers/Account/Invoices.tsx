@@ -29,6 +29,7 @@ const InvoicesQuery = graphql(`
           number
           date
           total
+          taxAmount
           currency
           status
           refundedAmount
@@ -270,7 +271,15 @@ function UpcomingInvoiceRow(props: { accountSlug: string }) {
           </span>
         </Tooltip>
       }
-      amount={formatCurrency(upcomingInvoice.total, currency)}
+      amount={
+        <>
+          {formatCurrency(upcomingInvoice.total, currency)}
+          <TaxIncludedNote
+            taxAmount={upcomingInvoice.taxAmount}
+            currency={currency}
+          />
+        </>
+      }
     >
       {lines.length > 0 ? (
         <Details className="mt-3 text-sm">
@@ -298,6 +307,21 @@ function UpcomingInvoiceRow(props: { accountSlug: string }) {
         </Details>
       ) : null}
     </InvoiceRowLayout>
+  );
+}
+
+function AmountNote(props: { children: React.ReactNode }) {
+  return <div className="text-low text-xs font-normal">{props.children}</div>;
+}
+
+function TaxIncludedNote(props: { taxAmount: number; currency: string }) {
+  if (props.taxAmount <= 0) {
+    return null;
+  }
+  return (
+    <AmountNote>
+      incl. {formatCurrency(props.taxAmount, props.currency)} tax
+    </AmountNote>
   );
 }
 
@@ -380,11 +404,15 @@ function InvoiceRow(props: { invoice: Invoice }) {
       amount={
         <>
           {formatCurrency(invoice.total, invoice.currency)}
+          <TaxIncludedNote
+            taxAmount={invoice.taxAmount}
+            currency={invoice.currency}
+          />
           {isPartiallyRefunded(invoice) ? (
-            <div className="text-low text-xs font-normal">
+            <AmountNote>
               {formatCurrency(invoice.refundedAmount, invoice.currency)}{" "}
               refunded
-            </div>
+            </AmountNote>
           ) : null}
         </>
       }

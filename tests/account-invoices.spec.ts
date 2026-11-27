@@ -24,6 +24,9 @@ loggedTest("account invoices - billing history", async ({ page, team }) => {
   await expect(rows.first()).toContainText("ARGOS-0005");
   await expect(rows.first()).toContainText("Due");
   await expect(rows.first()).toContainText("€249.00");
+  // The tax a total includes reads under it, and only where some was charged.
+  await expect(rows.first()).toContainText("incl. €41.50 tax");
+  await expect(rows.nth(1)).not.toContainText("tax");
   await expect(rows.nth(1)).toContainText("Paid");
   await expect(rows.nth(2)).toContainText("Void");
   // Stripe keeps a refunded invoice paid: the refund has to show regardless.

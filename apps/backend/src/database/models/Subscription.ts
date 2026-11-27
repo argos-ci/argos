@@ -99,7 +99,6 @@ export class Subscription extends Model {
             ],
           },
           cancellationComment: { type: ["string", "null"] },
-          staffContactedAt: { type: ["string", "null"] },
         },
       },
     ],
@@ -148,11 +147,6 @@ export class Subscription extends Model {
   cancellationFeedback!: SubscriptionCancellationFeedback | null;
   /** What came with that answer, in the subscriber's own words. */
   cancellationComment!: string | null;
-  /**
-   * When a staff member wrote to the team about its cancellation. Cleared when
-   * the cancellation is called off, so a later one starts unmarked.
-   */
-  staffContactedAt!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

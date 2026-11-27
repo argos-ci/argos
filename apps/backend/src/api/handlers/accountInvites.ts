@@ -93,6 +93,7 @@ export const createAccountInvitesOperation = {
     "Invite people to a team by email. Each invited address receives an email with a link to join. Re-inviting an address that already has a pending invite refreshes it. Requires administrator access to the team.",
   tags: ["Members"],
   security: patOrOAuthAuth(["account:admin"]),
+  "x-mcp": { destructive: true },
   requestParams: { path: AccountPathSchema },
   requestBody: {
     required: true,
@@ -194,6 +195,7 @@ export const resetAccountInviteLinkOperation = {
     "Rotate the team's shared invite link, invalidating the previous one. Anyone holding the old link can no longer use it to join. Requires administrator access to the team.",
   tags: ["Members"],
   security: patOrOAuthAuth(["account:admin"]),
+  "x-mcp": { destructive: true },
   requestParams: { path: AccountPathSchema },
   responses: {
     "200": {

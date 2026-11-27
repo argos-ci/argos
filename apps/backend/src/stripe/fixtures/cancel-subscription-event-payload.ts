@@ -25,6 +25,8 @@ const subscription = {
   default_payment_method: "pm_cancel_subscription_test",
   currency: "usd",
   created: 1748458766,
+  metadata: {},
+  automatic_tax: { enabled: false, disabled_reason: null, liability: null },
   cancel_at: null,
   ended_at: 1748458766,
   trial_end: null,

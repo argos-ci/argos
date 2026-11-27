@@ -28,6 +28,7 @@ import { TeamDelete } from "@/containers/Team/Delete";
 import { TeamDiscord } from "@/containers/Team/Discord";
 import { TeamDomains } from "@/containers/Team/Domains";
 import { TeamEnforcedAuthMethod } from "@/containers/Team/EnforcedAuthMethod";
+import { TeamEnterpriseOffer } from "@/containers/Team/EnterpriseOffer";
 import { TeamGitHubLight } from "@/containers/Team/GitHubLight";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
 import { TeamMembers } from "@/containers/Team/members/Members";
@@ -241,6 +242,9 @@ function PageContent() {
       slug: "billing",
       element: (
         <>
+          {isTeam && canManageBilling && (
+            <TeamEnterpriseOffer accountSlug={accountSlug} />
+          )}
           {canManageBilling && <PlanCard account={account} />}
           {isTeam && hasAdminPermission && <TeamAddOns team={account} />}
           {isTeam && account.subscription ? (

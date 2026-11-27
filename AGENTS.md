@@ -109,6 +109,9 @@ short, plain and confident, and respect the reader's time.
   renamed".
 - **One name per concept.** Use the words the rest of the product and the docs
   use: project token, build, screenshot, team.
+- **An amount that includes tax says how much.** A billed amount a customer
+  reads (an invoice total, an estimate) shows the tax inside it, "incl. €41.50
+  tax", so it matches the document their accounting files.
 
 Older copy predates these rules, so don't take it as a model. Fix the strings
 you touch.
@@ -190,6 +193,12 @@ relation is loaded:
   `argos/relation-matches-schema` enforces that, since `invariant` trusts these
   types. `User.account` and `Team.account` are typed non-null with a suppression:
   the app creates each in the same transaction as its owner.
+
+**The emails staff send a team go in `team_outreach`.** A welcome to a trial, a
+follow-up on a cancellation, an offer: one row with its `type`, its author and
+an optional `note`, never a timestamp column on the account or the
+subscription, nor a table per page. A new kind of email is a new type in
+`TeamOutreach` and in the column's check constraint.
 
 **Idempotent inserts:** never gate an insert on a prior existence check — two
 concurrent requests can both pass it and race on the primary key. Insert
