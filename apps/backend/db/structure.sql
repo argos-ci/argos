@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict PgD3qlVj6jk1Lb4LVVbvAIVhdwl36JMSZaM4HNa6TxKzk6rOj4Bnjgd1pSOTdNF
+\restrict InuC6r6n5oY3jyPJlE6f1hZyKEACTlFwEgMJoA7P5y4CBcQVag9cln3Xs6XgRg3
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -2837,6 +2837,47 @@ ALTER SEQUENCE public.subscriptions_id_seq OWNED BY public.subscriptions.id;
 
 
 --
+-- Name: team_crm_actions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.team_crm_actions (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "teamId" bigint NOT NULL,
+    "userId" bigint,
+    "subscriptionId" bigint,
+    type text NOT NULL,
+    note text,
+    CONSTRAINT team_crm_actions_cancellation_follow_up_subscription CHECK (((type <> 'cancellation_follow_up'::text) OR ("subscriptionId" IS NOT NULL))),
+    CONSTRAINT team_crm_actions_type_check CHECK ((type = ANY (ARRAY['trial_outreach'::text, 'cancellation_follow_up'::text])))
+);
+
+
+ALTER TABLE public.team_crm_actions OWNER TO postgres;
+
+--
+-- Name: team_crm_actions_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.team_crm_actions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.team_crm_actions_id_seq OWNER TO postgres;
+
+--
+-- Name: team_crm_actions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.team_crm_actions_id_seq OWNED BY public.team_crm_actions.id;
+
+
+--
 -- Name: team_domains; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -3984,6 +4025,13 @@ ALTER TABLE ONLY public.subscriptions ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: team_crm_actions id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_crm_actions ALTER COLUMN id SET DEFAULT nextval('public.team_crm_actions_id_seq'::regclass);
+
+
+--
 -- Name: team_domains id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -4973,6 +5021,14 @@ ALTER TABLE ONLY public.subscriptions
 
 ALTER TABLE ONLY public.subscriptions
     ADD CONSTRAINT subscriptions_stripesubscriptionid_unique UNIQUE ("stripeSubscriptionId");
+
+
+--
+-- Name: team_crm_actions team_crm_actions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_crm_actions
+    ADD CONSTRAINT team_crm_actions_pkey PRIMARY KEY (id);
 
 
 --
@@ -6183,6 +6239,27 @@ CREATE INDEX subscriptions_subscriberid_index ON public.subscriptions USING btre
 
 
 --
+-- Name: team_crm_actions_cancellation_follow_up_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX team_crm_actions_cancellation_follow_up_unique ON public.team_crm_actions USING btree ("subscriptionId") WHERE (type = 'cancellation_follow_up'::text);
+
+
+--
+-- Name: team_crm_actions_teamid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX team_crm_actions_teamid_index ON public.team_crm_actions USING btree ("teamId");
+
+
+--
+-- Name: team_crm_actions_trial_outreach_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX team_crm_actions_trial_outreach_unique ON public.team_crm_actions USING btree ("teamId") WHERE (type = 'trial_outreach'::text);
+
+
+--
 -- Name: team_domains_domain_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -7275,6 +7352,30 @@ ALTER TABLE ONLY public.subscriptions
 
 
 --
+-- Name: team_crm_actions team_crm_actions_subscriptionid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_crm_actions
+    ADD CONSTRAINT team_crm_actions_subscriptionid_foreign FOREIGN KEY ("subscriptionId") REFERENCES public.subscriptions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: team_crm_actions team_crm_actions_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_crm_actions
+    ADD CONSTRAINT team_crm_actions_teamid_foreign FOREIGN KEY ("teamId") REFERENCES public.teams(id) ON DELETE CASCADE;
+
+
+--
+-- Name: team_crm_actions team_crm_actions_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_crm_actions
+    ADD CONSTRAINT team_crm_actions_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
 -- Name: team_domains team_domains_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -7518,7 +7619,7 @@ ALTER TABLE ONLY public.webhooks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict PgD3qlVj6jk1Lb4LVVbvAIVhdwl36JMSZaM4HNa6TxKzk6rOj4Bnjgd1pSOTdNF
+\unrestrict InuC6r6n5oY3jyPJlE6f1hZyKEACTlFwEgMJoA7P5y4CBcQVag9cln3Xs6XgRg3
 
 -- Knex migrations
 
@@ -7812,3 +7913,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026112
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261123124108_build-auth-source.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261124150116_link-marketplace-teams-to-github.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261125120000_deployment-external-url.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261127150000_team-crm-actions.js', 1, NOW());

@@ -10,6 +10,7 @@ import {
   StripeInvoice,
   StripeInvoiceSync,
   Subscription,
+  TeamCrmAction,
   TeamUser,
 } from "../apps/backend/src/database/models";
 import {
@@ -661,6 +662,8 @@ async function createCanceledTeams(input: {
       unpaidInvoice?: number;
       /** Defaults to a month before the first of its monthly bills. */
       createdDaysAgo?: number;
+      /** Days since staff wrote to the team about its cancellation. */
+      contactedDaysAgo?: number;
     },
   ) {
     const slug = `${prefix}-${name.toLowerCase().replaceAll(" ", "-")}`;
@@ -669,6 +672,7 @@ async function createCanceledTeams(input: {
       invoices = [],
       unpaidInvoice,
       createdDaysAgo = 30 * (invoices.length + 1),
+      contactedDaysAgo,
       ...data
     } = subscription;
     await account.$query().patch({ createdAt: daysFromNow(-createdDaysAgo) });
@@ -685,6 +689,15 @@ async function createCanceledTeams(input: {
       paymentMethodFilled: true,
       ...data,
     });
+    if (contactedDaysAgo !== undefined) {
+      await TeamCrmAction.query().insert({
+        createdAt: daysFromNow(-contactedDaysAgo),
+        teamId: team.id,
+        userId: subscriberId,
+        subscriptionId: created.id,
+        type: "cancellation_follow_up",
+      });
+    }
     // Monthly bills, the most recent last, each one month further back.
     const bills = [
       ...invoices.map((amount, index) => ({
@@ -734,7 +747,7 @@ async function createCanceledTeams(input: {
       cancellationReason: "cancellation_requested",
       cancellationFeedback: "switched_service",
       cancellationComment: "Moving to in-house tooling.",
-      staffContactedAt: daysFromNow(-10),
+      contactedDaysAgo: 10,
       invoices: [100, 100],
     }),
     // Billed once a year: the column reads a twelfth of the bill.
