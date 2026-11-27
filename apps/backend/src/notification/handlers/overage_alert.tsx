@@ -108,7 +108,6 @@ export const handler = defineNotificationHandler({
           <Paragraph>
             Your team, <strong>{accountName}</strong>, now has {amount} of usage
             beyond its plan this billing period.
-            {isLast ? " This is the last of these notes." : null}
           </Paragraph>
           {limit}
           {/* A team with a spend limit is told where to change it, in a
