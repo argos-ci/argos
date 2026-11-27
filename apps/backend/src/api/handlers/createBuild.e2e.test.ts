@@ -1,5 +1,5 @@
 import request from "supertest";
-import { test as base, beforeAll, describe, expect } from "vitest";
+import { test as base, beforeAll, describe, expect, vi } from "vitest";
 import z from "zod";
 
 import type { Project } from "@/database/models";
@@ -7,6 +7,15 @@ import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
 import { createBuild } from "./createBuild";
+
+vi.mock("@/storage/s3", async () => {
+  const { S3Client } = await import("@aws-sdk/client-s3");
+  const client = new S3Client({
+    region: "us-east-1",
+    credentials: { accessKeyId: "test", secretAccessKey: "test" },
+  });
+  return { getS3Client: () => client };
+});
 
 const app = createTestHandlerApp(createBuild);
 
@@ -70,10 +79,15 @@ describe("createBuild", () => {
     const [upload] = res.body.screenshots;
     expect(upload.key).toBe(key);
     const checksum = Buffer.from(key, "hex").toString("base64");
+    // Both fields are signed, as on the media upload path.
+    expect(upload.fields["x-amz-checksum-algorithm"]).toBe("SHA256");
     expect(upload.fields["x-amz-checksum-sha256"]).toBe(checksum);
     const policy = JSON.parse(
       Buffer.from(upload.fields.Policy, "base64").toString("utf8"),
     );
+    expect(policy.conditions).toContainEqual({
+      "x-amz-checksum-algorithm": "SHA256",
+    });
     expect(policy.conditions).toContainEqual({
       "x-amz-checksum-sha256": checksum,
     });
