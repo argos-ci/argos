@@ -1,4 +1,10 @@
-import { DeleteObjectsCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { createHash } from "node:crypto";
+import type { Readable } from "node:stream";
+import {
+  DeleteObjectsCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+} from "@aws-sdk/client-s3";
 import type { TransactionOrKnex } from "objection";
 
 import config from "@/config";
@@ -12,9 +18,11 @@ import { chunk } from "@/util/chunk";
  * A missing object is a normal answer — the caller finalized before the upload
  * finished, or the same bytes have never been uploaded before — not an error.
  */
-export async function headMediaObject(
-  key: string,
-): Promise<{ size: number; contentType: string | null } | null> {
+export async function headMediaObject(key: string): Promise<{
+  size: number;
+  contentType: string | null;
+  checksumSha256: string | null;
+} | null> {
   try {
     const result = await getS3Client().send(
       new HeadObjectCommand({
@@ -25,6 +33,7 @@ export async function headMediaObject(
     return {
       size: result.ContentLength ?? 0,
       contentType: result.ContentType ?? null,
+      checksumSha256: result.ChecksumSHA256 ?? null,
     };
   } catch (error) {
     if (isNotFoundError(error)) {
@@ -32,6 +41,26 @@ export async function headMediaObject(
     }
     throw error;
   }
+}
+
+/**
+ * SHA-256 of an existing object, base64 encoded like S3's checksum metadata.
+ *
+ * Streamed rather than buffered: a video can be hundreds of megabytes, and only
+ * objects uploaded before the bucket started storing SHA-256 checksums need it.
+ */
+export async function hashMediaObject(key: string): Promise<string> {
+  const result = await getS3Client().send(
+    new GetObjectCommand({
+      Bucket: config.get("s3.screenshotsBucket"),
+      Key: key,
+    }),
+  );
+  const hash = createHash("sha256");
+  for await (const chunk of result.Body as Readable) {
+    hash.update(chunk as Buffer);
+  }
+  return hash.digest("base64");
 }
 
 /**

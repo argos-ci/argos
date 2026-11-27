@@ -1,4 +1,5 @@
 import { normalizeContentType } from "@argos/schemas/content-type";
+import { invariant } from "@argos/util/invariant";
 
 /**
  * Extension used for each accepted content type.
@@ -39,6 +40,14 @@ export function getMediaKey(args: {
 }): string {
   const extension = getExtensionForContentType(args.contentType);
   return `media/${args.projectId}/${args.hash}.${extension}`;
+}
+
+/** The hash a media key was built from, used to check the uploaded bytes. */
+export function getMediaHashFromKey(key: string): string {
+  const match = /^media\/[^/]+\/([0-9a-fA-F]{64})\.[^.]+$/.exec(key);
+  const hash = match?.[1];
+  invariant(hash, "a media key carries its SHA-256");
+  return hash;
 }
 
 /**

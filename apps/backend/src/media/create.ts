@@ -14,6 +14,7 @@ import { endTrialToUnlockUsage } from "@/stripe";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
+import { mediaObjectMatchesHash, sha256HexToBase64 } from "./checksum";
 import { finalizeMedia } from "./finalize";
 import { getMediaKey } from "./key";
 import { getMediaLimits, resolveExpiresAt, type MediaLimits } from "./limits";
@@ -116,31 +117,45 @@ export async function createMedia(
   });
   const expiresAt = resolveExpiresAt({ limits });
 
-  const { media, version } = await upsertMediaVersion({
+  const { media, version: foundVersion } = await upsertMediaVersion({
     ...params,
     key,
     defaultVisibility,
     expiresAt,
   });
 
-  if (version.uploadedAt) {
-    return { media, version, upload: null };
-  }
-
-  // The key is content-addressed, so bytes uploaded once — by this media or by
-  // any earlier one — are already in the bucket. Re-running the same command
-  // then costs one HEAD instead of re-transferring a 500 MB video.
+  // The key is content-addressed, so bytes uploaded once, by this media or by
+  // any earlier one, are already in the bucket. Re-running the same command
+  // costs one HEAD instead of re-transferring a 500 MB video. The hash has to
+  // check out first: a key is only as good as the bytes stored under it.
   const existingObject = await headMediaObject(key);
-  if (existingObject) {
+  if (
+    existingObject &&
+    (await mediaObjectMatchesHash({
+      key,
+      hash: params.hash,
+      checksumSha256: existingObject.checksumSha256,
+    }))
+  ) {
     return {
       media,
-      version: await finalizeMedia(version, media),
+      version: await finalizeMedia(foundVersion, media),
       upload: null,
     };
   }
 
+  // Bytes that are gone, or that turned out not to be the declared content,
+  // cannot be finalized after a re-upload while the row still says they landed.
+  const version =
+    foundVersion.uploadedAt || existingObject
+      ? await foundVersion
+          .$query()
+          .patchAndFetch({ uploadedAt: null, billedUnits: 0 })
+      : foundVersion;
+
   const upload = await createUploadTarget({
     key,
+    hash: params.hash,
     contentType: params.contentType,
     maxBytes: limits.maxFileBytes,
   });
@@ -327,12 +342,18 @@ async function upsertMediaVersion(
 }
 
 /**
- * Sign a POST policy S3 itself enforces, so an oversized or mistyped upload is
- * rejected **before** the bytes reach the bucket rather than after we have paid
- * to receive them.
+ * Sign a POST policy S3 itself enforces, so an oversized, mistyped or corrupt
+ * upload is rejected **before** the bytes reach the bucket rather than after we
+ * have paid to receive them.
+ *
+ * `createPresignedPost` turns every field into an exact-match policy condition,
+ * so the checksum cannot be swapped by the caller and S3 checks it against the
+ * bytes it receives. Clients already append every returned field to the form,
+ * so this needs no client change.
  */
 async function createUploadTarget(args: {
   key: string;
+  hash: string;
   contentType: string;
   maxBytes: number;
 }): Promise<{ url: string; fields: Record<string, string> }> {
@@ -340,7 +361,11 @@ async function createUploadTarget(args: {
     Bucket: config.get("s3.screenshotsBucket"),
     Key: args.key,
     Expires: UPLOAD_EXPIRES_IN_SECONDS,
-    Fields: { "Content-Type": args.contentType },
+    Fields: {
+      "Content-Type": args.contentType,
+      "x-amz-checksum-algorithm": "SHA256",
+      "x-amz-checksum-sha256": sha256HexToBase64(args.hash),
+    },
     Conditions: [
       ["content-length-range", 1, args.maxBytes],
       ["eq", "$Content-Type", args.contentType],

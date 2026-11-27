@@ -3,8 +3,10 @@ import { getMediaUnits } from "@argos/schemas/media";
 import { Media, MediaVersion } from "@/database/models";
 import { boom } from "@/util/error";
 
+import { mediaObjectMatchesHash } from "./checksum";
 import { scheduleMediaDiff } from "./diff-schedule";
 import { inspectMediaObject, MediaContentMismatchError } from "./inspect";
+import { getMediaHashFromKey } from "./key";
 import { deleteUnreferencedMediaObjects, headMediaObject } from "./object";
 import { probeMediaPoster } from "./poster";
 
@@ -21,12 +23,13 @@ const POSTER_WAIT_MS = 10_000;
  * Mark a version's bytes as landed and make it serveable.
  *
  * Everything here is cheap enough to run inside the request: one `HEAD` for the
- * real size, and one 64 KB ranged read to check the file is what it claims and to
- * pick up an image's dimensions — plus, for a video, a bounded wait for the CDN's
- * poster frame. Nothing touches the bytes — they are served exactly as uploaded,
- * and the CDN derives WebP/AVIF variants and video posters on request. The one
- * background step is the before/after comparison, which produces a separate mask
- * and leaves the upload itself alone.
+ * real size and S3's stored checksum, and one 64 KB ranged read to check the file
+ * is what it claims and to pick up an image's dimensions, plus, for a video, a
+ * bounded wait for the CDN's poster frame. An object uploaded before S3 stored
+ * SHA-256 checksums is streamed through the hash once instead. Bytes are served
+ * exactly as uploaded, and the CDN derives WebP/AVIF variants and video posters
+ * on request. The one background step is the before/after comparison, which
+ * produces a separate mask and leaves the upload itself alone.
  *
  * Doing the check inline rather than in a worker is also better behaviour: a file
  * that isn't what it claims is rejected *before* the caller is handed a working
@@ -51,6 +54,23 @@ export async function finalizeMedia(
     throw boom(
       400,
       "The file has not been uploaded yet. Upload it to the signed URL returned by the create call, then finalize again.",
+    );
+  }
+
+  const matchesHash = await mediaObjectMatchesHash({
+    key: version.key,
+    hash: getMediaHashFromKey(version.key),
+    checksumSha256: head.checksumSha256,
+  });
+
+  if (!matchesHash) {
+    await deleteUnreferencedMediaObjects({
+      keys: [version.key],
+      excludeVersionIds: [version.id],
+    });
+    throw boom(
+      400,
+      "The uploaded bytes do not match the declared SHA-256. Upload the file again.",
     );
   }
 
