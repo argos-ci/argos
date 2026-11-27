@@ -43,14 +43,14 @@ export function journeyFixture(input: {
   /** `describe` blocks between the file and the title. */
   describe?: string[];
   viewport: Viewport;
-  /** The screens, the changed ones marked with a `*`. */
+  /** The screens, the changed ones marked with a trailing `*`. */
   screens: string[];
 }): Journey {
-  const steps = input.screens.map((name) => ({
-    key: name.replace("*", ""),
-    diffId: `${input.id}-${name.replace("*", "")}`,
-    changed: name.endsWith("*"),
-  }));
+  const steps = input.screens.map((name) => {
+    const changed = name.endsWith("*");
+    const key = changed ? name.slice(0, -1) : name;
+    return { key, diffId: `${input.id}-${key}`, changed };
+  });
   const [first] = steps;
   invariant(first, "a journey has a screen");
   const shown = steps.find((step) => step.changed) ?? first;
