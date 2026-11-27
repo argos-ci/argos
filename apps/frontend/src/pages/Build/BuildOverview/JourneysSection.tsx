@@ -397,8 +397,10 @@ export function JourneysSectionView(props: {
     () => getJourneyTestGroups(build.journeys, page.statuses),
     [build.journeys, page.statuses],
   );
+  // A journey is a card: a test on one viewport or browser.
   const unchangedCount = groups.unchanged.reduce(
-    (count, file) => count + file.tests.length,
+    (count, file) =>
+      count + file.tests.reduce((runs, test) => runs + test.runs.length, 0),
     0,
   );
   const checkIsFiltered = (test: JourneyTest) =>
@@ -432,8 +434,8 @@ export function JourneysSectionView(props: {
             Journeys
           </h2>
           <p className="text-low mt-0.5 text-sm">
-            Tests that walk several screens. Open one to review its screens in
-            order.
+            A journey is a test on one viewport or browser. Open one to review
+            its screens in order.
           </p>
           <JourneyFileList
             files={groups.changed}

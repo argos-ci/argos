@@ -258,8 +258,9 @@ loggedTest(
       }),
     ).toBeVisible();
     await expect(walkLink("shows the home page")).toHaveCount(0);
-    // A test of a single screen is no journey: the affected tests name it,
-    // and only it, the journeys being named above.
+    // A test of a single screen is no journey: the other affected tests name
+    // it, and only it, the journeys being named above.
+    await expect(page.getByText("Other affected tests")).toBeVisible();
     const affectedTests = page.getByRole("list").filter({
       has: page.getByText("home.spec.ts › shows the home page"),
     });

@@ -154,7 +154,8 @@ export function ImpactAnalysisSection(props: {
     <AffectedItemsSection
       items={tests}
       itemIcon={FlaskConicalIcon}
-      title="Affected tests"
+      // The journeys section names the tests it shows.
+      title={journeyTests.size > 0 ? "Other affected tests" : "Affected tests"}
       seeAllLabel={(count) => `View all ${count} tests`}
       branch={build.branch}
       repoUrl={repoUrl}
