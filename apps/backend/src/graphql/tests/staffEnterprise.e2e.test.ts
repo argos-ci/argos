@@ -45,6 +45,7 @@ const EnterpriseQuery = `
         includedScreenshots
         periodStart
         periodEnd
+        endDate
         periodScreenshots
         previousPeriodAmount
         renewalEmailedAt
@@ -164,6 +165,7 @@ async function queryEnterprise(viewer: Viewer) {
       includedScreenshots: number | null;
       periodStart: string | null;
       periodEnd: string | null;
+      endDate: string | null;
       periodScreenshots: number | null;
       previousPeriodAmount: number | null;
       renewalEmailedAt: string | null;
@@ -335,6 +337,64 @@ describe("GraphQL staffEnterprise", () => {
     invariant(trial, "trial missing");
     expect(new Date(trial.periodStart).getDate()).toBe(1);
     expect(new Date(trial.periodEnd).getDate()).toBe(1);
+  });
+
+  it("says when a yearly contract is set to end instead of renewing", async () => {
+    const viewer = await createViewer({ staff: true });
+    const { subscription } = await createContractTeam({
+      plan: { name: "Entreprise Annual", interval: "year", usageBased: true },
+      flatPrice: 10_800,
+      screenshots: 60_000,
+    });
+    const endDate = new Date(Date.now() + 30 * 86_400_000).toISOString();
+    await subscription.$query().patch({ endDate });
+
+    const [contract] = (await queryEnterprise(viewer)).contracts;
+    expect(contract?.endDate).toBe(endDate);
+  });
+
+  it("refuses a renewal email for a contract that does not renew yearly", async () => {
+    const viewer = await createViewer({ staff: true });
+    const { subscription } = await createContractTeam({
+      plan: { name: "enterprise", interval: "month", usageBased: true },
+      flatPrice: 900,
+      screenshots: 1000,
+    });
+    const app = await createApp(viewer);
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: LogRenewalEmailMutation,
+        variables: { subscriptionId: subscription.id },
+      });
+
+    expect(res.body.errors[0].extensions.code).toBe("BAD_USER_INPUT");
+    await expect(
+      TeamOutreach.query().where("subscriptionId", subscription.id),
+    ).resolves.toHaveLength(0);
+  });
+
+  it("offers Enterprise to Pro teams only, but clears an offer on any plan", async () => {
+    const viewer = await createViewer({ staff: true });
+    const { subscription } = await createContractTeam({
+      plan: { name: "enterprise", interval: "month", usageBased: true },
+      flatPrice: 900,
+      screenshots: 1000,
+    });
+    const app = await createApp(viewer);
+    const setContact = (contacted: boolean) =>
+      request(app)
+        .post("/graphql")
+        .send({
+          query: SetContactMutation,
+          variables: { subscriptionId: subscription.id, contacted },
+        });
+
+    const mark = await setContact(true);
+    expect(mark.body.errors[0].extensions.code).toBe("BAD_USER_INPUT");
+    const clear = await setContact(false);
+    expectNoGraphQLError(clear);
   });
 
   it("records the renewal emails of the running term", async () => {

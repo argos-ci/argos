@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import { captureException } from "@sentry/node";
 
 import { checkHasStripeDiscount } from "@/stripe/discount";
 import { toEuros } from "@/stripe/revenue";
@@ -245,7 +246,15 @@ export async function getStaffEnterprise(): Promise<StaffEnterprise> {
   const offered = await Promise.all(
     candidates.map(async (subscription) => {
       const team = withBilling(subscription);
-      return (await checkIsEnterpriseOfferDue(team)) ? team : null;
+      try {
+        return (await checkIsEnterpriseOfferDue(team)) ? team : null;
+      } catch (error) {
+        // Stripe could not say whether the team has a discount, which it is
+        // asked only past the threshold: the team is listed rather than the
+        // whole page lost, and the failure reported.
+        captureException(error);
+        return team;
+      }
     }),
   );
 

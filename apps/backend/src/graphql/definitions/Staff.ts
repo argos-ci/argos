@@ -8,6 +8,7 @@ import gqlTag from "graphql-tag";
 import config from "@/config";
 import {
   Account,
+  Plan,
   StripeInvoice,
   Subscription,
   TeamUser,
@@ -431,6 +432,11 @@ export const typeDefs = gql`
     renews. Null when it is not billed yet.
     """
     periodEnd: DateTime
+    """
+    When the subscription is set to end: the contract does not renew then.
+    Null while it renews.
+    """
+    endDate: DateTime
     """
     Screenshots used since the running billing period opened. Null when the
     plan is not billed by usage.
@@ -1182,6 +1188,8 @@ export const resolvers: IResolvers = {
     includedScreenshots: ({ billing }) => billing.includedScreenshots,
     periodStart: ({ billing }) => getRunningPeriod(billing)?.from ?? null,
     periodEnd: ({ billing }) => getRunningPeriod(billing)?.endsAt ?? null,
+    endDate: ({ subscription }) =>
+      subscription.endDate ? new Date(subscription.endDate) : null,
     periodScreenshots: ({ billing }) =>
       billing.periodUsage?.currentPeriodScreenshotsCount ?? null,
     previousPeriodAmount: ({ billing }) => getPeriodAmount(billing, "previous"),
@@ -1504,11 +1512,15 @@ export const resolvers: IResolvers = {
 
       const subscription = await Subscription.query()
         .findById(args.input.subscriptionId)
-        .withGraphFetched("account")
+        .withGraphFetched("[account, plan]")
         .throwIfNotFound();
 
       if (!subscription.account.teamId) {
         throw badUserInput("Subscription is not a team's.");
+      }
+      // Clearing stays possible on any plan: the team may have moved since.
+      if (args.input.contacted && !Plan.checkIsProPlan(subscription.plan)) {
+        throw badUserInput("The Enterprise offer is made to Pro teams.");
       }
 
       const action = {
@@ -1530,11 +1542,17 @@ export const resolvers: IResolvers = {
 
       const subscription = await Subscription.query()
         .findById(args.input.subscriptionId)
-        .withGraphFetched("account")
+        .withGraphFetched("[account, plan]")
         .throwIfNotFound();
 
       if (!subscription.account.teamId) {
         throw badUserInput("Subscription is not a team's.");
+      }
+      if (
+        !Plan.checkIsEnterprisePlan(subscription.plan) ||
+        subscription.plan.interval !== "year"
+      ) {
+        throw badUserInput("Only a yearly Enterprise contract renews.");
       }
 
       await logTeamOutreach({
