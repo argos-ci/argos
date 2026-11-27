@@ -32,7 +32,6 @@ const withProTeam = test.extend<Ctx>({
       interval: "month",
       includedScreenshots: INCLUDED_SCREENSHOTS,
     });
-    const subscriber = await factory.User.create();
     await factory.Subscription.create({
       accountId: account.id,
       planId: plan.id,
@@ -41,9 +40,6 @@ const withProTeam = test.extend<Ctx>({
       flatPrice: FLAT_PRICE,
       additionalScreenshotPrice: ADDITIONAL_SCREENSHOT_PRICE,
       additionalStorybookScreenshotPrice: ADDITIONAL_SCREENSHOT_PRICE,
-      provider: "stripe",
-      stripeSubscriptionId: "sub_enterprise_offer",
-      subscriberId: subscriber.id,
       createdAt: new Date("2021-01-01").toISOString(),
       startDate: new Date("2021-01-01").toISOString(),
       status: "active",
@@ -119,6 +115,17 @@ describe("getIsEnterpriseOfferShown", () => {
     "is hidden once the team left the Pro plan",
     async ({ account, subscription, project }) => {
       await leavePro(subscription);
+      await bill(project, 5000);
+      await expect(getIsEnterpriseOfferShown(account)).resolves.toBe(false);
+    },
+  );
+
+  withProTeam(
+    "is hidden on Pro billed by the year, whose period is a year",
+    async ({ account, subscription, project }) => {
+      await Plan.query()
+        .findById(subscription.planId)
+        .patch({ interval: "year" });
       await bill(project, 5000);
       await expect(getIsEnterpriseOfferShown(account)).resolves.toBe(false);
     },

@@ -47,11 +47,15 @@ export function TeamEnterpriseOffer(props: { accountSlug: string }) {
 }
 
 function EnterpriseOffer(props: { accountSlug: string }) {
-  const { data } = useSuspenseQuery(EnterpriseOfferQuery, {
+  const { data, error } = useSuspenseQuery(EnterpriseOfferQuery, {
     variables: { slug: props.accountSlug },
+    // An offer that cannot be read is left out: the rest of the Billing page
+    // must not go down with it.
+    errorPolicy: "all",
   });
   if (
-    data.account?.__typename !== "Team" ||
+    error ||
+    data?.account?.__typename !== "Team" ||
     !data.account.showEnterpriseOffer
   ) {
     return null;

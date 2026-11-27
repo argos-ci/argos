@@ -1,6 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import request from "supertest";
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, test } from "vitest";
 
 import type { Account } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
@@ -26,35 +26,17 @@ async function createUser() {
   return { account, user: account.user };
 }
 
-async function queryOffer(
-  viewer: Awaited<ReturnType<typeof createUser>>,
-  team: Account,
-) {
-  const app = await createApolloServerApp(
-    apolloServer,
-    createApolloMiddleware,
-    viewer,
-  );
-  const res = await request(app)
-    .post("/graphql")
-    .send({ query: EnterpriseOfferQuery, variables: { slug: team.slug } });
-  expectNoGraphQLError(res);
-  return res.body.data.account.showEnterpriseOffer;
-}
+type Viewer = Awaited<ReturnType<typeof createUser>>;
 
-describe("GraphQL Team.showEnterpriseOffer", () => {
-  beforeEach(async () => {
+const withOfferedTeam = test.extend<{
+  /** A team on Pro whose running period came to $1,500. */
+  team: Account;
+  owner: Viewer;
+  member: Viewer;
+}>({
+  team: async ({}, use) => {
     await setupDatabase();
-  });
-
-  it("offers Enterprise to who manages billing, and to nobody else", async () => {
-    const [owner, member] = await Promise.all([createUser(), createUser()]);
     const team = await factory.TeamAccount.create();
-    invariant(team.teamId, "team account has no team");
-    await factory.TeamUser.createMany(2, [
-      { teamId: team.teamId, userId: owner.user.id, userLevel: "owner" },
-      { teamId: team.teamId, userId: member.user.id, userLevel: "member" },
-    ]);
     const plan = await factory.Plan.create({
       name: "pro",
       usageBased: true,
@@ -77,8 +59,49 @@ describe("GraphQL Team.showEnterpriseOffer", () => {
       projectId: project.id,
       screenshotCount: 3800,
     });
+    await use(team);
+  },
+  owner: async ({ team }, use) => {
+    invariant(team.teamId, "team account has no team");
+    const owner = await createUser();
+    await factory.TeamUser.create({
+      teamId: team.teamId,
+      userId: owner.user.id,
+      userLevel: "owner",
+    });
+    await use(owner);
+  },
+  member: async ({ team }, use) => {
+    invariant(team.teamId, "team account has no team");
+    const member = await createUser();
+    await factory.TeamUser.create({
+      teamId: team.teamId,
+      userId: member.user.id,
+      userLevel: "member",
+    });
+    await use(member);
+  },
+});
 
-    await expect(queryOffer(owner, team)).resolves.toBe(true);
-    await expect(queryOffer(member, team)).resolves.toBe(false);
-  });
+async function queryOffer(viewer: Viewer, team: Account) {
+  const app = await createApolloServerApp(
+    apolloServer,
+    createApolloMiddleware,
+    viewer,
+  );
+  const res = await request(app)
+    .post("/graphql")
+    .send({ query: EnterpriseOfferQuery, variables: { slug: team.slug } });
+  expectNoGraphQLError(res);
+  return res.body.data.account.showEnterpriseOffer;
+}
+
+describe("GraphQL Team.showEnterpriseOffer", () => {
+  withOfferedTeam(
+    "offers Enterprise to who manages billing, and to nobody else",
+    async ({ team, owner, member }) => {
+      await expect(queryOffer(owner, team)).resolves.toBe(true);
+      await expect(queryOffer(member, team)).resolves.toBe(false);
+    },
+  );
 });

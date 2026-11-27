@@ -163,7 +163,7 @@ export const typeDefs = gql`
     blockWhenSpendLimitIsReached: Boolean!
     invoices(after: Int = 0, first: Int = 20): InvoiceConnection!
     upcomingInvoice: UpcomingInvoice
-    "Whether the Billing page offers the team an Enterprise plan: it is on Pro and its current or previous billing period came to $1,500 or more before tax, euros converted at a fixed rate. Always false for members who cannot manage billing."
+    "Whether the Billing page offers the team an Enterprise plan: it is on Pro, billed monthly at list prices with no discount, and its current or previous billing period came to $1,500 or more before tax, euros converted at a fixed rate. Always false for members who cannot manage billing."
     showEnterpriseOffer: Boolean!
 
     me: TeamMember

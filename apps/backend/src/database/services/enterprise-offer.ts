@@ -1,5 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 
+import { checkHasStripeDiscount } from "@/stripe/discount";
 import { toEuros } from "@/stripe/revenue";
 
 import { Plan, type Account, type Subscription } from "../models";
@@ -35,12 +36,17 @@ const PRO_LIST_PRICES = {
 };
 
 /**
- * Whether the subscription is on Pro at its list prices. A team billed below
- * them has a negotiated deal: it already talked to sales, and offering it a
- * better price than Pro would read as if it had not.
+ * Whether the subscription is on Pro billed monthly at its list prices. A team
+ * billed below them has a negotiated deal: it already talked to sales, and
+ * offering it a better price than Pro would read as if it had not. The
+ * threshold is a month's bill, and a yearly plan's period is a year.
  */
-function checkIsListPricedPro(subscription: Subscription): boolean {
-  if (!subscription.plan || !Plan.checkIsProPlan(subscription.plan)) {
+function checkIsMonthlyListPricedPro(subscription: Subscription): boolean {
+  if (
+    !subscription.plan ||
+    !Plan.checkIsProPlan(subscription.plan) ||
+    subscription.plan.interval !== "month"
+  ) {
     return false;
   }
   const screenshotPrice = subscription.additionalScreenshotPrice;
@@ -56,10 +62,10 @@ function checkIsListPricedPro(subscription: Subscription): boolean {
 }
 
 /**
- * Whether the Billing page offers the team an Enterprise plan: it is on Pro at
- * list prices and its running or its previous billing period reached the
- * threshold. The previous one keeps the offer up while a new period starts
- * again from zero.
+ * Whether the Billing page offers the team an Enterprise plan: it is on Pro
+ * billed monthly at list prices with no discount, and its running or its
+ * previous billing period reached the threshold. The previous one keeps the
+ * offer up while a new period starts again from zero.
  */
 export async function getIsEnterpriseOfferShown(
   account: Account,
@@ -68,7 +74,7 @@ export async function getIsEnterpriseOfferShown(
   const subscription = await account
     .$getSubscriptionManager()
     .getActiveSubscription();
-  if (!subscription || !checkIsListPricedPro(subscription)) {
+  if (!subscription || !checkIsMonthlyListPricedPro(subscription)) {
     return false;
   }
   const billings = await getAccountBillings([account]);
@@ -78,8 +84,14 @@ export async function getIsEnterpriseOfferShown(
     return false;
   }
   const threshold = getThreshold(subscription.currency);
-  return (["current", "previous"] as const).some((period) => {
+  const reached = (["current", "previous"] as const).some((period) => {
     const amount = getPeriodAmount(billing, period);
     return amount !== null && amount >= threshold;
   });
+  if (!reached) {
+    return false;
+  }
+  // A coupon is a deal too. Stripe is asked last, so only the few teams past
+  // the threshold wait on it.
+  return !(await checkHasStripeDiscount(subscription));
 }
