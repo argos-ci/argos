@@ -6,8 +6,8 @@ import { ScreenshotMetadataColorScheme } from "@/gql/graphql";
 import type { JourneysSectionView } from "./BuildOverview/JourneysSection";
 
 /**
- * Journey fixtures for the stories of the journeys section and the walk
- * header. They carry what the section reads, which covers the header too.
+ * Journey fixtures for the stories of the journeys section, with what the
+ * section reads.
  */
 type Journey = ComponentProps<
   typeof JourneysSectionView
@@ -124,7 +124,7 @@ export const checkoutMobile = journeyFixture({
   ],
 });
 
-export const searchDesktop = journeyFixture({
+const searchDesktop = journeyFixture({
   id: "c0ffee03",
   file: "search.spec.ts",
   title: "finds a product",

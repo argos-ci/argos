@@ -1,18 +1,18 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { resolveTestIdentity } from "@argos/schemas/journey";
 import { invariant } from "@argos/util/invariant";
 import { createSerializer, parseAsString, useQueryState } from "nuqs";
 
 import { parseAsSetOf } from "@/util/search-params";
 
-import type { BuildJourney, Diff } from "../../BuildDiffState";
-import { getBuildURL, type BuildParams } from "../../BuildParams";
-import { countJourneyDiffs } from "../../journey-hints";
+import type { Diff } from "../../BuildDiffState";
 import {
   getMetadataCategoryDefinition,
   isKnownMetadataCategory,
   MetadataCategory,
 } from "../metadataCategories";
 import { isRelevantStoryTag } from "../tags/util";
+import type { VariantAxis } from "../variants/sibling";
 import { formatViewport, parseViewport } from "../viewports/util";
 import type { FilterState } from "./FilterState";
 
@@ -46,44 +46,48 @@ export function getFilterKey(
   return `${filter.category}:${filter.value}`;
 }
 
-/**
- * The journeys the review walks, by journey id. Kept in the URL rather than
- * with the other filters: a link to a journey opens the build on it, and
- * leaving for the build overview drops it.
- */
-const journeySearchParams = {
-  journey: parseAsSetOf(parseAsString).withDefault(new Set()),
-};
-
-export const serializeJourneySearch = createSerializer(journeySearchParams);
-
-/** A screenshot of a journey, opened walking that journey. */
-export function getJourneyScreenURL(
-  params: BuildParams,
-  journeyId: string,
-  diffId: string,
-): string {
-  return serializeJourneySearch(getBuildURL({ ...params, diffId }), {
-    journey: new Set([journeyId]),
-  });
-}
-
-export function useJourneySearchState() {
-  return useQueryState("journey", journeySearchParams.journey);
-}
-
 function parseFilterKey(key: string) {
   const [category = "", ...rest] = key.split(":");
   return { category, value: rest.join(":") };
+}
+
+/**
+ * The active filters live in the URL: a link opens the build filtered, which
+ * is what the runs of the build overview are, and a reload keeps them.
+ */
+const filterSearchParams = {
+  filters: parseAsSetOf(parseAsString).withDefault(new Set()),
+};
+
+const serializeFilterSearch = createSerializer(filterSearchParams);
+
+/** `url` with `filters` active. */
+export function withFilters(url: string, filters: ReadonlySet<string>): string {
+  return serializeFilterSearch(url, {
+    filters: filters.size > 0 ? new Set(filters) : null,
+  });
+}
+
+/**
+ * The test a screenshot comes from, as the Test filter names it. Stories have
+ * the Story kind filter.
+ */
+function getFilterTestKey(
+  metadata: NonNullable<Diff["compareScreenshot"]>["metadata"],
+) {
+  return metadata?.story?.id
+    ? null
+    : (resolveTestIdentity(metadata)?.key ?? null);
 }
 
 export function getStoryKindFromStoryId(storyId: string | null | undefined) {
   return (storyId || "").split("--")[0] || null;
 }
 
-function getFilters(diffs: Diff[]): {
+function getFiltersFromDiffs(diffs: Diff[]): {
   filters: Filter[];
   filterByKey: Map<string, Filter>;
+  filterGroups: FilterGroup[];
 } {
   const filterByKey = new Map<string, Filter>();
 
@@ -180,6 +184,15 @@ function getFilters(diffs: Diff[]): {
         });
       }
     }
+
+    const testKey = getFilterTestKey(metadata);
+    if (testKey) {
+      addFilter({
+        category: MetadataCategory.test,
+        value: testKey,
+        label: testKey,
+      });
+    }
   }
 
   const filters = Array.from(filterByKey.values()).sort((a, b) => {
@@ -208,45 +221,7 @@ function getFilters(diffs: Diff[]): {
     return a.label.localeCompare(b.label);
   });
 
-  return { filters, filterByKey };
-}
-
-/**
- * A filter per journey, which the journey menu lists by test: they depend on
- * the journeys alone, not on the diffs the list has loaded so far.
- */
-function getJourneyFilters(journeys: BuildJourney[]): Map<string, Filter> {
-  return new Map(
-    journeys.map((journey) => {
-      const filter = createFilter({
-        category: MetadataCategory.journey,
-        value: journey.id,
-        label: journey.title,
-      });
-      return [filter.key, { ...filter, count: countJourneyDiffs(journey) }];
-    }),
-  );
-}
-
-/** `journeyFilters` slotted into `filters` where their category sorts. */
-function mergeJourneyFilters(
-  filters: Filter[],
-  journeyFilters: Map<string, Filter>,
-): Filter[] {
-  if (journeyFilters.size === 0) {
-    return filters;
-  }
-  const label = getMetadataCategoryDefinition(MetadataCategory.journey).label;
-  const index = filters.findIndex(
-    (filter) =>
-      getMetadataCategoryDefinition(filter.category).label.localeCompare(
-        label,
-      ) > 0,
-  );
-  const journeys = Array.from(journeyFilters.values());
-  return index === -1
-    ? [...filters, ...journeys]
-    : [...filters.slice(0, index), ...journeys, ...filters.slice(index)];
+  return { filters, filterByKey, filterGroups: getFilterGroups(filters) };
 }
 
 function getMetadataForDiff(diff: Diff) {
@@ -254,59 +229,45 @@ function getMetadataForDiff(diff: Diff) {
 }
 
 /**
- * Create a filter state from diffs, and the journeys of the build.
+ * Create a filter state from diffs.
  */
-export function useCreateFilterState(
-  diffs: Diff[],
-  journeys: BuildJourney[],
-): FilterState {
-  const [localActive, setLocalActive] = useState<Set<string>>(new Set());
-  const [journeyIds, setJourneyIds] = useJourneySearchState();
-  const diffFilters = useMemo(() => getFilters(diffs), [diffs]);
-  const journeyFilters = useMemo(() => getJourneyFilters(journeys), [journeys]);
-  const { filterGroups, filters } = useMemo(() => {
-    const filters = mergeJourneyFilters(diffFilters.filters, journeyFilters);
-    return { filters, filterGroups: getFilterGroups(filters) };
-  }, [diffFilters, journeyFilters]);
-  // A journey id the build does not have, from an old link, filters nothing.
-  const active = useMemo(() => {
-    const active = new Set(localActive);
-    for (const journeyId of journeyIds) {
-      const key = getFilterKey({
-        category: MetadataCategory.journey,
-        value: journeyId,
-      });
-      if (journeyFilters.has(key)) {
-        active.add(key);
-      }
-    }
-    return active;
-  }, [localActive, journeyIds, journeyFilters]);
-  const setActive: FilterState["setActive"] = useCallback(
-    (next) => {
-      const nextLocal = new Set<string>();
-      const nextJourneyIds = new Set<string>();
-      for (const key of next) {
-        const { category, value } = parseFilterKey(key);
-        if (category === MetadataCategory.journey) {
-          nextJourneyIds.add(value);
-        } else {
-          nextLocal.add(key);
-        }
-      }
-      setLocalActive(nextLocal);
-      void setJourneyIds(nextJourneyIds.size > 0 ? nextJourneyIds : null);
+export function useCreateFilterState(diffs: Diff[]): FilterState {
+  const [filtersParam, setFiltersParam] = useQueryState(
+    "filters",
+    filterSearchParams.filters,
+  );
+  // A category this version does not know, from an old link, filters nothing.
+  const active = useMemo(
+    () =>
+      new Set(
+        Array.from(filtersParam).filter((key) =>
+          isKnownMetadataCategory(parseFilterKey(key).category),
+        ),
+      ),
+    [filtersParam],
+  );
+  const setActive = useCallback(
+    (next: Set<string>) => {
+      void setFiltersParam(next.size > 0 ? next : null);
     },
-    [setJourneyIds],
+    [setFiltersParam],
+  );
+  const { filterByKey, filterGroups, filters } = useMemo(
+    () => getFiltersFromDiffs(diffs),
+    [diffs],
   );
   const getFilterByKey: FilterState["getFilterByKey"] = useCallback(
     (key) => {
-      const filter =
-        diffFilters.filterByKey.get(key) ?? journeyFilters.get(key);
-      invariant(filter, "Filter not found");
-      return filter;
+      const existing = filterByKey.get(key);
+      if (existing) {
+        return existing;
+      }
+      // A link can filter on screenshots the list has not loaded yet.
+      const { category, value } = parseFilterKey(key);
+      invariant(isKnownMetadataCategory(category), "Filter not found");
+      return { key, category, value, label: value, count: 0 };
     },
-    [diffFilters, journeyFilters],
+    [filterByKey],
   );
   return useMemo(
     () => ({
@@ -315,9 +276,8 @@ export function useCreateFilterState(
       getFilterByKey,
       filterGroups,
       filters,
-      journeys,
     }),
-    [active, setActive, filterGroups, getFilterByKey, filters, journeys],
+    [active, setActive, filterGroups, getFilterByKey, filters],
   );
 }
 
@@ -343,23 +303,59 @@ function getFilterGroups(filters: Filter[]) {
       group.category === FilterCategory.storyTag ||
       group.category === FilterCategory.snapshotTag ||
       group.category === FilterCategory.testTag ||
-      group.category === FilterCategory.journey ||
+      group.category === FilterCategory.test ||
       group.filterKeys.size > 1,
   );
 }
 
+const VARIANT_FILTER_CATEGORIES: Record<VariantAxis, FilterCategory | null> = {
+  browser: FilterCategory.browser,
+  viewport: FilterCategory.viewport,
+  colorScheme: FilterCategory.colorScheme,
+  storyMode: null,
+};
+
 /**
- * Whether a diff matches every active filter: all categories must match
- * (AND), within a category any value matches (OR). The filters are read once,
- * then each diff is tested against them.
+ * `filters` once the review switches to `sibling` along `axis`: a filter on
+ * that axis takes the sibling's value, so the sibling stays in the list.
  */
-export function createFilterMatcher(
+export function followVariantFilter(
+  filters: ReadonlySet<string>,
+  sibling: Diff,
+  axis: VariantAxis,
+): ReadonlySet<string> {
+  const category = VARIANT_FILTER_CATEGORIES[axis];
+  const metadata = getMetadataForDiff(sibling);
+  const value =
+    category === FilterCategory.browser
+      ? metadata?.browser?.name
+      : category === FilterCategory.viewport && metadata?.viewport
+        ? formatViewport(metadata.viewport)
+        : category === FilterCategory.colorScheme
+          ? metadata?.colorScheme
+          : null;
+  if (!category || !value) {
+    return filters;
+  }
+  const key = getFilterKey({ category, value });
+  const others = Array.from(filters).filter(
+    (filter) => parseFilterKey(filter).category !== category,
+  );
+  return filters.has(key) || others.length === filters.size
+    ? filters
+    : new Set([...others, key]);
+}
+
+export function diffMatchesFilters(
+  diff: Diff,
   activeFilters: Set<string>,
-  context: {
-    /** The screenshots of the journeys the review walks. */
-    walkedDiffIds: { has(diffId: string): boolean };
-  },
-): (diff: Diff) => boolean {
+): boolean {
+  const metadata = getMetadataForDiff(diff);
+  if (!metadata) {
+    return false;
+  }
+
+  // All categories must match (AND), within a category any value matches (OR).
   const byCategory = new Map<MetadataCategory, string[]>();
   for (const filter of activeFilters) {
     const { category, value } = parseFilterKey(filter);
@@ -367,93 +363,86 @@ export function createFilterMatcher(
       continue;
     }
     if (!isKnownMetadataCategory(category)) {
-      return () => false;
+      return false;
     }
     const existing = byCategory.get(category) ?? [];
     existing.push(value);
     byCategory.set(category, existing);
   }
-  const categories = Array.from(byCategory.entries());
 
-  return (diff) => {
-    const metadata = getMetadataForDiff(diff);
-    if (!metadata) {
-      return false;
-    }
-    for (const [category, values] of categories) {
-      let matched = false;
-      for (const value of values) {
-        switch (category) {
-          case MetadataCategory.browser:
-            if (metadata.browser?.name === value) {
-              matched = true;
-            }
-            break;
-
-          case MetadataCategory.viewport:
-            if (metadata.viewport) {
-              const vp = formatViewport(metadata.viewport);
-              if (vp === value) {
-                matched = true;
-              }
-            }
-            break;
-
-          case MetadataCategory.colorScheme:
-            if (metadata.colorScheme === value) {
-              matched = true;
-            }
-            break;
-
-          case MetadataCategory.mediaType:
-            if (metadata.mediaType === value) {
-              matched = true;
-            }
-            break;
-
-          case MetadataCategory.storyKind: {
-            const storyKind = getStoryKindFromStoryId(metadata.story?.id);
-            if (storyKind === value) {
-              matched = true;
-            }
-            break;
+  for (const [category, values] of Array.from(byCategory.entries())) {
+    let matched = false;
+    for (const value of values) {
+      switch (category) {
+        case MetadataCategory.browser:
+          if (metadata.browser?.name === value) {
+            matched = true;
           }
+          break;
 
-          case MetadataCategory.snapshotTag: {
-            if (metadata.tags?.includes(value)) {
+        case MetadataCategory.viewport:
+          if (metadata.viewport) {
+            const vp = formatViewport(metadata.viewport);
+            if (vp === value) {
               matched = true;
             }
-            break;
           }
+          break;
 
-          case MetadataCategory.storyTag: {
-            if (metadata.story?.tags?.includes(value)) {
-              matched = true;
-            }
-            break;
+        case MetadataCategory.colorScheme:
+          if (metadata.colorScheme === value) {
+            matched = true;
           }
+          break;
 
-          case MetadataCategory.testTag: {
-            if (metadata.test?.tags?.includes(value)) {
-              matched = true;
-            }
-            break;
+        case MetadataCategory.mediaType:
+          if (metadata.mediaType === value) {
+            matched = true;
           }
+          break;
 
-          case MetadataCategory.journey: {
-            if (context.walkedDiffIds.has(diff.id)) {
-              matched = true;
-            }
-            break;
+        case MetadataCategory.storyKind: {
+          const storyKind = getStoryKindFromStoryId(metadata.story?.id);
+          if (storyKind === value) {
+            matched = true;
           }
+          break;
+        }
+
+        case MetadataCategory.snapshotTag: {
+          if (metadata.tags?.includes(value)) {
+            matched = true;
+          }
+          break;
+        }
+
+        case MetadataCategory.storyTag: {
+          if (metadata.story?.tags?.includes(value)) {
+            matched = true;
+          }
+          break;
+        }
+
+        case MetadataCategory.testTag: {
+          if (metadata.test?.tags?.includes(value)) {
+            matched = true;
+          }
+          break;
+        }
+
+        case MetadataCategory.test: {
+          if (getFilterTestKey(metadata) === value) {
+            matched = true;
+          }
+          break;
         }
       }
-
-      if (!matched) {
-        return false;
-      }
     }
 
-    return true;
-  };
+    if (!matched) {
+      return false;
+    }
+  }
+
+  return true;
 }

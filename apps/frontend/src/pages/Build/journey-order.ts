@@ -67,31 +67,3 @@ export function groupTestsForReview<T extends FiledTest>(
     ),
   };
 }
-
-/** The tests of `groups`, one after the other in the review's order. */
-export function getTestsInReviewOrder<T>(groups: JourneyTestGroups<T>): T[] {
-  return [...groups.changed, ...groups.unchanged].flatMap((file) => file.tests);
-}
-
-/**
- * The files of `groups` as a menu lists them: the unchanged ones after a
- * separator, so a file holding both kinds of tests is named in each part.
- */
-export function listJourneyTestFiles<T>(groups: JourneyTestGroups<T>): {
-  key: string;
-  file: JourneyFile<T>;
-  separated: boolean;
-}[] {
-  return [
-    ...groups.changed.map((file) => ({
-      key: `changed:${file.key}`,
-      file,
-      separated: false,
-    })),
-    ...groups.unchanged.map((file, index) => ({
-      key: `unchanged:${file.key}`,
-      file,
-      separated: index === 0 && groups.changed.length > 0,
-    })),
-  ];
-}

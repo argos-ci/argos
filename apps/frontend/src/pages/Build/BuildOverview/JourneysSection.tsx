@@ -1,9 +1,8 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { use, useEffect, useId, useMemo, useRef, useState } from "react";
 import { getStepLabel } from "@argos/schemas/journey";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { ChevronDownIcon, FileCodeIcon, WaypointsIcon } from "lucide-react";
-import { useLocation } from "react-router";
 
 import {
   DiffStatusIcon,
@@ -28,7 +27,7 @@ import { buildTypeDescriptors } from "@/util/build";
 import { lowTextColorClassNames } from "@/util/colors";
 import { capitalize } from "@/util/string";
 
-import { useBuildParams, type BuildParams } from "../BuildParams";
+import { getBuildURL, useBuildParams, type BuildParams } from "../BuildParams";
 import { getBuildReviewBlocker } from "../BuildReviewability";
 import { EvaluationStatus } from "../EvaluationStatus";
 import type { JourneyFile, JourneyTestGroups } from "../journey-order";
@@ -42,7 +41,12 @@ import {
 } from "../journey-tests";
 import { BrowserIcon } from "../metadata/browser/BrowserIcon";
 import { getBrowserLabel } from "../metadata/browser/browserLabels";
-import { getJourneyScreenURL } from "../metadata/filters/util";
+import { FilterStateContext } from "../metadata/filters/FilterState";
+import {
+  FilterCategory,
+  getFilterKey,
+  withFilters,
+} from "../metadata/filters/util";
 import {
   colorSchemeIcons,
   getViewportIconKind,
@@ -52,6 +56,7 @@ import { formatViewport } from "../metadata/viewports/util";
 import { ReviewProgressBadge } from "../ReviewProgressBadge";
 import { getRepositoryFileURL } from "../sidebar/metadata/LocationChip";
 import { ScreenshotDiffThumbnail } from "../sidebar/ScreenshotDiffThumbnail";
+import { useSnapshotGrouping } from "../SnapshotListPreferences";
 
 const _JourneyFragment = graphql(`
   fragment JourneysSection_Journey on BuildJourney {
@@ -122,7 +127,8 @@ type JourneyRun = {
 type JourneyTest = Omit<ListedJourneyTest<Journey>, "journeys"> & {
   /** Smallest viewport first. */
   runs: JourneyRun[];
-  /** What tells the runs apart, besides their viewport. */
+  /** What tells the runs apart. */
+  showViewport: boolean;
   showBrowser: boolean;
   showColorScheme: boolean;
 };
@@ -130,7 +136,7 @@ type JourneyTest = Omit<ListedJourneyTest<Journey>, "journeys"> & {
 /**
  * The runs of a journey, one per variant. A test takes each screen at several
  * sizes in a single run with Argos's `viewports` option: the sizes are steps
- * of one journey, and each is walked on its own.
+ * of one journey, and each opens the list on its own.
  */
 function getJourneyRuns(journey: Journey): JourneyRun[] {
   return journey.variants.map((variant, variantIndex) => {
@@ -165,10 +171,7 @@ function getJourneyRuns(journey: Journey): JourneyRun[] {
   });
 }
 
-/**
- * The tests in the order the walk header and the filter list them, each run
- * of a test as a card.
- */
+/** The tests in the review's order, each run of a test as a card. */
 function getJourneyTestGroups(
   journeys: Journey[],
   statuses: Record<string, EvaluationStatus>,
@@ -188,6 +191,12 @@ function getJourneyTestGroups(
     return {
       ...test,
       runs,
+      showViewport:
+        new Set(
+          runs.map((run) =>
+            run.viewport ? formatViewport(run.viewport) : null,
+          ),
+        ).size > 1,
       showBrowser: new Set(runs.map((run) => run.browser)).size > 1,
       showColorScheme: new Set(runs.map((run) => run.colorScheme)).size > 1,
     };
@@ -287,23 +296,69 @@ function ReviewMark(props: { mark: ReviewMarkValue; className?: string }) {
   );
 }
 
-/** The overview anchor of a journey, where walking it leads back to. */
-export function getJourneyAnchor(journeyId: string): string {
-  return `journey-${journeyId}`;
-}
-
 /** What the journeys section reads from the build page around it. */
 type JourneyPageContext = {
   params: BuildParams;
   /** The viewer's marks in the review under way, by diff id. */
   statuses: Record<string, EvaluationStatus>;
+  /** The filters of the list: the test it is filtered on is shown first. */
+  filters: ReadonlySet<string>;
+  /** Lists the snapshots by test, in the order each test took them. */
+  onOpenRun: () => void;
 };
+
+function getTestFilterKey(test: Pick<JourneyTest, "key">): string {
+  return getFilterKey({ category: FilterCategory.test, value: test.key });
+}
+
+/**
+ * The filters a run opens the list with: its test, and what tells the run
+ * from the other runs of the test.
+ */
+function getRunFilters(run: JourneyRun, test: JourneyTest): Set<string> {
+  const filters = new Set([getTestFilterKey(test)]);
+  if (test.showViewport && run.viewport) {
+    filters.add(
+      getFilterKey({
+        category: FilterCategory.viewport,
+        value: formatViewport(run.viewport),
+      }),
+    );
+  }
+  if (test.showBrowser && run.browser) {
+    filters.add(
+      getFilterKey({ category: FilterCategory.browser, value: run.browser }),
+    );
+  }
+  if (test.showColorScheme && run.colorScheme) {
+    filters.add(
+      getFilterKey({
+        category: FilterCategory.colorScheme,
+        value: run.colorScheme,
+      }),
+    );
+  }
+  return filters;
+}
+
+/** A screen of a run, the list filtered on the run. */
+function getRunScreenURL(
+  page: JourneyPageContext,
+  run: JourneyRun,
+  test: JourneyTest,
+  diffId: string,
+): string {
+  return withFilters(
+    getBuildURL({ ...page.params, diffId }),
+    getRunFilters(run, test),
+  );
+}
 
 /**
  * The build's end-to-end tests that walk several screens, by file, each run
- * as a card. A run opens the build on its first screen with the journey
- * filter on, a screen opens it on that screen: the review then walks the
- * journey screen by screen, the way a user clicks through the app.
+ * as a card. A run opens the build on its first screen, the list filtered on
+ * the run and listed by test; a screen opens it on that screen: the review
+ * then walks the run screen by screen, the way a user clicks through the app.
  *
  * A section of the page rather than a panel among others: when a build has
  * journeys, they are what its review goes through.
@@ -315,9 +370,19 @@ export function JourneysSection(props: {
   const params = useBuildParams();
   invariant(params, "journeys are shown on a build page");
   const statuses = useReviewStatuses();
-  const { hash } = useLocation();
+  const filterState = use(FilterStateContext);
+  invariant(filterState, "journeys are shown on a build page");
+  const [, setGrouping] = useSnapshotGrouping();
   return (
-    <JourneysSectionView {...props} page={{ params, statuses }} hash={hash} />
+    <JourneysSectionView
+      {...props}
+      page={{
+        params,
+        statuses,
+        filters: filterState.active,
+        onOpenRun: () => setGrouping("test"),
+      }}
+    />
   );
 }
 
@@ -325,10 +390,8 @@ export function JourneysSectionView(props: {
   build: Build;
   repoUrl: string | null;
   page: JourneyPageContext;
-  /** The URL's hash: a journey the review comes back from is shown first. */
-  hash: string;
 }) {
-  const { build, repoUrl, page, hash } = props;
+  const { build, repoUrl, page } = props;
   const headingId = useId();
   const groups = useMemo(
     () => getJourneyTestGroups(build.journeys, page.statuses),
@@ -338,18 +401,18 @@ export function JourneysSectionView(props: {
     (count, file) => count + file.tests.length,
     0,
   );
-  const checkIsWalked = (test: JourneyTest) =>
-    test.runs.some((run) => `#${getJourneyAnchor(run.journey.id)}` === hash);
+  const checkIsFiltered = (test: JourneyTest) =>
+    page.filters.has(getTestFilterKey(test));
   // Folded even when nothing changed: open, the list would read as journeys
-  // to review. Open when the review comes back from one of them.
+  // to review. Open when the list is filtered on one of them.
   const [showUnchanged, setShowUnchanged] = useState(() =>
-    groups.unchanged.some((file) => file.tests.some(checkIsWalked)),
+    groups.unchanged.some((file) => file.tests.some(checkIsFiltered)),
   );
   if (groups.changed.length === 0 && groups.unchanged.length === 0) {
     return null;
   }
   const listProps = {
-    checkIsWalked,
+    checkIsFiltered,
     reviewBlocker: getBuildReviewBlocker(build),
     repo: { repoUrl, branch: build.branch },
     page,
@@ -444,7 +507,7 @@ type RepositoryContext = { repoUrl: string | null; branch: string | null };
 
 function JourneyFileList(props: {
   files: JourneyFile<JourneyTest>[];
-  checkIsWalked: (test: JourneyTest) => boolean;
+  checkIsFiltered: (test: JourneyTest) => boolean;
   reviewBlocker: ReviewBlocker;
   repo: RepositoryContext;
   page: JourneyPageContext;
@@ -463,12 +526,12 @@ function JourneyFileList(props: {
 /** A test file and its journeys, as a pull request review shows a file. */
 function JourneyFileCard(props: {
   file: JourneyFile<JourneyTest>;
-  checkIsWalked: (test: JourneyTest) => boolean;
+  checkIsFiltered: (test: JourneyTest) => boolean;
   reviewBlocker: ReviewBlocker;
   repo: RepositoryContext;
   page: JourneyPageContext;
 }) {
-  const { file, checkIsWalked, reviewBlocker, repo, page } = props;
+  const { file, checkIsFiltered, reviewBlocker, repo, page } = props;
   const href = file.path
     ? getRepositoryFileURL({ file: file.path, ...repo })
     : null;
@@ -517,7 +580,7 @@ function JourneyFileCard(props: {
             key={test.key}
             test={test}
             context={getTestContext(test, file)}
-            scrollIntoView={checkIsWalked(test)}
+            scrollIntoView={checkIsFiltered(test)}
             reviewBlocker={reviewBlocker}
             page={page}
           />
@@ -530,7 +593,7 @@ function JourneyFileCard(props: {
 const MAX_CHANGED_SCREEN_NAMES = 6;
 
 type NamedScreen = JourneyScreen & {
-  journey: Journey;
+  run: JourneyRun;
   /** The label, with its folder when another screen of the run shares it. */
   name: string;
 };
@@ -560,7 +623,7 @@ function getChangedScreens(test: JourneyTest): NamedScreen[] {
       const shared = (labelCounts.get(screen.label) ?? 0) > 1;
       byIdentity.set(identity, {
         ...screen,
-        journey: run.journey,
+        run,
         name: shared ? screen.key.split("/").slice(-2).join("/") : screen.label,
       });
     }
@@ -574,7 +637,7 @@ function JourneyTestItem(props: {
   test: JourneyTest;
   /** What the title path says besides the file, shown before the title. */
   context: string | null;
-  /** Whether the review comes back from walking it, to show it first. */
+  /** Whether the list is filtered on it, to show it first. */
   scrollIntoView: boolean;
   reviewBlocker: ReviewBlocker;
   page: JourneyPageContext;
@@ -606,12 +669,9 @@ function JourneyTestItem(props: {
         <div className="mt-2 flex flex-wrap items-center gap-1">
           {namedScreens.map((screen) => (
             <HeadlessLink
-              key={`${screen.journey.id}:${screen.key}`}
-              href={getJourneyScreenURL(
-                page.params,
-                screen.journey.id,
-                screen.diffId,
-              )}
+              key={`${screen.run.key}:${screen.key}`}
+              href={getRunScreenURL(page, screen.run, test, screen.diffId)}
+              onClick={page.onOpenRun}
               aria-label={`Screen ${screen.stepIndex + 1}, ${screen.name}, changed`}
               className="border-thin bg-app hover:bg-hover focus-ring text-xxs max-w-full truncate rounded-full px-1.5 transition"
             >
@@ -715,7 +775,7 @@ function JourneyRunItem(props: {
   page: JourneyPageContext;
 }) {
   const { run, test, reviewBlocker, page } = props;
-  const { journey, screens, viewport, browser, colorScheme } = run;
+  const { screens, viewport, browser, colorScheme } = run;
   const [firstScreen] = screens;
   invariant(firstScreen, "a journey has at least one screen");
   const label = getRunLabel(run, test);
@@ -741,7 +801,8 @@ function JourneyRunItem(props: {
     // it above its file's sticky header.
     <li className="isolate">
       <HeadlessLink
-        href={getJourneyScreenURL(page.params, journey.id, firstScreen.diffId)}
+        href={getRunScreenURL(page, run, test, firstScreen.diffId)}
+        onClick={page.onOpenRun}
         aria-label={`Walk “${test.title}”${label ? ` at ${label}` : ""}`}
         className="group/item block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-(--ring-color-default)"
       >

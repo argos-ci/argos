@@ -230,9 +230,7 @@ export function BuildJourneyDrawer() {
 export function JourneyDrawerToggle() {
   const journey = useActiveDiffJourney();
   const { visible, setVisible } = useJourneyDrawerState();
-  const { journeyMode } = useBuildDiffState();
-  // Walking a journey keeps the strip open: there is nothing to toggle.
-  if (!journey || journeyMode) {
+  if (!journey) {
     return null;
   }
   return (

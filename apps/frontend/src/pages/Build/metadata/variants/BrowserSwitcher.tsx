@@ -8,7 +8,7 @@ import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { useGetSiblingDiffURL, type Diff } from "../../BuildDiffState";
+import type { Diff } from "../../BuildDiffState";
 import { BrowserIcon } from "../browser/BrowserIcon";
 import { getBrowserLabel } from "../browser/browserLabels";
 import { FilterContextMenu } from "../filters/FilterContextMenu";
@@ -18,6 +18,7 @@ import {
   getUniqueBrowsers,
   hashBrowser,
   resolveDiffMetadata,
+  useGetDiffPath,
   type MetadataBrowser,
 } from "../utils";
 import { findVariantSibling } from "./sibling";
@@ -34,7 +35,7 @@ export function BrowserSwitcher(props: {
   isSubsetBuild: boolean;
 }) {
   const { diff, siblingDiffs, isSubsetBuild } = props;
-  const getSiblingURL = useGetSiblingDiffURL(diff);
+  const getDiffPath = useGetDiffPath("browser");
   const metadata = resolveDiffMetadata(diff);
   const browsers = getUniqueBrowsers(
     siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
@@ -65,7 +66,8 @@ export function BrowserSwitcher(props: {
             browser={browser}
             status={getVariantStatus(resolvedDiff, { isSubsetBuild })}
             isActive={isActive}
-            href={getSiblingURL(resolvedDiff.id)}
+            href={getDiffPath(resolvedDiff)}
+            getFilteredHref={(filters) => getDiffPath(resolvedDiff, filters)}
             shortcutEnabled={isNextActive}
           />
         );
@@ -78,10 +80,13 @@ function BrowserLinkButton(props: {
   browser: MetadataBrowser;
   status: VariantStatus | null;
   href: string;
+  /** The link with `filters` on, once one of them is added. */
+  getFilteredHref: (filters: Set<string>) => string;
   isActive: boolean;
   shortcutEnabled: boolean;
 }) {
-  const { browser, status, href, isActive, shortcutEnabled } = props;
+  const { browser, status, href, isActive, shortcutEnabled, getFilteredHref } =
+    props;
   const navigate = useNavigate();
   const label = getBrowserLabel(browser.name);
   const tooltipContent = withVariantStatus(
@@ -99,7 +104,9 @@ function BrowserLinkButton(props: {
         category: MetadataCategory.browser,
         value: browser.name,
       })}
-      onFilterAdded={isActive || !href ? undefined : () => navigate(href)}
+      onFilterAdded={
+        isActive ? undefined : (filters) => navigate(getFilteredHref(filters))
+      }
     >
       {/* The logo is the label: browsers are the one dimension whose icons
           anyone reviewing snapshots can already tell apart. The name stays for

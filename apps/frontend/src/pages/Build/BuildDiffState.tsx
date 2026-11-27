@@ -15,7 +15,6 @@ import {
   checkIsMultiStepJourney,
   compareSteps,
   getCaptureIndex,
-  getStepLabel,
   getVariantSignature,
   groupJourneys,
   resolveJourneyIdentity,
@@ -32,7 +31,6 @@ import {
   checkIsDiffGroupName,
   DIFF_GROUPS,
   getDiffStatusGroup,
-  JOURNEY_DIFF_GROUP,
   SKIPPED_DIFF_GROUP,
   type DiffGroupName,
 } from "@/containers/Build/BuildDiffGroup";
@@ -48,15 +46,11 @@ import {
 } from "./BuildParams";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
-import { getWalkAfterSwitch } from "./journey-hints";
 import { FilterStateContext } from "./metadata/filters/FilterState";
 import {
-  createFilterMatcher,
-  FilterCategory,
-  getFilterKey,
-  serializeJourneySearch,
+  diffMatchesFilters,
   useCreateFilterState,
-  useJourneySearchState,
+  withFilters,
 } from "./metadata/filters/util";
 import { resolveDiffMetadata } from "./metadata/utils";
 import {
@@ -266,8 +260,7 @@ type BuildDiffContextValue = {
   toggleGroup: (name: string, value?: boolean) => void;
   /**
    * Whether the similar diffs of `group` are stacked and closed, so they are
-   * marked and walked past as one. Listed by test or walking a journey,
-   * nothing is stacked.
+   * marked and walked past as one. Listed by test, nothing is stacked.
    */
   isStackCollapsed: (group: string | null | undefined) => boolean;
   activeDiff: Diff | null;
@@ -296,17 +289,6 @@ type BuildDiffContextValue = {
    * Aria version of the diff.
    */
   ariaDiff: Diff | null;
-  /**
-   * A journey filter is active: the list walks the journey screen by screen,
-   * in one section, instead of sorting it by status.
-   */
-  journeyMode: boolean;
-  /** The journeys of the build: the tests that walk several screens. */
-  journeys: BuildJourney[];
-  /** The journeys the filter walks, none outside of journey mode. */
-  walkedJourneys: BuildJourney[];
-  /** Where each walked screen sits in its journey ("2 · cart"), by diff id. */
-  journeyStepLabels: Map<string, string>;
 };
 
 const BuildDiffContext = createContext<BuildDiffContextValue | null>(null);
@@ -477,8 +459,8 @@ function useGetPreviousDiff() {
 
 export function useGoToPreviousDiff() {
   const getPreviousDiff = useGetPreviousDiff();
-  const { setActiveDiff, activeDiff, journeyMode } = useBuildDiffState();
-  const params = useBuildParams();
+  const { setActiveDiff, activeDiff } = useBuildDiffState();
+  const overviewURL = useBuildOverviewURL();
   const navigate = useNavigate();
   return useEventCallback(() => {
     const previousDiff = getPreviousDiff();
@@ -486,48 +468,31 @@ export function useGoToPreviousDiff() {
       setActiveDiff(previousDiff, true);
       return;
     }
-    // From the first diff, going up returns to the build overview. Not from
-    // the first screen of a journey: the walk stops there, one keypress
-    // should not end it.
-    if (activeDiff && params && !journeyMode) {
-      navigate(getBuildOverviewURL(params), { replace: true });
+    // From the first diff, going up returns to the build overview.
+    if (activeDiff && overviewURL) {
+      navigate(overviewURL, { replace: true });
     }
   });
+}
+
+/** The build overview, the filters kept for the way back to the list. */
+export function useBuildOverviewURL(): string | null {
+  const params = useBuildParams();
+  const filterState = use(FilterStateContext);
+  invariant(filterState, "the build overview is linked from a build page");
+  return params
+    ? withFilters(getBuildOverviewURL(params), filterState.active)
+    : null;
 }
 
 export function useGoToBuildOverview() {
-  const params = useBuildParams();
+  const overviewURL = useBuildOverviewURL();
   const navigate = useNavigate();
   return useEventCallback(() => {
-    if (params) {
-      navigate(getBuildOverviewURL(params), { replace: true });
+    if (overviewURL) {
+      navigate(overviewURL, { replace: true });
     }
   });
-}
-
-/**
- * The link from `diff` to one of its siblings, for the variant switchers: a
- * journey walked goes on through the switch.
- */
-export function useGetSiblingDiffURL(
-  diff: Diff,
-): (siblingId: string) => string {
-  const { journeys, walkedJourneys } = useBuildDiffState();
-  const params = useBuildParams();
-  invariant(params, "a snapshot is shown on a build page");
-  return useCallback(
-    (siblingId: string) => {
-      const url = getBuildURL({ ...params, diffId: siblingId });
-      const journey = getWalkAfterSwitch({
-        journeys,
-        walked: walkedJourneys,
-        fromDiffId: diff.id,
-        toDiffId: siblingId,
-      });
-      return journey ? serializeJourneySearch(url, { journey }) : url;
-    },
-    [params, diff.id, journeys, walkedJourneys],
-  );
 }
 
 /**
@@ -727,28 +692,6 @@ function groupDiffsByStatus(
   });
 }
 
-/**
- * The one group of a journey walk: its screens in the order the test took
- * them, whatever their status. A reviewed screen keeps its place: it is still
- * a step of the journey.
- */
-function groupDiffsAlongJourneys(
-  diffs: Diff[],
-  /** Position of each screen in the walk. */
-  walkOrder: Map<string, number>,
-): DiffListGroup[] {
-  const getPosition = (diff: Diff) =>
-    walkOrder.get(diff.id) ?? Number.MAX_SAFE_INTEGER;
-  return [
-    {
-      type: "status",
-      name: JOURNEY_DIFF_GROUP,
-      diffs: diffs.toSorted((a, b) => getPosition(a) - getPosition(b)),
-      defaultExpanded: true,
-    },
-  ];
-}
-
 const NO_TEST_GROUP = "no-test";
 
 /**
@@ -763,7 +706,8 @@ function getTestGroupName(test: JourneyIdentity | null): string {
 /**
  * Groups the diffs by the test they come from, in the order the test took
  * them. Tests are listed by the most pressing status among their diffs, then
- * by name, and the ones with a diff to look at start open.
+ * by name, and the ones with a diff to look at start open, as does a test
+ * listed alone.
  *
  * Built from the statuses the build came with, not from the review: a test
  * does not move as its diffs are marked, and marking one does not regroup the
@@ -805,8 +749,11 @@ function groupDiffsByTest(
       name,
       test,
       diffs: steps.toSorted(compareSteps).map((step) => step.diff),
+      // A list filtered on one test, as a run of the overview opens it, shows
+      // its snapshots whatever their status.
       defaultExpanded:
         context.searchMode ||
+        tests.size === 1 ||
         ATTENTION_STATUSES.some((status) => statuses.has(status)),
     },
   }))
@@ -872,34 +819,10 @@ const _BuildDiffStateFragment = graphql(`
       unchanged
       retryFailure
     }
-    journeys {
-      id
-      prefix
-      title
-      location {
-        file
-      }
-      stepKeys
-      variants {
-        browser
-        viewport {
-          width
-          height
-        }
-        diffIds
-        changedDiffIds
-      }
-    }
   }
 `);
 
 type BuildStats = DocumentType<typeof _BuildDiffStateFragment>["stats"];
-
-export type BuildJourney = DocumentType<
-  typeof _BuildDiffStateFragment
->["journeys"][number];
-
-const NO_JOURNEYS: BuildJourney[] = [];
 
 /**
  * The status groups open by default while searching. Out of search, only the
@@ -1161,51 +1084,19 @@ export function BuildDiffProvider(props: {
     () => groupDiffsByJourneyKey(screenshotDiffs),
     [screenshotDiffs],
   );
-  const journeys = build?.journeys ?? NO_JOURNEYS;
-  const filterState = useCreateFilterState(screenshotDiffs, journeys);
-  const walkedJourneys = useMemo(
-    () =>
-      journeys.filter((journey) =>
-        filterState.active.has(
-          getFilterKey({ category: FilterCategory.journey, value: journey.id }),
-        ),
-      ),
-    [journeys, filterState.active],
-  );
-  const journeyMode = walkedJourneys.length > 0;
-  const { walkOrder, journeyStepLabels } = useMemo(() => {
-    const walkOrder = new Map<string, number>();
-    const journeyStepLabels = new Map<string, string>();
-    for (const journey of walkedJourneys) {
-      // The server lists the variants in walk order, each step by step.
-      for (const variant of journey.variants) {
-        variant.diffIds.forEach((diffId, index) => {
-          const stepKey = journey.stepKeys[index];
-          if (!diffId || !stepKey) {
-            return;
-          }
-          journeyStepLabels.set(
-            diffId,
-            `${index + 1} · ${getStepLabel(stepKey)}`,
-          );
-          walkOrder.set(diffId, walkOrder.size);
-        });
-      }
-    }
-    return { walkOrder, journeyStepLabels };
-  }, [walkedJourneys]);
+  const filterState = useCreateFilterState(screenshotDiffs);
 
   const filteredDiffs = useMemo(() => {
     let diffs = searchMode
       ? results.map((result) => result.item)
       : screenshotDiffs;
     if (filterState.active.size > 0) {
-      diffs = diffs.filter(
-        createFilterMatcher(filterState.active, { walkedDiffIds: walkOrder }),
+      diffs = diffs.filter((diff) =>
+        diffMatchesFilters(diff, filterState.active),
       );
     }
     return diffs;
-  }, [screenshotDiffs, results, searchMode, filterState.active, walkOrder]);
+  }, [screenshotDiffs, results, searchMode, filterState.active]);
 
   const [initialDiffIdParam] = useState(params.diffId);
   const initialDiffId = initialDiffIdParam ?? firstDiffId;
@@ -1241,25 +1132,18 @@ export function BuildDiffProvider(props: {
   const listResumeRef = useRef<Diff | null>(null);
   const drawerValue = useMemo(
     (): JourneyDrawerContextValue => ({
-      // The strip is how a journey shows on screen: walking one opens it,
-      // without touching the preference.
-      visible: drawerVisible || journeyMode,
+      visible: drawerVisible,
       setVisible: setDrawerVisible,
       listResumeRef,
     }),
-    [drawerVisible, journeyMode, setDrawerVisible],
+    [drawerVisible, setDrawerVisible],
   );
 
   // Out of the memo's dependencies when listed by test, which the review does
   // not regroup.
   const groupingReviewStatuses =
-    grouping === "status" && !journeyMode
-      ? reviewState?.diffStatuses
-      : undefined;
+    grouping === "status" ? reviewState?.diffStatuses : undefined;
   const groups = useMemo(() => {
-    if (journeyMode) {
-      return groupDiffsAlongJourneys(filteredDiffs, walkOrder);
-    }
     const context = { isSubsetBuild, searchMode };
     return grouping === "test"
       ? groupDiffsByTest(filteredDiffs, context)
@@ -1273,8 +1157,6 @@ export function BuildDiffProvider(props: {
     isSubsetBuild,
     searchMode,
     grouping,
-    journeyMode,
-    walkOrder,
   ]);
 
   const expanded = useMemo(
@@ -1286,14 +1168,10 @@ export function BuildDiffProvider(props: {
     setToggle(name, value ?? !expanded.has(name));
   });
 
-  // A journey is walked screen by screen: screens that changed the same way
-  // stay apart.
   const isStackCollapsed = useCallback(
     (group: string | null | undefined) =>
-      Boolean(
-        group && grouping === "status" && !journeyMode && !expanded.has(group),
-      ),
-    [grouping, journeyMode, expanded],
+      Boolean(group && grouping === "status" && !expanded.has(group)),
+    [grouping, expanded],
   );
 
   const sortedDiffs = useMemo(() => {
@@ -1304,20 +1182,17 @@ export function BuildDiffProvider(props: {
     findDiffGroup(groups, diff),
   );
 
-  // Read from the URL, not from the filters: a journey the list has not
-  // loaded yet is not a filter yet, and must survive the navigation all the same.
-  const [journeyKeys] = useJourneySearchState();
   const setActiveDiff = useEventCallback((diff: Diff, scroll?: boolean) => {
     navigate(
-      {
-        pathname: getBuildURL({
+      withFilters(
+        getBuildURL({
           accountSlug: params.accountSlug,
           buildNumber: params.buildNumber,
           projectName: params.projectName,
           diffId: diff.id,
         }),
-        search: serializeJourneySearch({ journey: journeyKeys }),
-      },
+        filterState.active,
+      ),
       { replace: true },
     );
 
@@ -1330,55 +1205,6 @@ export function BuildDiffProvider(props: {
       });
     }
   });
-
-  // A journey picked from the filters, or a link to a screenshot it does not
-  // have, starts the walk on its first screen: the screenshot shown before is
-  // not in the list anymore.
-  const walkStart = journeyMode ? (groups[0]?.diffs[0] ?? null) : null;
-  const [firstWalkedId] = walkOrder.keys();
-  const firstWalkedLoaded = Boolean(
-    firstWalkedId && indices.byId[firstWalkedId],
-  );
-  const walkKey = walkedJourneys.map((journey) => journey.id).join(",");
-  // Checked once per change of the walked journeys, not on each navigation:
-  // a link to another journey changes the screenshot a render before the
-  // journey filter follows it from the URL, and in that render the new
-  // screenshot is not in the walk yet.
-  const walkStartCheckRef = useRef({ walkKey: "", pending: false });
-  useEffect(() => {
-    const check = walkStartCheckRef.current;
-    if (check.walkKey !== walkKey) {
-      check.walkKey = walkKey;
-      check.pending = Boolean(walkKey);
-    }
-    if (!check.pending || !walkStart) {
-      return;
-    }
-    const shownId = params.diffId;
-    if (shownId && walkOrder.has(shownId)) {
-      check.pending = false;
-      return;
-    }
-    // The pages of the list come in one after the other: the screenshot of
-    // the URL, or the journey's first screen, may be in one still to come.
-    if (
-      !complete &&
-      ((shownId && !indices.byId[shownId]) || !firstWalkedLoaded)
-    ) {
-      return;
-    }
-    check.pending = false;
-    setActiveDiff(walkStart, true);
-  }, [
-    walkKey,
-    walkStart,
-    params.diffId,
-    walkOrder,
-    indices,
-    complete,
-    firstWalkedLoaded,
-    setActiveDiff,
-  ]);
 
   const setGrouping = useEventCallback((next: SnapshotGrouping) => {
     setGroupingPreference(next);
@@ -1481,10 +1307,6 @@ export function BuildDiffProvider(props: {
       ariaDiff,
       isLoading: hasMore,
       isSubsetBuild,
-      journeyMode,
-      journeys,
-      walkedJourneys,
-      journeyStepLabels,
     }),
     [
       grouping,
@@ -1510,10 +1332,6 @@ export function BuildDiffProvider(props: {
       ariaDiff,
       hasMore,
       isSubsetBuild,
-      journeyMode,
-      journeys,
-      walkedJourneys,
-      journeyStepLabels,
     ],
   );
 

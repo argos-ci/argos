@@ -12,7 +12,6 @@ import { BuildDiffList } from "./BuildDiffList";
 import { useSearchModeState, useSearchState } from "./BuildDiffState";
 import { BuildInfos } from "./BuildInfos";
 import { BuildParams } from "./BuildParams";
-import { JourneyWalkHeader } from "./JourneyWalkHeader";
 import { FilterButton } from "./metadata/filters/FilterButton";
 import { FilterChips } from "./metadata/filters/FilterChips";
 import { SnapshotListDisplayButton } from "./SnapshotListDisplayButton";
@@ -151,7 +150,6 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
 
       {searchMode ? (
         <div className="flex min-h-0 flex-1 flex-col">
-          <JourneyWalkHeader />
           <FilterChips />
           <BuildDiffList />
         </div>
@@ -162,7 +160,6 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
               value="snapshots"
               className="flex min-h-0 flex-1 flex-col"
             >
-              <JourneyWalkHeader />
               <FilterChips />
               <BuildDiffList />
             </TabPanel>

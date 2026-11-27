@@ -8,7 +8,7 @@ import { LinkButton } from "@/ui/Button";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { useGetSiblingDiffURL, type Diff } from "../../BuildDiffState";
+import type { Diff } from "../../BuildDiffState";
 import { FilterContextMenu } from "../filters/FilterContextMenu";
 import { getFilterKey } from "../filters/util";
 import { MetadataCategory } from "../metadataCategories";
@@ -17,6 +17,7 @@ import {
   getUniqueColorSchemes,
   resolveColorScheme,
   resolveDiffMetadata,
+  useGetDiffPath,
 } from "../utils";
 import { findVariantSibling } from "./sibling";
 import {
@@ -47,7 +48,7 @@ export function ColorSchemeSwitcher(props: {
   isSubsetBuild: boolean;
 }) {
   const { diff, siblingDiffs, isSubsetBuild } = props;
-  const getSiblingURL = useGetSiblingDiffURL(diff);
+  const getDiffPath = useGetDiffPath("colorScheme");
   const metadata = resolveDiffMetadata(diff);
   const colorSchemes = getUniqueColorSchemes(
     siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
@@ -75,7 +76,8 @@ export function ColorSchemeSwitcher(props: {
             colorScheme={colorScheme}
             status={getVariantStatus(resolvedDiff, { isSubsetBuild })}
             isActive={isActive}
-            href={getSiblingURL(resolvedDiff.id)}
+            href={getDiffPath(resolvedDiff)}
+            getFilteredHref={(filters) => getDiffPath(resolvedDiff, filters)}
           />
         );
       })}
@@ -87,9 +89,11 @@ function ColorSchemeLinkButton(props: {
   colorScheme: ScreenshotMetadataColorScheme;
   status: VariantStatus | null;
   href: string;
+  /** The link with `filters` on, once one of them is added. */
+  getFilteredHref: (filters: Set<string>) => string;
   isActive: boolean;
 }) {
-  const { colorScheme, status, href, isActive } = props;
+  const { colorScheme, status, href, isActive, getFilteredHref } = props;
   const navigate = useNavigate();
   const Icon = colorSchemeIcons[colorScheme];
   const label = withVariantStatus(getColorSchemeLabel(colorScheme), status);
@@ -105,7 +109,9 @@ function ColorSchemeLinkButton(props: {
           category: MetadataCategory.colorScheme,
           value: colorScheme,
         })}
-        onFilterAdded={isActive || !href ? undefined : () => navigate(href)}
+        onFilterAdded={
+          isActive ? undefined : (filters) => navigate(getFilteredHref(filters))
+        }
       >
         <LinkButton
           href={href}

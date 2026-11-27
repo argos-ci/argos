@@ -1,26 +1,15 @@
-import { Fragment, useMemo, type ComponentProps, type ReactNode } from "react";
 import { invariant } from "@argos/util/invariant";
 
-import { DiffStatusIcon } from "@/containers/Build/BuildDiffGroup";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
-import { MenuHeading, MenuItem, MenuSeparator } from "@/ui/menu-kit";
 
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
-import {
-  getJourneyRunHints,
-  getRunCapture,
-  groupJourneysByTest,
-  type JourneyRunHint,
-} from "./journey-hints";
+import { getRunCapture, groupJourneysByTest } from "./journey-hints";
 import {
   groupTestsForReview,
-  listJourneyTestFiles,
   type JourneyFile,
   type JourneyTestGroups,
 } from "./journey-order";
-import { getBrowserLabel } from "./metadata/browser/browserLabels";
-import { formatViewport } from "./metadata/viewports/util";
 
 type TestJourney = {
   prefix: string;
@@ -92,17 +81,6 @@ export const JOURNEY_STATUS_LABELS: Record<JourneyStatus, string> = {
   [EvaluationStatus.Rejected]: "Reviewed, with a rejected screen",
 };
 
-/** A journey's status, in the icon and color the snapshot list gives it. */
-function JourneyStatusIcon(props: { status: JourneyStatus }) {
-  return (
-    <DiffStatusIcon
-      group={props.status}
-      aria-label={JOURNEY_STATUS_LABELS[props.status]}
-      className="ml-1.5 inline size-3.5 align-[-0.125em]"
-    />
-  );
-}
-
 type ReviewedJourney = TestJourney & {
   id: string;
   variants: readonly {
@@ -159,82 +137,4 @@ export function getJourneyTestFiles<J extends ReviewedJourney>(
     },
   );
   return groupTestsForReview(tests);
-}
-
-/** The tests of `journeys`, computed again only when they or the marks change. */
-export function useJourneyTestFiles<J extends ReviewedJourney>(
-  journeys: readonly J[],
-) {
-  const statuses = useReviewStatuses();
-  return useMemo(
-    () => getJourneyTestFiles(journeys, statuses),
-    [journeys, statuses],
-  );
-}
-
-/**
- * What a test's row says under its title: the runs it took, told apart by
- * what differs between them, and how many screens changed.
- */
-function getJourneyTestSummary(
-  test: ListedJourneyTest<ReviewedJourney>,
-): string {
-  const hints = getJourneyRunHints(test.journeys);
-  const runs = test.journeys
-    .map((journey) => getJourneyRunLabel(hints.get(journey.id)))
-    .filter(Boolean);
-  return [
-    runs.join(", "),
-    test.changedCount > 0
-      ? `${test.changedCount} changed ${test.changedCount === 1 ? "screen" : "screens"}`
-      : "No changes",
-  ]
-    .filter(Boolean)
-    .join(" · ");
-}
-
-/** A run named by what tells it from the other runs of its test. */
-export function getJourneyRunLabel(hint: JourneyRunHint | undefined): string {
-  return [
-    hint?.viewport ? formatViewport(hint.viewport) : null,
-    hint?.browser ? getBrowserLabel(hint.browser) : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-}
-
-/**
- * A menu row per test of `groups`, under its file, the unchanged tests after
- * a separator. A plain function rather than a component: menu-kit reads the
- * rows it is given.
- */
-export function getJourneyTestMenuItems<J extends ReviewedJourney>(
-  groups: JourneyTestFiles<J>,
-  getItemProps: (
-    test: ListedJourneyTest<J>,
-  ) => Omit<ComponentProps<typeof MenuItem>, "children">,
-): ReactNode[] {
-  return listJourneyTestFiles(groups).map(({ key, file, separated }) => (
-    <Fragment key={key}>
-      {separated ? <MenuSeparator /> : null}
-      <MenuHeading>{file.path ?? file.name}</MenuHeading>
-      {file.tests.map((test) => {
-        const context = getTestContext(test, file);
-        return (
-          <MenuItem
-            key={test.key}
-            wrap
-            textValue={[context, test.title].filter(Boolean).join(" › ")}
-            keywords={[file.path ?? file.name]}
-            subtitle={getJourneyTestSummary(test)}
-            {...getItemProps(test)}
-          >
-            {context ? <span className="text-low">{context} › </span> : null}
-            {test.title}
-            <JourneyStatusIcon status={test.status} />
-          </MenuItem>
-        );
-      })}
-    </Fragment>
-  ));
 }

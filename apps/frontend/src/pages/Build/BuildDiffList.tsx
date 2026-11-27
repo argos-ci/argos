@@ -63,10 +63,11 @@ import {
   getDiffListStatus,
   getFirstListedStatus,
   useBuildDiffState,
+  useBuildOverviewURL,
   useSearchModeState,
   type DiffListGroup,
 } from "./BuildDiffState";
-import { getBuildOverviewURL, useBuildParams } from "./BuildParams";
+import { useBuildParams } from "./BuildParams";
 import {
   useGetDiffGroupEvaluationStatus,
   useGetDiffStatus,
@@ -191,7 +192,6 @@ function getRows(
   expandedGroups: ReadonlySet<string>,
   results: DiffResult[],
   searchMode: boolean,
-  journeyMode: boolean,
 ): ListRow[] {
   const rows: ListRow[] = [];
   const nonEmptyGroups = groups.filter((group) => group.diffs.length > 0);
@@ -199,16 +199,13 @@ function getRows(
     const isLastGroup = groupIndex === nonEmptyGroups.length - 1;
     const isGroupExpanded = expandedGroups.has(group.name);
 
-    // A journey has its header above the list, the walk is the whole list.
-    if (!journeyMode) {
-      rows.push(
-        createHeaderRow({
-          group,
-          expanded: isGroupExpanded,
-          borderBottom: isLastGroup || isGroupExpanded,
-        }),
-      );
-    }
+    rows.push(
+      createHeaderRow({
+        group,
+        expanded: isGroupExpanded,
+        borderBottom: isLastGroup || isGroupExpanded,
+      }),
+    );
 
     if (!isGroupExpanded) {
       return;
@@ -217,7 +214,7 @@ function getRows(
     // Listed by test, similar diffs are not stacked: they mostly come from
     // other tests.
     const stackSizes = new Map<string, number>();
-    if (!searchMode && !journeyMode && group.type === "status") {
+    if (!searchMode && group.type === "status") {
       for (const diff of group.diffs) {
         if (diff.group) {
           stackSizes.set(diff.group, (stackSizes.get(diff.group) ?? 0) + 1);
@@ -231,13 +228,10 @@ function getRows(
       const first = index === 0;
       const last = index === diffs.length - 1;
 
-      // Searching, or walking a journey screen by screen, nothing is stacked.
-      // A searched row shows what matched.
-      if (searchMode || journeyMode) {
-        const result = searchMode
-          ? (results.find((r) => r.item === diff) ?? null)
-          : null;
-        if (!searchMode || result) {
+      // In search mode, we don't show groups.
+      if (searchMode) {
+        const result = results.find((r) => r.item === diff) ?? null;
+        if (result) {
           rows.push(memoCreateListItemRow({ diff, first, last, result }));
         }
         return;
@@ -454,8 +448,7 @@ function DiffStatusIndicator(props: { group: DiffGroupName }) {
  * The status a row shows. Listed by status, the section says where a diff
  * stands, so a card only adds what a reviewed diff was, while a name, which
  * has nothing else beside it, always shows its diff's status. Listed by test,
- * nothing else on the row says where the diff stands. Walking a journey, with
- * no status sections left, a screen says on its own whether it changed.
+ * nothing else on the row says where the diff stands.
  */
 function getRowStatus(input: {
   diff: Diff;
@@ -463,12 +456,8 @@ function getRowStatus(input: {
   grouping: SnapshotGrouping;
   display: SnapshotDisplay;
   isSubsetBuild: boolean;
-  journeyMode: boolean;
 }): DiffGroupName | null {
-  const { diff, status, grouping, display, isSubsetBuild, journeyMode } = input;
-  if (journeyMode) {
-    return getDiffListStatus(diff, null, { isSubsetBuild });
-  }
+  const { diff, status, grouping, display, isSubsetBuild } = input;
   if (grouping === "test") {
     return getDiffListStatus(diff, status, { isSubsetBuild });
   }
@@ -480,15 +469,10 @@ function getRowStatus(input: {
     : null;
 }
 
-function DiffName(props: {
-  diff: Diff;
-  result: DiffResult | null;
-  /** What names the diff in place of its name, out of search. */
-  label?: string | undefined;
-}) {
-  const { diff, result, label } = props;
+function DiffName(props: { diff: Diff; result: DiffResult | null }) {
+  const { diff, result } = props;
   if (!result) {
-    return label ?? diff.name;
+    return diff.name;
   }
   const start = Math.max(result.match.index, 0);
   const end = result.match.index + result.match.length;
@@ -510,8 +494,6 @@ const ListItem = memo(function ListItem(props: {
    * already says it.
    */
   listStatus: DiffGroupName | null;
-  /** The step a journey walk names the diff by. */
-  label: string | undefined;
   display: SnapshotDisplay;
   active: boolean;
   setActiveDiff: (diff: Diff) => void;
@@ -525,7 +507,6 @@ const ListItem = memo(function ListItem(props: {
     active,
     status,
     listStatus,
-    label,
     display,
     setActiveDiff,
     observer,
@@ -590,7 +571,7 @@ const ListItem = memo(function ListItem(props: {
               scroll, so the row's native title names the snapshot instead. */}
           {listStatus && <DiffStatusIcon group={listStatus} />}
           <div className="min-w-0 flex-1 truncate">
-            <DiffName diff={item.diff} result={item.result} label={label} />
+            <DiffName diff={item.diff} result={item.result} />
           </div>
           {subItemToggle}
         </ListItemButton>
@@ -611,7 +592,7 @@ const ListItem = memo(function ListItem(props: {
         >
           {listStatus && <DiffStatusIndicator group={listStatus} />}
           <DiffCardFooterText>
-            <DiffName diff={item.diff} result={item.result} label={label} />
+            <DiffName diff={item.diff} result={item.result} />
           </DiffCardFooterText>
           {subItemToggle && (
             <div className="shrink-0 py-2">{subItemToggle}</div>
@@ -761,15 +742,13 @@ const InternalBuildDiffList = memo(() => {
     isSubsetBuild,
     grouping,
     diffs,
-    journeyMode,
-    journeyStepLabels,
   } = useBuildDiffState();
   const { searchMode } = useSearchModeState();
   const [display] = useSnapshotDisplay();
   const filterState = use(FilterStateContext);
   const rows = useMemo(
-    () => getRows(groups, expanded, results, searchMode, journeyMode),
-    [groups, expanded, results, searchMode, journeyMode],
+    () => getRows(groups, expanded, results, searchMode),
+    [groups, expanded, results, searchMode],
   );
   const containerRef = useRef<HTMLDivElement>(null);
   const getDiffIndex = useEventCallback((diff: Diff | null) => {
@@ -1083,9 +1062,7 @@ const InternalBuildDiffList = memo(() => {
                           grouping,
                           display,
                           isSubsetBuild,
-                          journeyMode,
                         })}
-                        label={journeyStepLabels.get(item.diff.id)}
                         display={display}
                       />
                     </div>
@@ -1116,14 +1093,15 @@ export function BuildDiffList() {
  */
 function OverviewButton() {
   const params = useBuildParams();
-  if (!params) {
+  const overviewURL = useBuildOverviewURL();
+  if (!params || !overviewURL) {
     return null;
   }
   const selected = params.diffId == null;
   return (
     <Tooltip content="Overview">
       <LinkButton
-        href={getBuildOverviewURL(params)}
+        href={overviewURL}
         variant="ghost"
         size="small"
         iconOnly

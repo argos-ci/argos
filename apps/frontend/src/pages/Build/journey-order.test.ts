@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getTestsInReviewOrder, groupTestsForReview } from "./journey-order";
+import { groupTestsForReview } from "./journey-order";
 
 function test(file: string, title: string, changedCount: number) {
   return {
@@ -30,14 +30,6 @@ describe("#groupTestsForReview", () => {
     ).toEqual([
       ["e2e/checkout.spec.ts", ["checkout.spec.ts › pays by card"]],
       ["e2e/signup.spec.ts", ["signup.spec.ts › creates an account"]],
-    ]);
-    // Next from the most changed test is the next changed one, even in
-    // another file, before any unchanged test of its own file.
-    expect(getTestsInReviewOrder(groups).map((t) => t.key)).toEqual([
-      "checkout.spec.ts › completes a purchase",
-      "search.spec.ts › finds a product",
-      "checkout.spec.ts › pays by card",
-      "signup.spec.ts › creates an account",
     ]);
   });
 });

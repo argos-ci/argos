@@ -9,7 +9,6 @@ import {
   SquareSlashIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
-  WaypointsIcon,
   XCircleIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -25,12 +24,6 @@ import { lowTextColorClassNames } from "@/util/colors";
  */
 export const SKIPPED_DIFF_GROUP = "skipped";
 
-/**
- * The one section a journey filter leaves, its screens in the order the test
- * walked them whatever their status.
- */
-export const JOURNEY_DIFF_GROUP = "journey";
-
 export const DIFF_GROUPS = [
   ScreenshotDiffStatus.Failure,
   ScreenshotDiffStatus.Changed,
@@ -42,15 +35,13 @@ export const DIFF_GROUPS = [
   ScreenshotDiffStatus.RetryFailure,
   ScreenshotDiffStatus.Ignored,
   SKIPPED_DIFF_GROUP,
-  JOURNEY_DIFF_GROUP,
 ] as const;
 
 export const DIFF_STATS_GROUPS = DIFF_GROUPS.filter(
   (group) =>
     group !== EvaluationStatus.Accepted &&
     group !== EvaluationStatus.Rejected &&
-    group !== SKIPPED_DIFF_GROUP &&
-    group !== JOURNEY_DIFF_GROUP,
+    group !== SKIPPED_DIFF_GROUP,
 );
 
 export type DiffGroupName = (typeof DIFF_GROUPS)[number];
@@ -140,11 +131,6 @@ const DiffGroupDefinitions: Record<DiffGroupName, DiffGroupDefinition> = {
     color: "success",
     label: "Accepted",
     icon: ThumbsUpIcon,
-  },
-  [JOURNEY_DIFF_GROUP]: {
-    color: "neutral",
-    label: "Journey",
-    icon: WaypointsIcon,
   },
 };
 

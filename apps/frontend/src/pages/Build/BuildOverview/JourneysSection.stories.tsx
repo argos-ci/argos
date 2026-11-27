@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { BuildType } from "@/gql/graphql";
 
 import { EvaluationStatus } from "../EvaluationStatus";
+import { getJourneyTestKey } from "../journey-hints";
 import {
   checkoutDesktop,
   checkoutMobile,
@@ -13,7 +14,8 @@ import {
   journeyFixture,
   signupDesktop,
 } from "../journey-testing";
-import { getJourneyAnchor, JourneysSectionView } from "./JourneysSection";
+import { FilterCategory, getFilterKey } from "../metadata/filters/util";
+import { JourneysSectionView } from "./JourneysSection";
 
 type Props = ComponentProps<typeof JourneysSectionView>;
 type Build = Props["build"];
@@ -38,6 +40,8 @@ function marks(ids: string[], status: EvaluationStatus) {
 const page: Props["page"] = {
   params: { accountSlug: "acme", projectName: "shop", buildNumber: 42 },
   statuses: {},
+  filters: new Set(),
+  onOpenRun: () => {},
 };
 
 const meta = {
@@ -47,7 +51,6 @@ const meta = {
     build: build(JOURNEYS),
     repoUrl: "https://github.com/acme/shop",
     page,
-    hash: "",
   },
   render: (args) => (
     <div className="flex max-w-3xl flex-col gap-10 p-6">
@@ -116,9 +119,19 @@ export const UnchangedOnly: Story = {
   args: { build: build([signupDesktop]) },
 };
 
-/** Back from walking an unchanged journey, its section is open on it. */
+/** Back from the list filtered on an unchanged test, its section is open on it. */
 export const UnchangedOpen: Story = {
-  args: { hash: `#${getJourneyAnchor(signupDesktop.id)}` },
+  args: {
+    page: {
+      ...page,
+      filters: new Set([
+        getFilterKey({
+          category: FilterCategory.test,
+          value: getJourneyTestKey(signupDesktop),
+        }),
+      ]),
+    },
+  },
 };
 
 const longJourney = journeyFixture({

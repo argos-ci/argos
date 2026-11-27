@@ -24,15 +24,17 @@ import { FilterStateContext } from "./FilterState";
 export function FilterContextMenu(props: {
   filterKey: string;
   /**
-   * Where to go once the filter is added.
+   * Goes where the filter leads, with `filters` active, instead of only
+   * adding it.
    *
    * A control naming a value the snapshot on screen does not carry — the
    * sibling segments of a variant switcher — would otherwise filter that very
    * snapshot out of the list, leaving the viewer on a diff no row points at.
    * Following the value is what keeps "filter on 375px" and "show me 375px"
-   * the same sentence.
+   * the same sentence. The navigation carries the filters: they live in the
+   * URL, and setting them apart would race it.
    */
-  onFilterAdded?: () => void;
+  onFilterAdded?: (filters: Set<string>) => void;
   children: ReactElement;
 }) {
   const { filterKey, onFilterAdded, children, ...rest } = props;
@@ -85,13 +87,13 @@ export function FilterContextMenu(props: {
           // Adding rather than replacing: a reviewer narrowing to two viewports
           // builds the set up one right-click at a time, and replacing would
           // undo the previous one.
-          filterState.setActive(
-            isActive
-              ? filterState.active.difference(new Set([filterKey]))
-              : filterState.active.union(new Set([filterKey])),
-          );
-          if (!isActive) {
-            onFilterAdded?.();
+          const next = isActive
+            ? filterState.active.difference(new Set([filterKey]))
+            : filterState.active.union(new Set([filterKey]));
+          if (!isActive && onFilterAdded) {
+            onFilterAdded(next);
+          } else {
+            filterState.setActive(next);
           }
           setIsOpen(false);
         }}

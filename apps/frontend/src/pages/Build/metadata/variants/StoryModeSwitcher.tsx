@@ -8,8 +8,12 @@ import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { useGetSiblingDiffURL, type Diff } from "../../BuildDiffState";
-import { getUniqueStoryModes, resolveDiffMetadata } from "../utils";
+import type { Diff } from "../../BuildDiffState";
+import {
+  getUniqueStoryModes,
+  resolveDiffMetadata,
+  useGetDiffPath,
+} from "../utils";
 import { findVariantSibling } from "./sibling";
 import {
   getVariantStatus,
@@ -24,7 +28,7 @@ export function StoryModeSwitcher(props: {
   isSubsetBuild: boolean;
 }) {
   const { diff, siblingDiffs, isSubsetBuild } = props;
-  const getSiblingURL = useGetSiblingDiffURL(diff);
+  const getDiffPath = useGetDiffPath("storyMode");
   const metadata = resolveDiffMetadata(diff);
   const storyModes = getUniqueStoryModes(
     siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
@@ -54,7 +58,7 @@ export function StoryModeSwitcher(props: {
             mode={mode}
             status={getVariantStatus(resolvedDiff, { isSubsetBuild })}
             aria-current={isActive ? "page" : undefined}
-            href={getSiblingURL(resolvedDiff.id)}
+            href={getDiffPath(resolvedDiff)}
             shortcutEnabled={isNextActive}
           />
         );

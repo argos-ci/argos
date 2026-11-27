@@ -12,8 +12,8 @@ import { FilterCategoryMenu } from "./FilterCategoryMenu";
 import { FilterIcon } from "./FilterIcon";
 import { FilterStateContext, type FilterState } from "./FilterState";
 import {
-  FilterCategory,
   getFilterCategoryDefinition,
+  type FilterCategory,
   type FilterGroup,
 } from "./util";
 
@@ -21,17 +21,13 @@ export const FilterChips = memo(() => {
   const state = use(FilterStateContext);
   invariant(state, "Must be used in a filter context");
 
-  // The journey a review walks has a header of its own above the list.
-  const filterGroups = Array.from(getActiveFilterGroups(state)).filter(
-    (filterGroup) => filterGroup.category !== FilterCategory.journey,
-  );
-  if (filterGroups.length === 0) {
+  if (state.active.size === 0) {
     return null;
   }
 
   return (
     <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
-      {filterGroups.map((filterGroup) => (
+      {Array.from(getActiveFilterGroups(state).values(), (filterGroup) => (
         <FilterChip
           key={filterGroup.category}
           filterGroup={filterGroup}
@@ -42,14 +38,25 @@ export const FilterChips = memo(() => {
   );
 });
 
+/**
+ * The active filters by category. A filter from a link may name a value the
+ * loaded snapshots do not carry yet, or the only one of its category, which
+ * the menus leave out: it gets a chip all the same.
+ */
 function getActiveFilterGroups(state: FilterState) {
-  const groups = new Set<FilterGroup>();
+  const groups = new Map<FilterCategory, FilterGroup>();
   for (const key of state.active) {
-    const group = state.filterGroups.find((group) => group.filterKeys.has(key));
-    invariant(group, "Group not found");
-    groups.add(group);
+    const { category } = state.getFilterByKey(key);
+    const group = groups.get(category) ?? {
+      category,
+      filterKeys: new Set(
+        state.filterGroups.find((group) => group.category === category)
+          ?.filterKeys,
+      ),
+    };
+    group.filterKeys.add(key);
+    groups.set(category, group);
   }
-
   return groups;
 }
 

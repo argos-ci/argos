@@ -178,7 +178,7 @@ export function useAcknowledgeMarkedDiff(
 ) {
   const getDiffStatus = useGetDiffEvaluationStatus();
   const reviewStatus = useReviewStatus();
-  const { setActiveDiff, isSubsetBuild, diffs, isLoading, journeyMode } =
+  const { setActiveDiff, isSubsetBuild, diffs, isLoading } =
     useBuildDiffState();
   const checkIsToReview = (diff: Diff) => {
     if (!getDiffStatus) {
@@ -194,11 +194,6 @@ export function useAcknowledgeMarkedDiff(
     checkIsToReview,
     getNextDiff,
   );
-  // Walking a journey, marking a screen moves on to the next one, changed or
-  // not: the list is the journey, and skipping a screen breaks the walk.
-  const getNextScreen = useGetNextDiff(undefined, options);
-  const getPlannedNextDiff = () =>
-    journeyMode ? getNextScreen() : getNextDiffThroughJourney();
   const reviewDialog = useReviewDialog();
   const state = use(BuildReviewStateContext);
   const diffStatuses = state?.diffStatuses ?? null;
@@ -213,8 +208,7 @@ export function useAcknowledgeMarkedDiff(
       reviewDialog.show();
     } else if (
       nextDiff &&
-      (journeyMode ||
-        checkDiffCanBeReviewed(nextDiff.status, { isSubsetBuild }))
+      checkDiffCanBeReviewed(nextDiff.status, { isSubsetBuild })
     ) {
       setActiveDiff(nextDiff, true);
     }
@@ -253,7 +247,9 @@ export function useAcknowledgeMarkedDiff(
 
   const planAck = useEventCallback(() => {
     diffStatusesRef.current = diffStatuses;
-    nextDiffRef.current = resolveNextDiffOnAck ? null : getPlannedNextDiff();
+    nextDiffRef.current = resolveNextDiffOnAck
+      ? null
+      : getNextDiffThroughJourney();
   });
 
   // Snapshot the next diff to review *now* — before marking re-sorts the list —
@@ -261,7 +257,7 @@ export function useAcknowledgeMarkedDiff(
   // the next render. Used by the reject-note dialog so moving to the next diff
   // waits until the reviewer submits or skips the note.
   const planDeferredAck = useEventCallback(() => {
-    const nextDiff = getPlannedNextDiff();
+    const nextDiff = getNextDiffThroughJourney();
     return () => acknowledgeNextDiff(nextDiff);
   });
 

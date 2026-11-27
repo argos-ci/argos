@@ -8,7 +8,7 @@ import { ButtonGroup } from "@/ui/ButtonGroup";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { useGetSiblingDiffURL, type Diff } from "../../BuildDiffState";
+import type { Diff } from "../../BuildDiffState";
 import { FilterContextMenu } from "../filters/FilterContextMenu";
 import { getFilterKey } from "../filters/util";
 import { MetadataCategory } from "../metadataCategories";
@@ -16,6 +16,7 @@ import {
   getUniqueViewports,
   hashViewport,
   resolveDiffMetadata,
+  useGetDiffPath,
   type MetadataViewport,
 } from "../utils";
 import { formatViewport } from "../viewports/util";
@@ -33,7 +34,7 @@ export function ViewportSwitcher(props: {
   isSubsetBuild: boolean;
 }) {
   const { diff, siblingDiffs, isSubsetBuild } = props;
-  const getSiblingURL = useGetSiblingDiffURL(diff);
+  const getDiffPath = useGetDiffPath("viewport");
   const metadata = resolveDiffMetadata(diff);
   const viewports = getUniqueViewports(
     siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
@@ -64,7 +65,8 @@ export function ViewportSwitcher(props: {
             viewport={viewport}
             status={getVariantStatus(resolvedDiff, { isSubsetBuild })}
             isActive={isActive}
-            href={getSiblingURL(resolvedDiff.id)}
+            href={getDiffPath(resolvedDiff)}
+            getFilteredHref={(filters) => getDiffPath(resolvedDiff, filters)}
             shortcutEnabled={isNextActive}
           />
         );
@@ -77,10 +79,13 @@ function ViewportLinkButton(props: {
   viewport: MetadataViewport;
   status: VariantStatus | null;
   href: string;
+  /** The link with `filters` on, once one of them is added. */
+  getFilteredHref: (filters: Set<string>) => string;
   isActive: boolean;
   shortcutEnabled: boolean;
 }) {
-  const { viewport, status, href, isActive, shortcutEnabled } = props;
+  const { viewport, status, href, isActive, shortcutEnabled, getFilteredHref } =
+    props;
   const navigate = useNavigate();
   const hotkey = useBuildHotkey("switchViewport", () => navigate(href), {
     enabled: shortcutEnabled,
@@ -93,7 +98,9 @@ function ViewportLinkButton(props: {
         category: MetadataCategory.viewport,
         value: formatViewport(viewport),
       })}
-      onFilterAdded={isActive || !href ? undefined : () => navigate(href)}
+      onFilterAdded={
+        isActive ? undefined : (filters) => navigate(getFilteredHref(filters))
+      }
     >
       {/* The width alone: it is what tells siblings apart, and the height and
           the unit are the same for all of them — the tooltip carries both. */}

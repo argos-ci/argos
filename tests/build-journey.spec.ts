@@ -274,49 +274,25 @@ loggedTest(
       replacements: { [team.account.slug]: "acme" },
     });
 
-    // A run opens its journey on the first screen, unchanged as it is, with a
-    // short id in the URL, the journey above the list and the strip open.
+    // A run opens the build on its first screen, the list filtered on the
+    // run and listed by test: the run's screens in the order the test took
+    // them.
     await page
       .getByRole("link", { name: "Walk “complete a purchase” at 1280×720" })
       .click();
     const heading = (name: string) =>
       page.getByRole("heading", { name: `desktop/checkout/${name}.png` });
     await expect(heading("cart")).toBeVisible();
-    await expect(page).toHaveURL(/[?&]journey=[0-9a-f]{8}(&|$)/);
-    // The walk stops at its first screen: up does not leave it for the
-    // overview, as it does from the first snapshot of the list.
-    await expect(page.locator("button:has(.lucide-arrow-up)")).toBeDisabled();
-    await page.keyboard.press("ArrowUp");
-    await expect(heading("cart")).toBeVisible();
-    await expect(page).toHaveURL(/[?&]journey=[0-9a-f]{8}(&|$)/);
-    const journeyHeader = page.getByRole("region", {
-      name: "Journey",
-      exact: true,
-    });
-    await expect(journeyHeader).toContainText("complete a purchase");
-    await expect(journeyHeader).toContainText("1280×720");
-    const drawer = page.getByTestId("journey-drawer");
-    // The strip stays open while the journey is walked: nothing to toggle.
-    const journeyToggle = page.getByRole("button", {
-      name: "Journey",
-      exact: true,
-    });
-    await expect(drawer.getByRole("button")).toHaveText([
-      "1 · cart",
-      "2 · shipping",
-      "3 · payment",
-      "4 · confirmation",
-    ]);
-    await expect(journeyToggle).toHaveCount(0);
-
-    // The list is the journey: its screens in the order the test walked them,
-    // in one section, not sorted by status.
+    await expect(page).toHaveURL(/[?&]filters=/);
+    await expect(
+      page.getByRole("button", { name: /^Remove .* filter$/ }),
+    ).toHaveCount(2);
     const rows = page.locator("[role='button'][data-index]");
     await expect(rows).toHaveText([
-      /1 · cart/,
-      /2 · shipping/,
-      /3 · payment/,
-      /4 · confirmation/,
+      /desktop\/checkout\/cart/,
+      /desktop\/checkout\/shipping/,
+      /desktop\/checkout\/payment/,
+      /desktop\/checkout\/confirmation/,
     ]);
     await waitForDiffListToSettle(page);
     await screenshot(page, "build-journey-walk", {
@@ -324,24 +300,21 @@ loggedTest(
     });
 
     // ↓ goes to the next screen, and marking one moves on to the next screen
-    // too, changed or not: the walk does not skip the payment.
+    // to review.
     await page.keyboard.press("ArrowDown");
     await expect(heading("shipping")).toBeVisible();
     await page.keyboard.press("y");
-    await expect(heading("payment")).toBeVisible();
-    // A reviewed screen keeps its place in the journey.
-    await expect(rows.nth(1)).toHaveText(/2 · shipping/);
+    await expect(heading("confirmation")).toBeVisible();
 
-    // The journey is in the URL, so a reload keeps walking it.
+    // The filters are in the URL, so a reload keeps the run.
     await page.reload();
-    await expect(heading("payment")).toBeVisible();
-    await expect(journeyHeader).toContainText("complete a purchase");
+    await expect(heading("confirmation")).toBeVisible();
+    await expect(rows).toHaveCount(4);
 
-    // Closing the journey goes back to the overview, at the journey, to pick
-    // another one.
-    await page.getByRole("link", { name: "Back to the overview" }).click();
-    await expect(page).not.toHaveURL(/[?&]journey=/);
-    await expect(page).toHaveURL(/#journey-[0-9a-f]{8}$/);
+    // The overview keeps the filters for the way back, and shows the test
+    // the list is filtered on.
+    await page.getByRole("link", { name: "Overview", exact: true }).click();
+    await expect(page).toHaveURL(/\/overview\?filters=/);
     await expect(
       page.getByRole("link", {
         name: "Walk “complete a purchase” at 1280×720",
@@ -351,13 +324,10 @@ loggedTest(
     await expect(
       page.getByRole("img", { name: "Changed, 1 of 2 reviewed" }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("img", { name: "Changed, not reviewed yet" }).first(),
-    ).toBeVisible();
-    await expect(journeyHeader).toHaveCount(0);
-    await expect(walkLink("complete a purchase").first()).toBeVisible();
 
-    // Once every changed screen of a run is marked, its card says so.
+    // A screen of another run opens that run, its filters replacing the
+    // previous ones; once every changed screen of a run is marked, its card
+    // says so.
     const reviewed = page.getByRole("img", {
       name: "Reviewed, every screen accepted",
     });
@@ -368,8 +338,14 @@ loggedTest(
     await expect(
       page.getByRole("heading", { name: "mobile/checkout/confirmation.png" }),
     ).toBeVisible();
+    await expect(rows).toHaveText([
+      /mobile\/checkout\/cart/,
+      /mobile\/checkout\/shipping/,
+      /mobile\/checkout\/payment/,
+      /mobile\/checkout\/confirmation/,
+    ]);
     await page.keyboard.press("y");
-    await page.getByRole("link", { name: "Back to the overview" }).click();
+    await page.getByRole("link", { name: "Overview", exact: true }).click();
     await expect(reviewed).toHaveCount(1);
   },
 );
@@ -401,7 +377,7 @@ loggedTest(
 );
 
 loggedTest(
-  "picks a journey from the filters and moves on from the walk header",
+  "switches size within a run, the viewport filter following",
   async ({ page, auth, team, project }) => {
     await ensureTeamOwner({ team: team.team, user: auth.user });
     const { build } = await createJourneysScenario({ projectId: project.id });
@@ -410,41 +386,22 @@ loggedTest(
       `/${team.account.slug}/${project.name}/builds/${build.number}`,
     );
 
-    // The journey filter lists the tests by file, a row per test with its
-    // runs together, and narrows the list to the one picked.
-    await page.locator("button:has(.lucide-filter)").click();
-    await page.getByRole("option", { name: "Journey" }).click();
-    await expect(
-      page.locator("[role='listbox']").getByText("e2e/checkout.spec.ts"),
-    ).toBeVisible();
-    const purchase = page.getByRole("option", {
-      name: /^complete a purchase/,
-    });
-    await expect(purchase).toContainText("375×812, 1280×720");
-    await purchase.click();
-    const journeyHeader = page.getByRole("region", {
-      name: "Journey",
-      exact: true,
-    });
-    await expect(journeyHeader).toContainText("complete a purchase");
-    // The walk starts on the journey's first screen, wherever the review was.
-    await expect(
-      page.getByRole("heading", { name: "desktop/checkout/cart.png" }),
-    ).toBeVisible();
-    // The overview's order: the most changed first, the unchanged one last.
-    await expect(journeyHeader).toContainText("Journey 1 of 3");
-
-    // On to the next journey, from its first screen.
-    await journeyHeader.getByRole("link", { name: "Next journey" }).click();
-    await expect(journeyHeader).toContainText("finds a product");
-    await expect(journeyHeader).toContainText("Journey 2 of 3");
-    await expect(page).toHaveURL(/[?&]journey=[0-9a-f]{8}(&|$)/);
-
-    // The run takes each screen at two sizes: switching size goes on with
-    // the walk, on the same screen.
+    // The search takes each screen at two sizes in a single run: a card per
+    // size, each filtering on its own.
+    await page
+      .getByRole("link", { name: "Walk “finds a product” at 375×667" })
+      .click();
     await expect(
       page.getByRole("heading", { name: "search/results vw-375.png" }),
     ).toBeVisible();
+    const rows = page.locator("[role='button'][data-index]");
+    await expect(rows).toHaveText([
+      /search\/results vw-375/,
+      /search\/product vw-375/,
+    ]);
+
+    // Switching size on the same screen takes the viewport filter along:
+    // the screen stays in the list.
     await page
       .getByRole("group", { name: "Snapshot variants" })
       .getByRole("link", { name: /^1280px/ })
@@ -452,36 +409,10 @@ loggedTest(
     await expect(
       page.getByRole("heading", { name: "search/results vw-1280.png" }),
     ).toBeVisible();
-    await expect(page).toHaveURL(/[?&]journey=[0-9a-f]{8}(&|$)/);
-    await expect(journeyHeader).toContainText("finds a product");
-
-    // Or to any journey, from the title.
-    await journeyHeader
-      .getByRole("button", { name: "finds a product" })
-      .click();
-    await page.getByRole("option", { name: /^complete a purchase/ }).click();
-    await expect(journeyHeader).toContainText("Journey 1 of 3");
-
-    // A test run in two projects switches runs on the same screen.
-    await journeyHeader.getByRole("link", { name: "375×812" }).click();
-    await expect(
-      page.getByRole("heading", { name: "mobile/checkout/cart.png" }),
-    ).toBeVisible();
-    await expect(
-      journeyHeader.getByRole("link", { name: "375×812" }),
-    ).toHaveAttribute("aria-current", "true");
-
-    // The walk sets the list's order: the display options offer no grouping.
-    await page.getByRole("button", { name: "Display options" }).click();
-    await expect(
-      page.getByRole("option", { name: "Names", exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("option", { name: "Status", exact: true }),
-    ).toHaveCount(0);
-    await expect(
-      page.getByRole("option", { name: "Test", exact: true }),
-    ).toHaveCount(0);
+    await expect(rows).toHaveText([
+      /search\/results vw-1280/,
+      /search\/product vw-1280/,
+    ]);
   },
 );
 

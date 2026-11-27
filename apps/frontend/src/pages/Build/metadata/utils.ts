@@ -1,3 +1,6 @@
+import { use } from "react";
+import { invariant } from "@argos/util/invariant";
+
 import {
   ScreenshotDiffStatus,
   ScreenshotMetadataColorScheme,
@@ -5,7 +8,11 @@ import {
 import { canParseURL } from "@/util/url";
 
 import type { Diff } from "../BuildDiffState";
+import { getBuildURL, useBuildParams } from "../BuildParams";
 import { getBrowserLabel } from "./browser/browserLabels";
+import { FilterStateContext } from "./filters/FilterState";
+import { followVariantFilter, withFilters } from "./filters/util";
+import type { VariantAxis } from "./variants/sibling";
 
 export type Metadata = NonNullable<
   NonNullable<Diff["baseScreenshot"]>["metadata"]
@@ -105,6 +112,23 @@ export function getUniqueStoryModes(metadataList: Metadata[]): string[] {
     }
   }
   return Array.from(modes).sort();
+}
+
+/**
+ * Links a variant switcher to `sibling`, with the filters of the list on, or
+ * `filters`. A filter along the switcher's axis follows the switch, so the
+ * sibling stays in the list.
+ */
+export function useGetDiffPath(axis: VariantAxis) {
+  const params = useBuildParams();
+  invariant(params, "a variant switcher is on a build page");
+  const filterState = use(FilterStateContext);
+  invariant(filterState, "a variant switcher is in a filter context");
+  return (sibling: Diff, filters: ReadonlySet<string> = filterState.active) =>
+    withFilters(
+      getBuildURL({ ...params, diffId: sibling.id }),
+      followVariantFilter(filters, sibling, axis),
+    );
 }
 
 export function resolvePreviewUrlFromDeployment(input: {
