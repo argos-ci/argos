@@ -6,6 +6,7 @@ import {
   AnnualContractsTable,
   CandidatesTable,
   MonthlyContractsTable,
+  NoEnterpriseTeam,
   TrialsTable,
   type Candidate,
   type Contract,
@@ -294,13 +295,10 @@ export const AnnualContracts: Story = {
   ),
 };
 
-export const Empty: Story = {
-  render: () => (
-    <div className="flex flex-col gap-4">
-      <CandidatesTable candidates={[]} onContactChange={setContact} />
-      <TrialsTable trials={[]} />
-      <MonthlyContractsTable contracts={[]} />
-      <AnnualContractsTable contracts={[]} onRenewalEmail={logRenewalEmail} />
-    </div>
-  ),
+export const NoTeam: Story = {
+  render: () => <NoEnterpriseTeam search="" />,
+};
+
+export const NoSearchMatch: Story = {
+  render: () => <NoEnterpriseTeam search="initech" />,
 };

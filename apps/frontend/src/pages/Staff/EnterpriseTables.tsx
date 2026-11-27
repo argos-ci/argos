@@ -89,10 +89,16 @@ function Amount(props: {
   );
 }
 
-function EmptyTable(props: { children: React.ReactNode }) {
+/**
+ * What the page shows in place of its sections when none has a team: an
+ * empty section is left out rather than drawn.
+ */
+export function NoEnterpriseTeam(props: { search: string }) {
   return (
     <div className="text-low rounded-sm border p-8 text-center text-sm">
-      {props.children}
+      {props.search
+        ? `No team matches "${props.search}".`
+        : "No team on Enterprise, and no Pro team billed $1,500 a period."}
     </div>
   );
 }
@@ -278,14 +284,6 @@ export function CandidatesTable(props: {
     // Names read best A→Z; everything else highest-first.
     setSortDirection(key === "team" ? "asc" : "desc");
   };
-
-  if (candidates.length === 0) {
-    return (
-      <EmptyTable>
-        No team on Pro is billed $1,500 or more this period or the last one.
-      </EmptyTable>
-    );
-  }
 
   return (
     <div className="relative overflow-x-auto rounded-sm border">
@@ -542,10 +540,6 @@ function ContractAmount(props: { contract: Contract; per: string }) {
 }
 
 export function TrialsTable(props: { trials: Trial[] }) {
-  if (props.trials.length === 0) {
-    return <EmptyTable>No team on the Enterprise trial plan.</EmptyTable>;
-  }
-
   return (
     <div className="relative overflow-x-auto rounded-sm border">
       <table className="w-full min-w-240 table-fixed border-collapse">
@@ -589,10 +583,6 @@ export function TrialsTable(props: { trials: Trial[] }) {
 }
 
 export function MonthlyContractsTable(props: { contracts: Contract[] }) {
-  if (props.contracts.length === 0) {
-    return <EmptyTable>No team on a monthly Enterprise plan.</EmptyTable>;
-  }
-
   return (
     <div className="relative overflow-x-auto rounded-sm border">
       <table className="w-full min-w-240 table-fixed border-collapse">
@@ -647,10 +637,6 @@ export function AnnualContractsTable(props: {
   contracts: Contract[];
   onRenewalEmail: (contract: Contract) => void;
 }) {
-  if (props.contracts.length === 0) {
-    return <EmptyTable>No team on a yearly Enterprise plan.</EmptyTable>;
-  }
-
   return (
     <div className="relative overflow-x-auto rounded-sm border">
       <table className="w-full min-w-240 table-fixed border-collapse">

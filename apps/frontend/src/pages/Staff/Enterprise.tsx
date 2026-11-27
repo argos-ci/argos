@@ -26,6 +26,7 @@ import {
   CandidatesTable,
   checkHasStaffData,
   MonthlyContractsTable,
+  NoEnterpriseTeam,
   TrialsTable,
   type Candidate,
   type Contract,
@@ -272,42 +273,53 @@ function StaffEnterpriseList() {
       </PageHeader>
       {loading && !data ? (
         <PageLoader />
+      ) : candidates.length + trials.length + monthly.length + annual.length ===
+        0 ? (
+        <NoEnterpriseTeam search={deferredSearch.trim()} />
       ) : (
         <div className="flex flex-col gap-10">
-          <section>
-            <SectionHeader
-              title="Candidates"
-              description="Pro teams billed $1,500 or more this period or the last one: their Billing page offers Enterprise."
-            />
-            <CandidatesTable
-              candidates={candidates}
-              onContactChange={setContact}
-            />
-          </section>
-          <section>
-            <SectionHeader
-              title="Enterprise trials"
-              description="Teams granted the Enterprise trial plan. The bar is this month's quota used, the mark how far into the month they are."
-            />
-            <TrialsTable trials={trials} />
-          </section>
-          <section>
-            <SectionHeader
-              title="Monthly contracts"
-              description="The bar is this month's quota used, the mark how far into the month they are."
-            />
-            <MonthlyContractsTable contracts={monthly} />
-          </section>
-          <section>
-            <SectionHeader
-              title="Annual contracts"
-              description="Next renewal first. The bar is the yearly commitment used, the mark how far into the term they are."
-            />
-            <AnnualContractsTable
-              contracts={annual}
-              onRenewalEmail={logRenewalEmail}
-            />
-          </section>
+          {candidates.length > 0 ? (
+            <section>
+              <SectionHeader
+                title="Candidates"
+                description="Pro teams billed $1,500 or more this period or the last one: their Billing page offers Enterprise."
+              />
+              <CandidatesTable
+                candidates={candidates}
+                onContactChange={setContact}
+              />
+            </section>
+          ) : null}
+          {trials.length > 0 ? (
+            <section>
+              <SectionHeader
+                title="Enterprise trials"
+                description="Teams granted the Enterprise trial plan. The bar is this month's quota used, the mark how far into the month they are."
+              />
+              <TrialsTable trials={trials} />
+            </section>
+          ) : null}
+          {monthly.length > 0 ? (
+            <section>
+              <SectionHeader
+                title="Monthly contracts"
+                description="The bar is this month's quota used, the mark how far into the month they are."
+              />
+              <MonthlyContractsTable contracts={monthly} />
+            </section>
+          ) : null}
+          {annual.length > 0 ? (
+            <section>
+              <SectionHeader
+                title="Annual contracts"
+                description="Next renewal first. The bar is the yearly commitment used, the mark how far into the term they are."
+              />
+              <AnnualContractsTable
+                contracts={annual}
+                onRenewalEmail={logRenewalEmail}
+              />
+            </section>
+          ) : null}
         </div>
       )}
     </PageContainer>
