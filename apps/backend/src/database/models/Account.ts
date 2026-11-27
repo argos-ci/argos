@@ -207,6 +207,7 @@ export class Account extends Model {
           lastPlanLimitAlertLevel: { type: ["string", "null"] },
           lastPlanLimitAlertAt: { type: ["string", "null"] },
           lastMonthlyReportAt: { type: ["string", "null"] },
+          avatarKey: { type: ["string", "null"] },
         },
       },
     ],
@@ -248,6 +249,11 @@ export class Account extends Model {
   lastPlanLimitAlertAt!: string | null;
   /** When the owners were last sent the monthly report. */
   lastMonthlyReportAt!: string | null;
+  /**
+   * S3 key of the avatar set on Argos, uploaded or picked up from the team's
+   * email domain. Wins over the one inferred from GitHub or GitLab.
+   */
+  avatarKey!: string | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);

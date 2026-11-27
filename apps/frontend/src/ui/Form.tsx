@@ -7,7 +7,7 @@ import {
   type UseFormReturn,
 } from "react-hook-form";
 
-import { DEFAULT_ERROR_MESSAGE } from "@/util/error";
+import { getErrorMessage } from "@/util/error";
 
 import { ModalActionContext } from "./Modal";
 
@@ -36,7 +36,7 @@ function unwrapErrors(error: unknown) {
   return [
     {
       field: ROOT_FIELD,
-      message: DEFAULT_ERROR_MESSAGE,
+      message: getErrorMessage(error),
       code: null,
     },
   ];

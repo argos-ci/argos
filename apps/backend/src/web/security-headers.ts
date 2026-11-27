@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 import helmet from "helmet";
 
 import config from "@/config";
+import { PUBLIC_FILES_REGION } from "@/storage/public-files";
 
 /**
  * Security headers for the app domain: the SPA shell and its static assets.
@@ -106,9 +107,9 @@ export function createAppSecurityHeaders(options: {
   ];
 }
 
-/** Virtual-hosted-style origin of the screenshots bucket. */
-function getScreenshotsBucketOrigin(): string {
-  return `https://${config.get("s3.screenshotsBucket")}.s3.${config.get("s3.region")}.amazonaws.com`;
+/** Virtual-hosted-style origin of an S3 bucket. */
+function getBucketOrigin(bucket: string, region: string): string {
+  return `https://${bucket}.s3.${region}.amazonaws.com`;
 }
 
 /**
@@ -129,7 +130,18 @@ function getScreenshotsBucketOrigin(): string {
 function getFileOrigins(): string[] {
   const origins = new Set<string>();
   addOrigin(origins, config.get("s3.publicImageBaseUrl"));
-  origins.add(getScreenshotsBucketOrigin());
+  origins.add(
+    getBucketOrigin(
+      config.get("s3.screenshotsBucket"),
+      config.get("s3.region"),
+    ),
+  );
+  // Public files: served by their CDN, or by the bucket when it has none, and
+  // uploaded from the browser straight to the bucket.
+  addOrigin(origins, config.get("publicFiles.baseUrl"));
+  origins.add(
+    getBucketOrigin(config.get("publicFiles.bucketName"), PUBLIC_FILES_REGION),
+  );
   return Array.from(origins);
 }
 

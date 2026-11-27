@@ -277,6 +277,20 @@ export function createConfig() {
         env: "S3_PUBLIC_IMAGE_BASE_URL",
       },
     },
+    publicFiles: {
+      bucketName: {
+        doc: "S3 bucket for files uploaded from the browser and files served to anyone with the URL (team avatars), created by the infra public files stack",
+        format: String,
+        default: "argos-public-files-development",
+        env: "PUBLIC_FILES_BUCKET_NAME",
+      },
+      baseUrl: {
+        doc: "URL public files are served from: the public files stack's CloudFront distribution. Empty serves them from the bucket through signed URLs.",
+        format: String,
+        default: "",
+        env: "PUBLIC_FILES_BASE_URL",
+      },
+    },
     github: {
       appId: {
         doc: "App ID",

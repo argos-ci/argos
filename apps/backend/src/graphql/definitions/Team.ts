@@ -9,6 +9,11 @@ import gqlTag from "graphql-tag";
 import type { TransactionOrKnex } from "objection";
 
 import { getAvatarColor } from "@/account/avatar";
+import {
+  removeAccountAvatar,
+  setAccountAvatarFromUpload,
+} from "@/account/custom-avatar";
+import { teamAvatarJob } from "@/account/domain-avatar";
 import { startSession } from "@/auth/login";
 import { getAuthMethodForTeam, type AuthViewer } from "@/auth/payload";
 import {
@@ -149,6 +154,11 @@ export const typeDefs = gql`
       filters: TestsFilterInput
     ): TestConnection!
     avatar: AccountAvatar!
+    """
+    Whether the avatar was set on Argos, uploaded or taken from the team's
+    email domain, rather than inferred from GitHub or drawn from its initial.
+    """
+    hasCustomAvatar: Boolean!
     hasForcedPlan: Boolean!
     gitlabAccessToken: String
     gitlabBaseUrl: String
@@ -427,6 +437,16 @@ export const typeDefs = gql`
     teamDomainId: ID!
   }
 
+  input SetTeamAvatarInput {
+    teamAccountId: ID!
+    "The \`key\` of an upload holding the image: PNG, JPEG, WebP or GIF"
+    uploadKey: String!
+  }
+
+  input RemoveTeamAvatarInput {
+    teamAccountId: ID!
+  }
+
   type ImportTeamSamlMetadataResult {
     idpEntityId: String!
     ssoUrl: String!
@@ -490,6 +510,10 @@ export const typeDefs = gql`
     addTeamDomain(input: AddTeamDomainInput!): Team!
     "Remove a verified email domain from a team"
     removeTeamDomain(input: RemoveTeamDomainInput!): Team!
+    "Set the team's avatar from an uploaded image, cropped to a square"
+    setTeamAvatar(input: SetTeamAvatarInput!): Team!
+    "Remove the avatar set on the team"
+    removeTeamAvatar(input: RemoveTeamAvatarInput!): Team!
     "Extend trial period"
     extendTrial(teamAccountId: ID!): ExtendTrialResult!
     "Create or update team SAML settings"
@@ -671,6 +695,7 @@ export const resolvers: IResolvers = {
   },
   Team: {
     ...commonAccountResolvers,
+    hasCustomAvatar: (account) => account.avatarKey !== null,
     me: async (account, _args, ctx) => {
       invariant(account.teamId, "not a team account");
 
@@ -1078,6 +1103,8 @@ export const resolvers: IResolvers = {
       } catch (error) {
         throw toGraphQLError(error);
       }
+
+      await teamAvatarJob.push(teamAccount.id);
 
       if (args.input.autoJoinDomain) {
         invariant(teamAccount.teamId, "team account has no teamId");
@@ -1887,6 +1914,33 @@ export const resolvers: IResolvers = {
       }
 
       return teamAccount;
+    },
+    setTeamAvatar: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        auth: ctx.auth,
+      });
+      invariant(teamAccount.teamId, "Account teamId is undefined");
+      try {
+        return await setAccountAvatarFromUpload({
+          account: teamAccount,
+          userId: ctx.auth.user.id,
+          uploadKey: args.input.uploadKey,
+        });
+      } catch (error) {
+        throw toGraphQLError(error);
+      }
+    },
+    removeTeamAvatar: async (_root, args, ctx) => {
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        auth: ctx.auth,
+      });
+      invariant(teamAccount.teamId, "Account teamId is undefined");
+      return removeAccountAvatar(teamAccount);
     },
     configureTeamSaml: async (_root, args, ctx) => {
       if (!ctx.auth) {

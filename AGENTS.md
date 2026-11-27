@@ -210,6 +210,22 @@ screenshots and buckets of 1k, 10k and 50k. Compare it with the queries that
 path already runs on the same rows, and put the numbers in the pull request.
 Local test databases are too small for the plan or the cost to show.
 
+## File storage
+
+- **A file people upload, or one anyone may read by URL, goes through public
+  files**: `useUploadFile` in the browser, then
+  `apps/backend/src/storage/public-files.ts` on the server (its doc describes
+  the flow). Team avatars are the model. Don't build an upload path or a bucket
+  for one feature, and never send a file through GraphQL as base64.
+- **Nothing new goes in the screenshots bucket**: everything there inherits the
+  screenshots' retention, CDN and permissions. A file that is neither uploaded
+  nor public, and needs access or retention rules of its own, gets its own
+  bucket in `infra/` (CDK).
+- Browser uploads rely on the bucket's CORS rule (`POST` from the app's
+  origins) and on the CSP `connect-src`
+  (`apps/backend/src/web/security-headers.ts`). A new app origin needs both,
+  or uploads fail in the browser only.
+
 ## GraphQL
 
 - The schema is the source of truth. After editing any `typeDefs` in

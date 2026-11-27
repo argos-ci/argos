@@ -54,6 +54,7 @@ import * as Test from "./Test";
 import * as TestChange from "./TestChange";
 import * as TestNotificationSubscription from "./TestNotificationSubscription";
 import * as TimeSeries from "./TimeSeries";
+import * as Upload from "./Upload";
 import * as User from "./User";
 import * as UserAccessToken from "./UserAccessToken";
 import * as UserPasskey from "./UserPasskey";
@@ -116,6 +117,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   TestChange,
   TestNotificationSubscription,
   TimeSeries,
+  Upload,
   User,
   UserAccessToken,
   UserPasskey,

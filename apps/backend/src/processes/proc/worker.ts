@@ -1,4 +1,5 @@
 import "../setup";
+import { teamAvatarJob } from "@/account/domain-avatar";
 import { checkExpiringSamlCertificates } from "@/auth/saml-certificate-expiration";
 import { job as automationActionRunJob } from "@/automation/job";
 import { job as buildJob } from "@/build";
@@ -141,5 +142,6 @@ createJobWorker(
   synchronizeJob,
   screenshotDiffJob,
   monthlyReportJob,
+  teamAvatarJob,
   webhookDeliveryJob,
 );

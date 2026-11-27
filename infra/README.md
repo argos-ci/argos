@@ -7,6 +7,7 @@
 | `argos-deployment-<stage>`            | `us-east-1` | Customer deployment hosting — `argos-ci.live`. S3 + DynamoDB + Lambda@Edge. |
 | `argos-deployment-production-replica` | `eu-west-1` | Cross-region replica bucket for the above.                                  |
 | `argos-assets-<stage>`                | `us-east-1` | Argos's **own** frontend assets — `assets.argos-ci.com`. S3 + CloudFront.   |
+| `argos-public-files-<stage>`          | `us-east-1` | Uploads and public files — `public.argos-ci.com`. S3 + CloudFront.          |
 
 The two domains are unrelated and easy to confuse. `argos-ci.live` is a Route 53
 zone in this account, so the deployment stack creates its own certificate and
@@ -71,8 +72,25 @@ The document:
     //     'Roles[?contains(to_string(AssumeRolePolicyDocument), `githubusercontent`)].RoleName'
     "uploaderRoleArns": ["arn:aws:iam::<ACCOUNT_ID>:role/GitHubActionsECRPush"],
   },
+
+  "publicFiles": {
+    // Optional, with `certificateArn`; without them the distribution's own
+    // *.cloudfront.net name serves the files.
+    "domainName": "public.argos-ci.com",
+    "certificateArn": "arn:aws:acm:us-east-1:<ACCOUNT_ID>:certificate/…",
+    // Origins the browser uploads from: S3 drops the response of a POST from
+    // any other one, so the upload looks failed.
+    "allowedOrigins": ["https://app.argos-ci.com"],
+    // Whoever the app's AWS credentials belong to (`aws sts
+    // get-caller-identity` with them). Development lists the developers.
+    "appPrincipalArns": ["arn:aws:iam::<ACCOUNT_ID>:user/<APP_USER>"],
+  },
 }
 ```
+
+> `publicFiles` is required in production, for the same reason as `assets`,
+> and optional elsewhere. A development stack needs `allowedOrigins` listing
+> `https://app.argos-ci.dev:4002`.
 
 > `assets` is optional, and development omits it: the frontend is served by Vite
 > there, so the stack has nothing to serve. Production refuses to synth without
@@ -293,6 +311,36 @@ served from the app origin, because the container never stopped serving
 - **Deploying by hand:** `pnpm --filter @argos/infra exec cdk deploy <stack> -c stage=production`
 - **Changing config:** update the SSM parameter (step 4), then redeploy. Config
   is read at synth time, so a parameter change alone does nothing.
+
+## Public files stack
+
+Browser uploads and the files the app serves by URL (team avatars), described
+in `apps/backend/src/storage/public-files.ts`. CloudFront serves the bucket's
+`public/` prefix only, at its root: `https://public.argos-ci.com/avatars/<id>.png`.
+
+### One-time setup
+
+1. Issue a certificate for `public.argos-ci.com` in `us-east-1` and validate
+   it, exactly like step 2 of the runbook above.
+2. Add the `publicFiles` block to `/<stage>/cdk/config.json` (step 4 above).
+3. Deploy the stack on its own:
+
+   ```sh
+   pnpm --filter @argos/infra exec cdk deploy argos-public-files-production -c stage=production
+   ```
+
+4. Point `public.argos-ci.com` at the `DistributionDomainName` output with a
+   CNAME at the external DNS provider (DNS only on Cloudflare).
+5. Only then ship the app: `release.yml` sets `PUBLIC_FILES_BUCKET_NAME` and
+   `PUBLIC_FILES_BASE_URL` (the `PublicFilesBaseUrl` output). The CSP is
+   derived from them, so nothing else changes.
+
+Check CORS once the stack is up. S3 answers a preflight with the origin only
+when a rule allows it, and with a 403 otherwise:
+
+```sh
+curl -sS -o /dev/null -D - -X OPTIONS -H 'Origin: https://app.argos-ci.com' -H 'Access-Control-Request-Method: POST' https://argos-public-files-production.s3.us-east-1.amazonaws.com/ | grep -i -e '^HTTP' -e access-control-allow-origin
+```
 
 ## Deployment files replicas
 

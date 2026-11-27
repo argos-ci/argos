@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict PgD3qlVj6jk1Lb4LVVbvAIVhdwl36JMSZaM4HNa6TxKzk6rOj4Bnjgd1pSOTdNF
+\restrict X4pyAcHVxNOgL2im5kQjxN9RT4dhrHzCcfV7zDabw2ik6fULCRlqlDclbcpWDwU
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.6 (Homebrew)
@@ -131,6 +131,7 @@ CREATE TABLE public.accounts (
     "lastMonthlyReportAt" timestamp with time zone,
     "lastPlanLimitAlertLevel" text,
     "lastPlanLimitAlertAt" timestamp with time zone,
+    "avatarKey" text,
     CONSTRAINT "accounts_lastPlanLimitAlertLevel_check" CHECK (("lastPlanLimitAlertLevel" = ANY (ARRAY['warning'::text, 'rejected'::text]))),
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
@@ -7518,7 +7519,7 @@ ALTER TABLE ONLY public.webhooks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict PgD3qlVj6jk1Lb4LVVbvAIVhdwl36JMSZaM4HNa6TxKzk6rOj4Bnjgd1pSOTdNF
+\unrestrict X4pyAcHVxNOgL2im5kQjxN9RT4dhrHzCcfV7zDabw2ik6fULCRlqlDclbcpWDwU
 
 -- Knex migrations
 
@@ -7812,3 +7813,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026112
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261123124108_build-auth-source.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261124150116_link-marketplace-teams-to-github.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261125120000_deployment-external-url.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20261126130816_add-account-avatar-key.js', 1, NOW());

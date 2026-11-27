@@ -105,6 +105,11 @@ const ApolloProvider = (props: { children: React.ReactNode }) => {
           BuildStats: {
             merge: false,
           },
+          // An avatar has no id either, and every query reads it through the
+          // same fragment: replacing it after an upload loses nothing.
+          AccountAvatar: {
+            merge: false,
+          },
           Team: {
             keyFields: (obj) => {
               invariant(obj.id, "Team.id is undefined");
