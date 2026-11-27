@@ -175,6 +175,72 @@ describe("GraphQL staffTeams", () => {
     expect(getSlugs(res)).toEqual([]);
   });
 
+  it("finds a team from its Stripe customer or subscription", async () => {
+    const viewer = await createViewer({ staff: true });
+    await factory.TeamAccount.create({
+      slug: "stripe-customer",
+      stripeCustomerId: "cus_search",
+    });
+    const subscribed = await factory.TeamAccount.create({
+      slug: "stripe-subscription",
+    });
+    const subscriber = await factory.User.create();
+    await factory.Subscription.create({
+      accountId: subscribed.id,
+      provider: "stripe",
+      stripeSubscriptionId: "sub_search",
+      subscriberId: subscriber.id,
+      status: "canceled",
+    });
+
+    const byCustomer = await queryTeams(viewer, { search: "cus_search" });
+    expect(getSlugs(byCustomer)).toEqual(["stripe-customer"]);
+
+    // A canceled subscription still leads to its team.
+    const bySubscription = await queryTeams(viewer, { search: "sub_search" });
+    expect(getSlugs(bySubscription)).toEqual(["stripe-subscription"]);
+
+    const byFragment = await queryTeams(viewer, { search: "cus_sea" });
+    expect(getSlugs(byFragment)).toEqual([]);
+  });
+
+  it("finds the teams of a member from any of their emails", async () => {
+    const viewer = await createViewer({ staff: true });
+    const owned = await factory.TeamAccount.create({ slug: "email-owned" });
+    const joined = await factory.TeamAccount.create({ slug: "email-joined" });
+    await factory.TeamAccount.create({ slug: "email-unrelated" });
+    invariant(owned.teamId && joined.teamId, "team accounts have a team");
+
+    const owner = await factory.User.create({ email: "jane@email-search.io" });
+    await factory.TeamUser.create({ userId: owner.id, teamId: owned.teamId });
+    const member = await factory.User.create();
+    await factory.UserEmail.create({
+      userId: member.id,
+      email: "billing@email-search.io",
+    });
+    await factory.TeamUser.create({
+      userId: member.id,
+      teamId: joined.teamId,
+      userLevel: "member",
+    });
+
+    const byPrimary = await queryTeams(viewer, {
+      search: "Jane@email-search.io",
+    });
+    expect(getSlugs(byPrimary)).toEqual(["email-owned"]);
+
+    const bySecondary = await queryTeams(viewer, {
+      search: "billing@email-search.io",
+    });
+    expect(getSlugs(bySecondary)).toEqual(["email-joined"]);
+
+    const byDomain = await queryTeams(viewer, { search: "@email-search.io" });
+    expect(getSlugs(byDomain).sort()).toEqual(["email-joined", "email-owned"]);
+
+    const withoutAt = await queryTeams(viewer, { search: "email-search.io" });
+    expect(getSlugs(withoutAt)).toEqual([]);
+  });
+
   it("orders by creation date", async () => {
     const viewer = await createViewer({ staff: true });
     await factory.TeamAccount.create({
