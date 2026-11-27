@@ -64,11 +64,10 @@ export const handler = defineNotificationHandler({
             intro: (
               <>
                 <Paragraph>
-                  Your team, <strong>{accountName}</strong>, has used everything
-                  its plan includes this billing period, and the usage beyond
-                  that comes to <strong>{amount} of overage</strong> so far. It
-                  is billed at your plan’s rates and will appear on your next
-                  invoice.
+                  Your team, <strong>{accountName}</strong>, now has{" "}
+                  <strong>{amount}</strong> of usage beyond its plan this
+                  billing period. It is billed at your plan’s rates and will
+                  appear on your next invoice.
                 </Paragraph>
                 <Paragraph>
                   This is exactly what your usage-based plan is for:{" "}
