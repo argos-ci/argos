@@ -1,12 +1,6 @@
 import { skipToken, useSuspenseQuery } from "@apollo/client/react";
 import { OrganizationIcon } from "@primer/octicons-react";
-import {
-  BanknoteIcon,
-  Building2Icon,
-  ChevronDownIcon,
-  HourglassIcon,
-  ShieldUserIcon,
-} from "lucide-react";
+import { ShieldUserIcon } from "lucide-react";
 import { useMatch, useParams } from "react-router";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
@@ -23,9 +17,8 @@ import {
   BreadcrumbMenuButton,
   BreadcrumbSplitButton,
 } from "@/ui/Breadcrumb";
-import { Button, LinkButton } from "@/ui/Button";
-import { ButtonGroup } from "@/ui/ButtonGroup";
-import { Menu, MenuItem, MenuRoot, MenuTrigger } from "@/ui/menu-kit";
+import { LinkButton } from "@/ui/Button";
+import { MenuRoot, MenuTrigger } from "@/ui/menu-kit";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { AccountBreadcrumbMenu } from "./AccountBreadcrumbMenu";
@@ -108,29 +101,14 @@ function AccountBreadcrumbLink(props: {
   );
 }
 
-function getStaffPageMenuItems() {
-  return [
-    <MenuItem key="teams" icon={<Building2Icon />} href="/staff/teams">
-      All teams
-    </MenuItem>,
-    <MenuItem key="trials" icon={<HourglassIcon />} href="/staff/trials">
-      Trials
-    </MenuItem>,
-    <MenuItem key="revenue" icon={<BanknoteIcon />} href="/staff/revenue">
-      Revenue
-    </MenuItem>,
-  ];
-}
-
 /**
- * The way into the staff pages, from anywhere in the app. On a team, the button
- * takes a staff member to the team's staff page; the menu holds every staff
- * page.
+ * The way into the staff pages, from anywhere in the app. On a team, it takes a
+ * staff member to the team's staff page; elsewhere, to the staff directory.
  *
  * Reads the account from the same query the link beside it already ran, so the
  * cache answers it.
  */
-function StaffButtonGroup(props: { accountSlug: string | undefined }) {
+function StaffButton(props: { accountSlug: string | undefined }) {
   const { accountSlug } = props;
   const { data } = useSuspenseQuery(
     AccountQuery,
@@ -140,34 +118,17 @@ function StaffButtonGroup(props: { accountSlug: string | undefined }) {
   const label = team ? "Open team staff page" : "Open staff directory";
   const href = team ? getStaffTeamURL(team.slug) : "/staff/teams";
   return (
-    <ButtonGroup>
-      <Tooltip content={label}>
-        <LinkButton
-          variant="secondary"
-          size="small"
-          iconOnly
-          aria-label={label}
-          href={href}
-        >
-          <ShieldUserIcon />
-        </LinkButton>
-      </Tooltip>
-      <MenuRoot>
-        <MenuTrigger>
-          <Button
-            variant="secondary"
-            size="small"
-            iconOnly
-            aria-label="Staff pages"
-          >
-            <ChevronDownIcon />
-          </Button>
-        </MenuTrigger>
-        <Menu side="bottom" align="start" aria-label="Staff pages">
-          {getStaffPageMenuItems()}
-        </Menu>
-      </MenuRoot>
-    </ButtonGroup>
+    <Tooltip content={label}>
+      <LinkButton
+        variant="secondary"
+        size="small"
+        iconOnly
+        aria-label={label}
+        href={href}
+      >
+        <ShieldUserIcon />
+      </LinkButton>
+    </Tooltip>
   );
 }
 
@@ -327,7 +288,7 @@ export function AccountBreadcrumbItem() {
         // on it. A phone puts it after the project's button, which names the
         // team there.
         <BreadcrumbItem className="shrink-0 max-md:order-last">
-          <StaffButtonGroup accountSlug={accountSlug} />
+          <StaffButton accountSlug={accountSlug} />
         </BreadcrumbItem>
       ) : null}
     </>
