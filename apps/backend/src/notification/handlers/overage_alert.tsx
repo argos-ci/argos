@@ -92,9 +92,7 @@ export const handler = defineNotificationHandler({
         </Paragraph>
       );
     return {
-      subject: isLast
-        ? `A last note on ${accountName}’s usage this billing period`
-        : `A note on ${accountName}’s usage this billing period`,
+      subject: `Heads-up: ${amount} of overage this billing period`,
       body: (
         <EmailLayout
           preview="A quick update on your usage, so your next invoice holds no surprise."
