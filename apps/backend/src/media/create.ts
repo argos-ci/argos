@@ -404,7 +404,7 @@ async function assertAccountCanUpload(account: Account): Promise<void> {
     );
     throw boom(
       402,
-      "Upload rejected: you have reached the spend limit for this billing period. Ask an owner to update the limit in your Team settings.",
+      "Upload rejected: your team has reached its spend limit for this billing period. An owner or billing member can raise or remove it in the team's billing settings.",
     );
   }
 }

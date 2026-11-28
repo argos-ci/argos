@@ -4,7 +4,10 @@ import * as Sentry from "@sentry/node";
 import { pushBuildNotification } from "@/build-notification";
 import { Build, Project, ScreenshotDiff } from "@/database/models";
 import { claimOverageAlert } from "@/database/services/overage-alert";
-import { getSpendLimitThreshold } from "@/database/services/spend-limit";
+import {
+  getSpendLimitAlertData,
+  getSpendLimitThreshold,
+} from "@/database/services/spend-limit";
 import { githubPullRequestJob } from "@/github-pull-request/job";
 import { GITLAB_PROJECT_SYNC_INTERVAL, syncGitlabProject } from "@/gitlab";
 import { createModelJob, UnretryableError } from "@/job-core";
@@ -66,12 +69,10 @@ async function updateUsage(project: Project) {
     if (spendLimitThreshold !== null) {
       await sendNotification({
         type: "spend_limit",
-        data: {
-          accountName: account.name,
-          accountSlug: account.slug,
-          blockWhenSpendLimitIsReached: account.blockWhenSpendLimitIsReached,
+        data: await getSpendLimitAlertData({
+          account,
           threshold: spendLimitThreshold,
-        },
+        }),
         recipients: await account.$getUserIdsWithPermission("billing"),
       });
     }
@@ -85,8 +86,7 @@ async function updateUsage(project: Project) {
         data: {
           accountName: account.name,
           accountSlug: account.slug,
-          threshold: overageAlert.threshold,
-          currency: overageAlert.currency,
+          ...overageAlert,
         },
         recipients: await account.$getUserIdsWithPermission("billing"),
       });

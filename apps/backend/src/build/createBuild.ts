@@ -112,7 +112,7 @@ export async function createBuild(params: {
     });
     throw boom(
       402,
-      `You have reached the spend limit of ${formatter.format(spendLimit)} for this billing period. Ask a owner to update the limit in your Team settings.`,
+      `Build rejected: your team has reached its spend limit of ${formatter.format(spendLimit)} for this billing period. An owner or billing member can raise or remove it in the team's billing settings.`,
     );
   }
 

@@ -88,6 +88,8 @@ describe("claimOverageAlert", () => {
       await expect(claim(account)).resolves.toEqual({
         threshold: 200,
         currency: "usd",
+        spendLimit: null,
+        planName: "Pro",
       });
       await expect(getLastThreshold(account)).resolves.toBe(200);
       await expect(claim(account)).resolves.toBeNull();
@@ -101,11 +103,15 @@ describe("claimOverageAlert", () => {
       await expect(claim(account)).resolves.toEqual({
         threshold: 200,
         currency: "usd",
+        spendLimit: null,
+        planName: "Pro",
       });
       await spend(project, 300);
       await expect(claim(account)).resolves.toEqual({
         threshold: 500,
         currency: "usd",
+        spendLimit: null,
+        planName: "Pro",
       });
       await expect(claim(account)).resolves.toBeNull();
     },
@@ -118,31 +124,35 @@ describe("claimOverageAlert", () => {
       await expect(claim(account)).resolves.toEqual({
         threshold: 500,
         currency: "usd",
+        spendLimit: null,
+        planName: "Pro",
       });
       await expect(claim(account)).resolves.toBeNull();
     },
   );
 
   withUsageBasedTeam(
-    "leaves accounts with a spend limit to the spend limit alerts",
+    "alerts a team with a spend limit too",
     async ({ account, project }) => {
-      await account.$query().patch({ meteredSpendLimitByPeriod: 1000 });
+      await account.$query().patch({
+        meteredSpendLimitByPeriod: 5000,
+        blockWhenSpendLimitIsReached: true,
+      });
       await spend(project, 600);
-      await expect(claim(account)).resolves.toBeNull();
-      await expect(getLastThreshold(account)).resolves.toBeNull();
+      await expect(claim(account)).resolves.toMatchObject({
+        threshold: 500,
+        spendLimit: 5000,
+      });
     },
   );
 
   withUsageBasedTeam(
-    "claims nothing when a spend limit is set after the account was loaded",
+    "skips the thresholds a spend limit already covers",
     async ({ account, project }) => {
+      await account.$query().patch({ meteredSpendLimitByPeriod: 300 });
       await spend(project, 600);
-      const loaded = await Account.query()
-        .findById(account.id)
-        .throwIfNotFound();
-      await account.$query().patch({ meteredSpendLimitByPeriod: 1000 });
-      await expect(claimOverageAlert(loaded)).resolves.toBeNull();
-      await expect(getLastThreshold(account)).resolves.toBeNull();
+      await expect(claim(account)).resolves.toMatchObject({ threshold: 200 });
+      await expect(claim(account)).resolves.toBeNull();
     },
   );
 
