@@ -8,6 +8,7 @@ import {
   type BuildBaselineIneligibilityReason,
 } from "@/build/baselineEligibility";
 import { getBuildImpactAnalysis } from "@/build/impact-analysis";
+import { getBuildJourneys } from "@/build/journeys";
 import { getNewerBuild } from "@/build/lineage";
 import { getBuildPullRequestStack } from "@/build/pull-request-stack";
 import { getSiblingBuilds } from "@/build/siblings";
@@ -168,6 +169,40 @@ export const typeDefs = gql`
     impactAnalysis: BuildImpactAnalysis
     "Indicates whether the build contains Storybook screenshots"
     storybook: Boolean!
+    "Runs of end-to-end tests that capture several screens, a journey each"
+    journeys: [BuildJourney!]!
+  }
+
+  "A run of an end-to-end test, with the screens it captures"
+  type BuildJourney {
+    "Short id, unique in the build"
+    id: ID!
+    "Test file and describe blocks the test sits in"
+    prefix: String!
+    "Title of the test"
+    title: String!
+    "Source location of the test"
+    location: ScreenshotMetadataLocation
+    "Screens of the journey in capture order, by the variant key their screenshots share"
+    stepKeys: [String!]!
+    "The journey at each viewport or color scheme it captured, in the order a review walks them"
+    variants: [BuildJourneyVariant!]!
+  }
+
+  "A journey at one viewport or color scheme"
+  type BuildJourneyVariant {
+    "Viewport its screens were captured at"
+    viewport: ScreenshotMetadataViewport
+    "Browser its screens were captured in"
+    browser: String
+    "Color scheme its screens were captured in"
+    colorScheme: ScreenshotMetadataColorScheme
+    "Its screenshot diff of each step, in the order of stepKeys: null for a step it did not capture"
+    diffIds: [ID]!
+    "Its screenshot diffs that wait for a review"
+    changedDiffIds: [ID!]!
+    "The screenshot diff that stands for it: the first that changed, or the first"
+    cover: ScreenshotDiff!
   }
 
   "Whether a build is eligible to be used as a baseline, with the reasons when it is not."
@@ -525,6 +560,13 @@ export const resolvers: IResolvers = {
       }
       return getBuildImpactAnalysis(build);
     },
+    journeys: async (build) => {
+      // Until the build concludes, its diffs are still being computed.
+      if (!build.conclusion) {
+        return [];
+      }
+      return getBuildJourneys(build);
+    },
     storybook: async (build, _args, ctx) => {
       const compareBucket = await getCompareScreenshotBucket(ctx, build);
       return compareBucket.storybookScreenshotCount > 0;
@@ -590,6 +632,13 @@ export const resolvers: IResolvers = {
           (reason) => baselineIneligibilityReasonMap[reason],
         ),
       };
+    },
+  },
+  BuildJourneyVariant: {
+    cover: async (variant, _args, ctx) => {
+      const diff = await ctx.loaders.ScreenshotDiff.load(variant.coverDiffId);
+      invariant(diff, "Screenshot diff not found");
+      return diff;
     },
   },
 };

@@ -26,6 +26,7 @@ import {
 import memoize from "memoize";
 
 import {
+  DiffStatusIcon,
   getDiffGroupDefinition,
   type DiffGroupName,
 } from "@/containers/Build/BuildDiffGroup";
@@ -35,6 +36,7 @@ import {
   DiffCardFooterText,
   DiffImage,
   getDiffDimensions,
+  getReviewDiffCardVariant,
   ListItemButton,
   type DiffCardProps,
 } from "@/containers/Build/BuildDiffListPrimitives";
@@ -54,7 +56,6 @@ import { Tooltip } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
-import { lowTextColorClassNames } from "@/util/colors";
 
 import {
   Diff,
@@ -62,10 +63,11 @@ import {
   getDiffListStatus,
   getFirstListedStatus,
   useBuildDiffState,
+  useBuildOverviewURL,
   useSearchModeState,
   type DiffListGroup,
 } from "./BuildDiffState";
-import { getBuildOverviewURL, useBuildParams } from "./BuildParams";
+import { useBuildParams } from "./BuildParams";
 import {
   useGetDiffGroupEvaluationStatus,
   useGetDiffStatus,
@@ -434,15 +436,6 @@ function ShowSubItemToggle(props: {
   );
 }
 
-function DiffStatusIcon(props: { group: DiffGroupName }) {
-  const def = getDiffGroupDefinition(props.group);
-  return (
-    <def.icon
-      className={clsx("size-3 shrink-0", lowTextColorClassNames[def.color])}
-    />
-  );
-}
-
 function DiffStatusIndicator(props: { group: DiffGroupName }) {
   return (
     <Tooltip content={getDiffGroupDefinition(props.group).label}>
@@ -638,20 +631,9 @@ function StatusDiffCard(
     status: EvaluationStatus | null;
   },
 ) {
-  const variant = (() => {
-    switch (props.status) {
-      case EvaluationStatus.Accepted:
-        return "success" as const;
-      case EvaluationStatus.Rejected:
-        return "danger" as const;
-      case EvaluationStatus.Pending:
-      case null:
-        return "primary" as const;
-      default:
-        assertNever(props.status);
-    }
-  })();
-  return <DiffCard {...props} variant={variant} />;
+  return (
+    <DiffCard {...props} variant={getReviewDiffCardVariant(props.status)} />
+  );
 }
 
 function useInViewportIndices(
@@ -1111,14 +1093,15 @@ export function BuildDiffList() {
  */
 function OverviewButton() {
   const params = useBuildParams();
-  if (!params) {
+  const overviewURL = useBuildOverviewURL();
+  if (!params || !overviewURL) {
     return null;
   }
   const selected = params.diffId == null;
   return (
     <Tooltip content="Overview">
       <LinkButton
-        href={getBuildOverviewURL(params)}
+        href={overviewURL}
         variant="ghost"
         size="small"
         iconOnly

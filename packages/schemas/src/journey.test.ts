@@ -5,9 +5,11 @@ import {
   getCaptureIndex,
   getStepLabel,
   getVariantSignature,
+  groupWalkableJourneys,
   resolveJourneyIdentity,
   resolveTestIdentity,
-} from "./journey-model";
+  type JourneyMetadata,
+} from "./journey";
 
 describe("#resolveTestIdentity", () => {
   it("merges the runs of one test", () => {
@@ -155,5 +157,56 @@ describe("#getCaptureIndex", () => {
     expect(getCaptureIndex(null)).toBeNull();
     expect(getCaptureIndex({})).toBeNull();
     expect(getCaptureIndex({ capture: null })).toBeNull();
+  });
+});
+
+type Screen = {
+  name: string;
+  variantKey: string;
+  metadata: JourneyMetadata;
+};
+
+function screen(
+  name: string,
+  variantKey: string,
+  metadata: JourneyMetadata,
+): Screen {
+  return { name, variantKey, metadata };
+}
+
+const checkout = (index: number) => ({
+  test: { id: "checkout", titlePath: ["checkout.spec.ts", "purchase"] },
+  capture: { index },
+});
+
+describe("#groupWalkableJourneys", () => {
+  it("keeps the journeys of several steps, in the order they come in", () => {
+    const journeys = groupWalkableJourneys(
+      [
+        screen("home", "home", {
+          test: { titlePath: ["home.spec.ts", "home"] },
+        }),
+        screen("checkout/payment", "checkout/payment", checkout(1)),
+        screen("checkout/cart", "checkout/cart", checkout(0)),
+        screen("button--primary", "button--primary", {
+          story: { id: "button--primary" },
+        }),
+        screen("button--secondary", "button--secondary", {
+          story: { id: "button--secondary" },
+        }),
+      ],
+      (item) => item.metadata,
+    );
+    expect(
+      journeys.map((journey) => ({
+        key: journey.identity.key,
+        steps: journey.steps.map((step) => step.key),
+      })),
+    ).toEqual([
+      {
+        key: "checkout.spec.ts › purchase#checkout",
+        steps: ["checkout/cart", "checkout/payment"],
+      },
+    ]);
   });
 });

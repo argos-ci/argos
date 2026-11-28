@@ -2,14 +2,21 @@ import { useState } from "react";
 import { ComponentIcon, FlaskConicalIcon, RadarIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
+import { Button } from "@/ui/Button";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Truncable } from "@/ui/Truncable";
 
+import { getJourneyTestKey } from "../journey-hints";
 import { LocationChip } from "../sidebar/metadata/LocationChip";
 
 const _BuildFragment = graphql(`
   fragment ImpactAnalysisSection_Build on Build {
     branch
+    journeys {
+      id
+      prefix
+      title
+    }
     impactAnalysis {
       affectedComponents {
         name
@@ -92,13 +99,15 @@ function AffectedItemsSection(props: {
         ))}
       </ul>
       {collapsible && !expanded ? (
-        <button
-          type="button"
-          onClick={() => setExpanded((value) => !value)}
-          className="focus-ring text-low hover:bg-ui hover:text-default mx-2 mt-3 cursor-default rounded-full px-2 py-0.5 text-sm transition"
-        >
-          {props.seeAllLabel(items.length)}
-        </button>
+        <div className="mx-4 mt-3">
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={() => setExpanded((value) => !value)}
+          >
+            {props.seeAllLabel(items.length)}
+          </Button>
+        </div>
       ) : null}
     </Panel>
   );
@@ -106,8 +115,8 @@ function AffectedItemsSection(props: {
 
 /**
  * Surfaces the entities most impacted by the build's changes: Storybook
- * components when available, otherwise end-to-end tests. Renders nothing when
- * neither is present.
+ * components when available, otherwise end-to-end tests, but those the
+ * journeys section shows. Renders nothing when neither is present.
  */
 export function ImpactAnalysisSection(props: {
   build: Build;
@@ -116,7 +125,11 @@ export function ImpactAnalysisSection(props: {
   const { build, repoUrl } = props;
   const analysis = build.impactAnalysis;
   const components = analysis?.affectedComponents ?? [];
-  const tests = analysis?.affectedTests ?? [];
+  // Affected tests go by their title path, the key a journey's test has.
+  const journeyTests = new Set(build.journeys.map(getJourneyTestKey));
+  const tests = (analysis?.affectedTests ?? []).filter(
+    (test) => !journeyTests.has(test.name),
+  );
   const showComponents = components.length > 0;
   const showTests = !showComponents && tests.length > 0;
 
@@ -141,7 +154,8 @@ export function ImpactAnalysisSection(props: {
     <AffectedItemsSection
       items={tests}
       itemIcon={FlaskConicalIcon}
-      title="Affected tests"
+      // The journeys section names the tests it shows.
+      title={journeyTests.size > 0 ? "Other affected tests" : "Affected tests"}
       seeAllLabel={(count) => `View all ${count} tests`}
       branch={build.branch}
       repoUrl={repoUrl}

@@ -1610,7 +1610,6 @@ export async function createJourneyScenario(input: {
   projectId: string;
 }): Promise<{ build: Build }> {
   const { projectId } = input;
-  const seededAt = getSeedInstant();
   const sdk = { name: "@argos-ci/playwright", version: "6.0.0" };
   const automationLibrary = { name: "playwright", version: "1.61.0" };
   const browser = { name: "chromium", version: "126.0" };
@@ -1650,12 +1649,188 @@ export async function createJourneyScenario(input: {
     },
   };
 
+  const screenshots = [
+    ...steps.map((step) => ({
+      name: step.name,
+      score: step.score,
+      metadata: {
+        url: `https://shop.example.com/${step.name.replace(/\.png$/, "")}`,
+        viewport,
+        colorScheme: "light" as const,
+        mediaType: "screen" as const,
+        test: journey,
+        capture: { index: step.index },
+        browser,
+        automationLibrary,
+        sdk,
+      } satisfies ScreenshotMetadata,
+    })),
+    {
+      name: other.name,
+      score: other.score,
+      metadata: {
+        url: "https://shop.example.com/account/settings",
+        viewport,
+        colorScheme: "light" as const,
+        mediaType: "screen" as const,
+        test: other.test,
+        capture: { index: 0 },
+        browser,
+        automationLibrary,
+        sdk,
+      } satisfies ScreenshotMetadata,
+    },
+  ];
+
+  const build = await insertJourneyBuild({ projectId, screenshots });
+  return { build };
+}
+
+/**
+ * A build with several journeys, the way a Playwright suite run by a `desktop`
+ * and a `mobile` project uploads them: the checkout walked by both projects
+ * (one journey each, under one title), a sign-up nothing changed in, and a
+ * test that captures a single screen, which is not a journey.
+ */
+/** The metadata Playwright records for a test of `file`, run in `project`. */
+function getTestMetadata(file: string, title: string, project?: string) {
+  return {
+    id: [file, title, project].filter(Boolean).join("-").replaceAll(" ", "-"),
+    title,
+    titlePath: [file, title],
+    location: { file: `e2e/${file}`, line: 5, column: 3 },
+    retries: 0,
+    retry: 0,
+  };
+}
+
+export async function createJourneysScenario(input: {
+  projectId: string;
+  /** `reference` for a build that ran on an auto-approved branch. */
+  type?: "check" | "reference";
+  /** Another number seeds a second build of the same tests. */
+  number?: number;
+}): Promise<{ build: Build }> {
+  const { projectId, type = "check", number = 1 } = input;
+  const common = {
+    sdk: { name: "@argos-ci/playwright", version: "7.5.1" },
+    automationLibrary: { name: "playwright", version: "1.61.0" },
+    browser: { name: "chromium", version: "126.0" },
+    colorScheme: "light" as const,
+    mediaType: "screen" as const,
+  };
+  const runs = [
+    {
+      project: "desktop",
+      viewport: { width: 1280, height: 720 },
+      test: ["checkout.spec.ts", "complete a purchase"],
+      steps: [
+        { name: "checkout/cart", score: null },
+        { name: "checkout/shipping", score: 0.2 },
+        { name: "checkout/payment", score: null },
+        { name: "checkout/confirmation", score: 0.5 },
+      ],
+    },
+    {
+      project: "mobile",
+      viewport: { width: 375, height: 812 },
+      test: ["checkout.spec.ts", "complete a purchase"],
+      steps: [
+        { name: "checkout/cart", score: null },
+        { name: "checkout/shipping", score: null },
+        { name: "checkout/payment", score: null },
+        { name: "checkout/confirmation", score: 0.3 },
+      ],
+    },
+    {
+      project: "desktop",
+      viewport: { width: 1280, height: 720 },
+      test: ["signup.spec.ts", "create an account"],
+      steps: [
+        { name: "signup/form", score: null },
+        { name: "signup/welcome", score: null },
+      ],
+    },
+    {
+      project: "desktop",
+      viewport: { width: 1280, height: 720 },
+      test: ["home.spec.ts", "shows the home page"],
+      steps: [{ name: "home", score: 0.1 }],
+    },
+  ];
+  const screenshots = runs.flatMap((run) => {
+    const [file, title] = run.test;
+    invariant(file && title);
+    return run.steps.map((step, index) => ({
+      name: `${run.project}/${step.name}.png`,
+      score: step.score,
+      metadata: {
+        ...common,
+        url: `https://shop.example.com/${step.name}`,
+        viewport: run.viewport,
+        // Playwright derives the test id from the project, which is what
+        // keeps the two runs of the checkout apart.
+        test: getTestMetadata(file, title, run.project),
+        capture: { index },
+      } satisfies ScreenshotMetadata,
+    }));
+  });
+  // `argosScreenshot` with its `viewports` option: a single run of the test
+  // takes each screen at two sizes, named apart by a ` vw-<width>` suffix.
+  const search = { file: "search.spec.ts", title: "finds a product" };
+  const searchViewports = [
+    { width: 375, height: 667 },
+    { width: 1280, height: 720 },
+  ];
+  const searchSteps = [
+    { name: "search/results", scores: [null, null] },
+    { name: "search/product", scores: [0.4, null] },
+  ];
+  const searchScreenshots = searchSteps.flatMap((step, index) =>
+    searchViewports.map((viewport, viewportIndex) => ({
+      name: `${step.name} vw-${viewport.width}.png`,
+      score: step.scores[viewportIndex] ?? null,
+      metadata: {
+        ...common,
+        url: `https://shop.example.com/${step.name}`,
+        viewport,
+        test: getTestMetadata(search.file, search.title),
+        capture: { index },
+      } satisfies ScreenshotMetadata,
+    })),
+  );
+  const build = await insertJourneyBuild({
+    projectId,
+    type,
+    number,
+    screenshots: [...screenshots, ...searchScreenshots],
+  });
+  return { build };
+}
+
+/**
+ * A concluded build of `screenshots`, against a baseline of the same names:
+ * a screenshot with a score changed, one without did not.
+ */
+async function insertJourneyBuild(input: {
+  projectId: string;
+  type?: "check" | "reference";
+  number?: number;
+  screenshots: {
+    name: string;
+    /** Diff score; `null` for an unchanged screenshot. */
+    score: number | null;
+    metadata: ScreenshotMetadata;
+  }[];
+}): Promise<Build> {
+  const { projectId, type = "check", number = 1, screenshots } = input;
+  const seededAt = getSeedInstant();
   const bucketProps = {
     name: "default",
     projectId,
     complete: true,
     valid: true,
-    screenshotCount: steps.length + 1,
+    screenshotCount: screenshots.length,
     storybookScreenshotCount: 0,
     createdAt: seededAt,
     updatedAt: seededAt,
@@ -1699,39 +1874,6 @@ export async function createJourneyScenario(input: {
     }),
   ]);
 
-  const screenshots = [
-    ...steps.map((step) => ({
-      name: step.name,
-      score: step.score,
-      metadata: {
-        url: `https://shop.example.com/${step.name.replace(/\.png$/, "")}`,
-        viewport,
-        colorScheme: "light" as const,
-        mediaType: "screen" as const,
-        test: journey,
-        capture: { index: step.index },
-        browser,
-        automationLibrary,
-        sdk,
-      } satisfies ScreenshotMetadata,
-    })),
-    {
-      name: other.name,
-      score: other.score,
-      metadata: {
-        url: "https://shop.example.com/account/settings",
-        viewport,
-        colorScheme: "light" as const,
-        mediaType: "screen" as const,
-        test: other.test,
-        capture: { index: 0 },
-        browser,
-        automationLibrary,
-        sdk,
-      } satisfies ScreenshotMetadata,
-    },
-  ];
-
   const tests = await Test.query().insertAndFetch(
     screenshots.map((screenshot) => ({
       name: screenshot.name,
@@ -1765,8 +1907,8 @@ export async function createJourneyScenario(input: {
   const [build] = await Build.query().insertAndFetch([
     {
       name: "default",
-      number: 1,
-      type: "check" as const,
+      number,
+      type,
       jobStatus: "complete" as const,
       baseScreenshotBucketId: baseBucket.id,
       compareScreenshotBucketId: compareBucket.id,
@@ -1801,7 +1943,7 @@ export async function createJourneyScenario(input: {
 
   await concludeBuild({ build, notify: false });
 
-  return { build };
+  return build;
 }
 
 /**
@@ -2895,6 +3037,13 @@ export async function seed() {
     accountId: smoothAccount.id,
   });
   await createJourneyScenario({ projectId: journeyProject.id });
+
+  const journeysProject = await createProject({
+    name: "shop",
+    token: "shop-7c1e4b9a2d8f3e6b5a4c9d0e1f2a3b4c5d6e",
+    accountId: smoothAccount.id,
+  });
+  await createJourneysScenario({ projectId: journeysProject.id });
 
   await createDeploymentScenario({
     projectId: bigProject.id,

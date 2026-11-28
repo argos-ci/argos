@@ -11,7 +11,11 @@ import { Truncable } from "@/ui/Truncable";
 import { FilterCategoryMenu } from "./FilterCategoryMenu";
 import { FilterIcon } from "./FilterIcon";
 import { FilterStateContext, type FilterState } from "./FilterState";
-import { getFilterCategoryDefinition, type FilterGroup } from "./util";
+import {
+  getFilterCategoryDefinition,
+  type FilterCategory,
+  type FilterGroup,
+} from "./util";
 
 export const FilterChips = memo(() => {
   const state = use(FilterStateContext);
@@ -34,14 +38,25 @@ export const FilterChips = memo(() => {
   );
 });
 
+/**
+ * The active filters by category. A filter from a link may name a value the
+ * loaded snapshots do not carry yet, or the only one of its category, which
+ * the menus leave out: it gets a chip all the same.
+ */
 function getActiveFilterGroups(state: FilterState) {
-  const groups = new Set<FilterGroup>();
+  const groups = new Map<FilterCategory, FilterGroup>();
   for (const key of state.active) {
-    const group = state.filterGroups.find((group) => group.filterKeys.has(key));
-    invariant(group, "Group not found");
-    groups.add(group);
+    const { category } = state.getFilterByKey(key);
+    const group = groups.get(category) ?? {
+      category,
+      filterKeys: new Set(
+        state.filterGroups.find((group) => group.category === category)
+          ?.filterKeys,
+      ),
+    };
+    group.filterKeys.add(key);
+    groups.set(category, group);
   }
-
   return groups;
 }
 

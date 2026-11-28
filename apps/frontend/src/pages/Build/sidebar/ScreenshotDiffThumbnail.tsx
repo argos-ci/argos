@@ -29,16 +29,22 @@ export function ScreenshotDiffThumbnail(props: {
   screenshotDiff: DocumentType<typeof _ScreenshotDiffFragment>;
   /** Size class for the thumbnail box. */
   className?: string;
+  /** Inline style of the thumbnail box, for a size computed at render. */
+  style?: React.CSSProperties;
+  /** `lazy` waits for the image to near the screen to load it. */
+  loading?: "lazy" | "eager";
   /** Size class for the fallback icon; defaults to `className`. */
   iconClassName?: string;
-  /** How the image fills the box. */
-  fit?: "contain" | "cover";
+  /** How the image fills the box; `cover-top` crops the bottom only. */
+  fit?: "contain" | "cover" | "cover-top";
   /** ImageKit transformations for the source, to match the box being drawn. */
   transformations?: string[];
 }) {
   const {
     screenshotDiff,
     className,
+    style,
+    loading,
     iconClassName = className,
     fit = "contain",
     transformations = ["w-32", "h-32", "c-at_max"],
@@ -57,13 +63,17 @@ export function ScreenshotDiffThumbnail(props: {
           "block shrink-0 overflow-hidden rounded-sm border bg-white",
           className,
         )}
+        style={style}
       >
         <ImageKitPicture
           src={thumbnailUrl}
+          loading={loading}
           transformations={transformations}
           className={clsx(
             "size-full",
-            fit === "cover" ? "object-cover" : "object-contain",
+            fit === "contain"
+              ? "object-contain"
+              : clsx("object-cover", fit === "cover-top" && "object-top"),
           )}
           alt=""
         />

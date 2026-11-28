@@ -1,3 +1,5 @@
+import { use } from "react";
+import { invariant } from "@argos/util/invariant";
 import {
   CircleDotIcon,
   FlaskConicalIcon,
@@ -18,11 +20,15 @@ import {
 import { Tooltip } from "@/ui/Tooltip";
 
 import { useBuildDiffState } from "./BuildDiffState";
+import { FilterStateContext } from "./metadata/filters/FilterState";
+import { checkFiltersOneTest } from "./metadata/filters/util";
 import { useSnapshotDisplay } from "./SnapshotListPreferences";
 
 export function SnapshotListDisplayButton() {
   const { grouping, setGrouping, setDisplay } = useBuildDiffState();
   const [display] = useSnapshotDisplay();
+  const filterState = use(FilterStateContext);
+  invariant(filterState, "the display options are in a filter context");
   return (
     <MenuRoot>
       <Tooltip content="Display options">
@@ -38,23 +44,27 @@ export function SnapshotListDisplayButton() {
         </MenuTrigger>
       </Tooltip>
       <Menu aria-label="Display options">
-        <MenuSection>
-          <MenuHeading>Group by</MenuHeading>
-          <MenuItem
-            icon={<CircleDotIcon />}
-            checked={grouping === "status"}
-            onAction={() => setGrouping("status")}
-          >
-            Status
-          </MenuItem>
-          <MenuItem
-            icon={<FlaskConicalIcon />}
-            checked={grouping === "test"}
-            onAction={() => setGrouping("test")}
-          >
-            Test
-          </MenuItem>
-        </MenuSection>
+        {/* A single test is listed in the order it took its screenshots:
+            there is no grouping to pick. */}
+        {checkFiltersOneTest(filterState.active) ? null : (
+          <MenuSection>
+            <MenuHeading>Group by</MenuHeading>
+            <MenuItem
+              icon={<CircleDotIcon />}
+              checked={grouping === "status"}
+              onAction={() => setGrouping("status")}
+            >
+              Status
+            </MenuItem>
+            <MenuItem
+              icon={<FlaskConicalIcon />}
+              checked={grouping === "test"}
+              onAction={() => setGrouping("test")}
+            >
+              Test
+            </MenuItem>
+          </MenuSection>
+        )}
         <MenuSection>
           <MenuHeading>Show</MenuHeading>
           <MenuItem

@@ -28,7 +28,7 @@ export function StoryModeSwitcher(props: {
   isSubsetBuild: boolean;
 }) {
   const { diff, siblingDiffs, isSubsetBuild } = props;
-  const getDiffPath = useGetDiffPath();
+  const getDiffPath = useGetDiffPath("storyMode");
   const metadata = resolveDiffMetadata(diff);
   const storyModes = getUniqueStoryModes(
     siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
@@ -58,7 +58,7 @@ export function StoryModeSwitcher(props: {
             mode={mode}
             status={getVariantStatus(resolvedDiff, { isSubsetBuild })}
             aria-current={isActive ? "page" : undefined}
-            href={getDiffPath(resolvedDiff.id) ?? ""}
+            href={getDiffPath(resolvedDiff)}
             shortcutEnabled={isNextActive}
           />
         );

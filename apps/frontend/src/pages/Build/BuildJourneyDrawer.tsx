@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { getStepLabel } from "@argos/schemas/journey";
 import { clsx } from "clsx";
 import { ChevronRightIcon, WaypointsIcon } from "lucide-react";
 
@@ -22,7 +23,6 @@ import {
   useBuildDiffState,
   useJourneyDrawerState,
 } from "./BuildDiffState";
-import { getStepLabel } from "./journey-model";
 import { getViewportIconKind } from "./metadata/metadataIcons";
 import { resolveDiffMetadata } from "./metadata/utils";
 import { ScreenshotDiffThumbnail } from "./sidebar/ScreenshotDiffThumbnail";

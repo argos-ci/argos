@@ -4,6 +4,7 @@ import {
   MonitorSmartphoneIcon,
   PrinterIcon,
   SunMoonIcon,
+  FlaskConicalIcon,
   TagIcon,
 } from "lucide-react";
 
@@ -16,6 +17,7 @@ export const MetadataCategory = {
   storyTag: "storyTag",
   snapshotTag: "snapshotTag",
   testTag: "testTag",
+  test: "test",
 } as const;
 
 export type MetadataCategory =
@@ -61,6 +63,11 @@ const metadataCategoryDefinitions = {
     label: "Test tag",
     pluralLabel: "tags",
     icon: TagIcon,
+  },
+  [MetadataCategory.test]: {
+    label: "Test",
+    pluralLabel: "tests",
+    icon: FlaskConicalIcon,
   },
 } as const;
 

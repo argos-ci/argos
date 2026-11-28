@@ -29,17 +29,31 @@ export type BuildReviewability =
     };
 
 /**
+ * What keeps this build's changes from ever being reviewed in it, whatever
+ * its review state: an auto-approved build, or one run in a merge queue.
+ */
+export function getBuildReviewBlocker(
+  build: Build,
+): "merge-queue" | "reference" | null {
+  if (build.mergeQueue) {
+    return "merge-queue";
+  }
+  if (build.type === BuildType.Reference) {
+    return "reference";
+  }
+  return null;
+}
+
+/**
  * Whether this build is in a state where its changes can be reviewed, and why
  * not otherwise. Shared by the header review button and the build overview so
  * they stay in agreement.
  */
 export function useBuildReviewability(build: Build): BuildReviewability {
   const progression = useBuildReviewProgression();
-  if (build.mergeQueue) {
-    return { reviewable: false, reason: "merge-queue" };
-  }
-  if (build.type === BuildType.Reference) {
-    return { reviewable: false, reason: "reference" };
+  const blocker = getBuildReviewBlocker(build);
+  if (blocker) {
+    return { reviewable: false, reason: blocker };
   }
   if (!progression) {
     return { reviewable: false, reason: "loading" };

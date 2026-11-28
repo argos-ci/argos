@@ -17,6 +17,9 @@ const _BuildFragment = graphql(`
     mode
     branch
     baseBranch
+    journeys {
+      id
+    }
     reviews {
       id
       date
@@ -191,8 +194,10 @@ export function BuildSummaryDescription({
   }
 
   switch (build.status) {
+    // With journeys, the title says it and the journeys to review follow
+    // right below.
     case BuildStatus.ChangesDetected:
-      return <ChangesResume />;
+      return build.journeys.length > 0 ? null : <ChangesResume />;
 
     case BuildStatus.Accepted:
       return <ApprovedDescription build={build} canReview={canReview} />;

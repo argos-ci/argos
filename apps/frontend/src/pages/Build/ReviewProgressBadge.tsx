@@ -43,7 +43,13 @@ export type BuildReviewProgression = NonNullable<
   ReturnType<typeof useBuildReviewProgression>
 >;
 
-function getProgressionDisplay(progression: BuildReviewProgression): {
+/** What the badge reads of a progression: how many, not which diffs. */
+type ReviewProgressionCounts = Record<
+  "toReview" | "reviewed" | "rejected",
+  readonly unknown[]
+>;
+
+function getProgressionDisplay(progression: ReviewProgressionCounts): {
   color: ChipColor;
   tooltip: string;
   icon: LucideIcon;
@@ -81,7 +87,7 @@ function getProgressionDisplay(progression: BuildReviewProgression): {
  */
 export function ReviewProgressBadge(props: {
   scale?: "xs" | "sm";
-  progression: BuildReviewProgression | null;
+  progression: ReviewProgressionCounts | null;
 }) {
   const { scale = "sm", progression } = props;
   if (!progression || progression.toReview.length === 0) {

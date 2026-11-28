@@ -1,6 +1,9 @@
 import { expect } from "@playwright/test";
 
-import { createJourneyScenario } from "../apps/backend/src/database/seeds";
+import {
+  createJourneyScenario,
+  createJourneysScenario,
+} from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot, waitForDiffListToSettle } from "./util";
 
@@ -200,5 +203,307 @@ loggedTest(
     // goes back to the diff it jumped over, which the list now has above.
     await page.keyboard.press("y");
     await expect(settingsHeading).toBeVisible();
+  },
+);
+
+loggedTest(
+  "walks a journey screen by screen from the build overview",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build } = await createJourneysScenario({ projectId: project.id });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+
+    // The checkout, run on desktop and on mobile, has the most changes: it
+    // comes first, a row per run. The sign-up changed nothing and waits behind
+    // a button; the home page test captures a single screen, no journey.
+    const walkLink = (title: string) =>
+      page.getByRole("link", { name: new RegExp(`^Walk “${title}”`) });
+    const runRow = (title: string) =>
+      page
+        .getByRole("listitem")
+        .filter({ has: walkLink(title), hasNot: page.getByRole("heading") });
+    await expect(runRow("complete a purchase")).toHaveText([
+      /375×812.*4 screenshots/,
+      /1280×720.*4 screenshots/,
+    ]);
+    // Journeys come by file, as a pull request shows them, each file with
+    // the build's review progress for its changed screens.
+    const checkoutFile = page.getByRole("listitem").filter({
+      has: page.getByRole("heading", {
+        level: 3,
+        name: "e2e/checkout.spec.ts",
+        exact: true,
+      }),
+    });
+    await expect(checkoutFile).toContainText(/0 \/ \d+ reviewed/);
+    await expect(walkLink("complete a purchase").first()).toHaveAccessibleName(
+      /375×812/,
+    );
+    // The search takes each screen at two sizes in a single run (Argos's
+    // `viewports` option): a run per size all the same, smallest first.
+    await expect(runRow("finds a product")).toHaveText([/375×667/, /1280×720/]);
+    await expect(walkLink("finds a product").first()).toHaveAccessibleName(
+      /375×667/,
+    );
+    await expect(walkLink("create an account")).toHaveCount(0);
+    await page.locator("summary", { hasText: "Unchanged journeys" }).click();
+    await expect(runRow("create an account")).toHaveText(/1280×720/);
+    // Apart from the journeys to review, and marked as having no changes.
+    await expect(
+      runRow("create an account").getByRole("img", {
+        name: "No changes in this journey",
+      }),
+    ).toBeVisible();
+    await expect(walkLink("shows the home page")).toHaveCount(0);
+    // A test of a single screen is no journey: the other affected tests name
+    // it, and only it, the journeys being named above.
+    await expect(page.getByText("Other affected tests")).toBeVisible();
+    const affectedTests = page.getByRole("list").filter({
+      has: page.getByText("home.spec.ts › shows the home page"),
+    });
+    await expect(affectedTests.getByRole("listitem")).toHaveCount(1);
+
+    // Opening the unchanged journeys scrolled the page: the capture starts at
+    // the section's heading.
+    await page
+      .getByRole("heading", { name: "Journeys", exact: true })
+      .evaluate((element) => element.scrollIntoView({ block: "start" }));
+    await screenshot(page, "build-overview-journeys", {
+      replacements: { [team.account.slug]: "acme" },
+    });
+
+    // A run opens the build on its first screen, the list filtered on the
+    // run and listed by test: the run's screens in the order the test took
+    // them.
+    await page
+      .getByRole("link", { name: "Walk “complete a purchase” at 1280×720" })
+      .click();
+    const heading = (name: string) =>
+      page.getByRole("heading", { name: `desktop/checkout/${name}.png` });
+    await expect(heading("cart")).toBeVisible();
+    await expect(page).toHaveURL(/[?&]filters=/);
+    await expect(
+      page.getByRole("button", { name: /^Remove .* filter$/ }),
+    ).toHaveCount(2);
+    const rows = page.locator("[role='button'][data-index]");
+    await expect(rows).toHaveText([
+      /desktop\/checkout\/cart/,
+      /desktop\/checkout\/shipping/,
+      /desktop\/checkout\/payment/,
+      /desktop\/checkout\/confirmation/,
+    ]);
+    await waitForDiffListToSettle(page);
+    await screenshot(page, "build-journey-walk", {
+      replacements: { [team.account.slug]: "acme" },
+    });
+
+    // ↓ goes to the next screen, and marking one moves on to the next screen
+    // to review.
+    await page.keyboard.press("ArrowDown");
+    await expect(heading("shipping")).toBeVisible();
+    await page.keyboard.press("y");
+    await expect(heading("confirmation")).toBeVisible();
+
+    // The filters are in the URL, so a reload keeps the run.
+    await page.reload();
+    await expect(heading("confirmation")).toBeVisible();
+    await expect(rows).toHaveCount(4);
+
+    // The overview keeps the filters for the way back, and shows the test
+    // the list is filtered on.
+    await page.getByRole("link", { name: "Overview", exact: true }).click();
+    await expect(page).toHaveURL(/\/overview\?filters=/);
+    await expect(
+      page.getByRole("link", {
+        name: "Walk “complete a purchase” at 1280×720",
+      }),
+    ).toBeInViewport();
+    // A run says it changed until its review is done, and how far it got.
+    await expect(
+      page.getByRole("img", { name: "Changed, 1 of 2 reviewed" }),
+    ).toBeVisible();
+
+    // A screen of another run opens that run, its filters replacing the
+    // previous ones; once every changed screen of a run is marked, its card
+    // says so.
+    const reviewed = page.getByRole("img", {
+      name: "Reviewed, every screen accepted",
+    });
+    await expect(reviewed).toHaveCount(0);
+    await page
+      .getByRole("link", { name: "Screen 4, confirmation, changed" })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "mobile/checkout/confirmation.png" }),
+    ).toBeVisible();
+    await expect(rows).toHaveText([
+      /mobile\/checkout\/cart/,
+      /mobile\/checkout\/shipping/,
+      /mobile\/checkout\/payment/,
+      /mobile\/checkout\/confirmation/,
+    ]);
+    await page.keyboard.press("y");
+    await page.getByRole("link", { name: "Overview", exact: true }).click();
+    await expect(reviewed).toHaveCount(1);
+  },
+);
+
+loggedTest(
+  "shows the journeys of an auto-approved build as approved",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build } = await createJourneysScenario({
+      projectId: project.id,
+      type: "reference",
+    });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+
+    // Nobody reviews a build of an auto-approved branch: its changed runs
+    // say they were approved with it, none waits for a review.
+    await expect(
+      page
+        .getByRole("img", { name: "Changed, auto-approved with the build" })
+        .first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("img", { name: /^Changed, not reviewed yet/ }),
+    ).toHaveCount(0);
+  },
+);
+
+loggedTest(
+  "switches size within a run, the viewport filter following",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build } = await createJourneysScenario({ projectId: project.id });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+
+    // The search takes each screen at two sizes in a single run: a card per
+    // size, each filtering on its own.
+    await page
+      .getByRole("link", { name: "Walk “finds a product” at 375×667" })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "search/results vw-375.png" }),
+    ).toBeVisible();
+    const rows = page.locator("[role='button'][data-index]");
+    await expect(rows).toHaveText([
+      /search\/results vw-375/,
+      /search\/product vw-375/,
+    ]);
+
+    // Switching size on the same screen takes the viewport filter along:
+    // the screen stays in the list.
+    await page
+      .getByRole("group", { name: "Snapshot variants" })
+      .getByRole("link", { name: /^1280px/ })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "search/results vw-1280.png" }),
+    ).toBeVisible();
+    await expect(rows).toHaveText([
+      /search\/results vw-1280/,
+      /search\/product vw-1280/,
+    ]);
+  },
+);
+
+loggedTest(
+  "lists a test filtered alone journey by journey, as the strip walks it",
+  async ({ page, auth, team, project }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    const { build } = await createJourneysScenario({ projectId: project.id });
+
+    await page.goto(
+      `/${team.account.slug}/${project.name}/builds/${build.number}`,
+    );
+    await page
+      .getByRole("button", { name: /^(Start review|Browse snapshots)/ })
+      .click();
+    // The reader lists the build by status.
+    await page.getByRole("button", { name: "Display options" }).click();
+    await page.getByRole("option", { name: "Status", exact: true }).click();
+    await page.keyboard.press("Escape");
+
+    // Filtered on one test, the list follows the test whatever the grouping:
+    // one journey after the other, each screen in the order it was taken,
+    // not the changed screens first nor the runs alternating.
+    await page.locator("button:has(.lucide-filter)").click();
+    await page.getByRole("option", { name: "Test", exact: true }).click();
+    await page
+      .getByRole("option", {
+        name: /^checkout\.spec\.ts › complete a purchase/,
+      })
+      .click();
+    await page.keyboard.press("Escape");
+    const rows = page.locator("[role='button'][data-index]");
+    await expect(rows).toHaveText([
+      /desktop\/checkout\/cart/,
+      /desktop\/checkout\/shipping/,
+      /desktop\/checkout\/payment/,
+      /desktop\/checkout\/confirmation/,
+      /mobile\/checkout\/cart/,
+      /mobile\/checkout\/shipping/,
+      /mobile\/checkout\/payment/,
+      /mobile\/checkout\/confirmation/,
+    ]);
+    // There is no grouping to pick then.
+    await page.getByRole("button", { name: "Display options" }).click();
+    await expect(
+      page.getByRole("option", { name: "Status", exact: true }),
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
+
+    // The strip walks the same screens, in the same order.
+    await rows.first().click();
+    await page.getByRole("button", { name: "Journey", exact: true }).click();
+    await expect(
+      page.getByTestId("journey-drawer").getByRole("button"),
+    ).toHaveText([
+      "1 · cart",
+      "2 · shipping",
+      "3 · payment",
+      "4 · confirmation",
+    ]);
+  },
+);
+
+loggedTest(
+  "keeps each build's journeys when going from one build to another",
+  async ({ page, team, project }) => {
+    // Two builds of the same tests: their journeys share their ids.
+    await createJourneysScenario({ projectId: project.id, number: 1 });
+    await createJourneysScenario({ projectId: project.id, number: 2 });
+    const buildLink = (number: number) =>
+      page.locator(`a[href$="/builds/${number}"]`);
+    const walkLink = page.getByRole("link", {
+      name: "Walk “complete a purchase” at 1280×720",
+    });
+
+    // Moving between the builds in the app keeps what the first one loaded.
+    await page.goto(`/${team.account.slug}/${project.name}`);
+    await buildLink(1).click();
+    await expect(walkLink).toBeVisible();
+    await page.goBack();
+    await buildLink(2).click();
+    await expect(walkLink).toBeVisible();
+    await page.goBack();
+    await buildLink(1).click();
+
+    // Back on the first build, its journeys still lead to its own screens.
+    await walkLink.click();
+    await expect(
+      page.getByRole("heading", { name: "desktop/checkout/cart.png" }),
+    ).toBeVisible();
+    await expect(page.locator("[role='button'][data-index]")).toHaveCount(4);
   },
 );

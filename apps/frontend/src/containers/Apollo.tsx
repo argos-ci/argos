@@ -125,6 +125,12 @@ const ApolloProvider = (props: { children: React.ReactNode }) => {
           TestMetrics: {
             merge: false,
           },
+          // A journey's id names it within its build only: every build that
+          // ran the same test gives it the same id. Normalized, the builds
+          // would overwrite each other's journeys in the cache.
+          BuildJourney: {
+            keyFields: false,
+          },
         },
       }),
       link,

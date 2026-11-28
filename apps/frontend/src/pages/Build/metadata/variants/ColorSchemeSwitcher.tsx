@@ -48,7 +48,7 @@ export function ColorSchemeSwitcher(props: {
   isSubsetBuild: boolean;
 }) {
   const { diff, siblingDiffs, isSubsetBuild } = props;
-  const getDiffPath = useGetDiffPath();
+  const getDiffPath = useGetDiffPath("colorScheme");
   const metadata = resolveDiffMetadata(diff);
   const colorSchemes = getUniqueColorSchemes(
     siblingDiffs.map(resolveDiffMetadata).filter(checkIsNonNullable),
@@ -76,7 +76,8 @@ export function ColorSchemeSwitcher(props: {
             colorScheme={colorScheme}
             status={getVariantStatus(resolvedDiff, { isSubsetBuild })}
             isActive={isActive}
-            href={getDiffPath(resolvedDiff.id) ?? ""}
+            href={getDiffPath(resolvedDiff)}
+            getFilteredHref={(filters) => getDiffPath(resolvedDiff, filters)}
           />
         );
       })}
@@ -88,9 +89,11 @@ function ColorSchemeLinkButton(props: {
   colorScheme: ScreenshotMetadataColorScheme;
   status: VariantStatus | null;
   href: string;
+  /** The link with `filters` on, once one of them is added. */
+  getFilteredHref: (filters: Set<string>) => string;
   isActive: boolean;
 }) {
-  const { colorScheme, status, href, isActive } = props;
+  const { colorScheme, status, href, isActive, getFilteredHref } = props;
   const navigate = useNavigate();
   const Icon = colorSchemeIcons[colorScheme];
   const label = withVariantStatus(getColorSchemeLabel(colorScheme), status);
@@ -106,7 +109,9 @@ function ColorSchemeLinkButton(props: {
           category: MetadataCategory.colorScheme,
           value: colorScheme,
         })}
-        onFilterAdded={isActive || !href ? undefined : () => navigate(href)}
+        onFilterAdded={
+          isActive ? undefined : (filters) => navigate(getFilteredHref(filters))
+        }
       >
         <LinkButton
           href={href}

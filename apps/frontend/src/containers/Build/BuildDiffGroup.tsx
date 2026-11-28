@@ -1,3 +1,4 @@
+import { clsx } from "clsx";
 import {
   AlertCircleIcon,
   CheckCircle2Icon,
@@ -14,6 +15,7 @@ import {
 
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { EvaluationStatus } from "@/pages/Build/EvaluationStatus";
+import { lowTextColorClassNames } from "@/util/colors";
 
 /**
  * Where a subset build lists the baseline snapshots it did not upload. Such a
@@ -136,4 +138,26 @@ export function getDiffGroupDefinition(
   diffGroupName: DiffGroupName,
 ): DiffGroupDefinition {
   return DiffGroupDefinitions[diffGroupName];
+}
+
+/** A status group's icon, in its color. */
+export function DiffStatusIcon(props: {
+  group: DiffGroupName;
+  /** Size and placement; `size-3` by default. */
+  className?: string;
+  /** Names the icon for whoever cannot see it, when nothing else does. */
+  "aria-label"?: string;
+}) {
+  const def = getDiffGroupDefinition(props.group);
+  return (
+    <def.icon
+      role={props["aria-label"] ? "img" : undefined}
+      aria-label={props["aria-label"]}
+      className={clsx(
+        "shrink-0",
+        lowTextColorClassNames[def.color],
+        props.className ?? "size-3",
+      )}
+    />
+  );
 }

@@ -11,6 +11,16 @@ import {
   useState,
 } from "react";
 import { useApolloClient } from "@apollo/client/react";
+import {
+  checkIsMultiStepJourney,
+  compareSteps,
+  getCaptureIndex,
+  getVariantSignature,
+  groupJourneys,
+  resolveJourneyIdentity,
+  resolveTestIdentity,
+  type JourneyIdentity,
+} from "@argos/schemas/journey";
 import { invariant } from "@argos/util/invariant";
 import { ResultOf } from "@graphql-typed-document-node/core";
 import { MatchData, Searcher } from "fast-fuzzy";
@@ -36,18 +46,12 @@ import {
 } from "./BuildParams";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
-import {
-  compareSteps,
-  getCaptureIndex,
-  getVariantSignature,
-  resolveJourneyIdentity,
-  resolveTestIdentity,
-  type JourneyIdentity,
-} from "./journey-model";
 import { FilterStateContext } from "./metadata/filters/FilterState";
 import {
+  checkFiltersOneTest,
   diffMatchesFilters,
   useCreateFilterState,
+  withFilters,
 } from "./metadata/filters/util";
 import { resolveDiffMetadata } from "./metadata/utils";
 import {
@@ -244,6 +248,8 @@ type ScrollRequest = {
 type BuildDiffContextValue = {
   diffs: Diff[];
   allDiffs: Diff[];
+  /** The loaded screenshots of each journey, by journey key. */
+  journeyDiffsByKey: ReadonlyMap<string, Diff[]>;
   grouping: SnapshotGrouping;
   /** Regroups the list, keeping the active diff open and in view. */
   setGrouping: (grouping: SnapshotGrouping) => void;
@@ -455,7 +461,7 @@ function useGetPreviousDiff() {
 export function useGoToPreviousDiff() {
   const getPreviousDiff = useGetPreviousDiff();
   const { setActiveDiff, activeDiff } = useBuildDiffState();
-  const params = useBuildParams();
+  const overviewURL = useBuildOverviewURL();
   const navigate = useNavigate();
   return useEventCallback(() => {
     const previousDiff = getPreviousDiff();
@@ -464,18 +470,28 @@ export function useGoToPreviousDiff() {
       return;
     }
     // From the first diff, going up returns to the build overview.
-    if (activeDiff && params) {
-      navigate(getBuildOverviewURL(params), { replace: true });
+    if (activeDiff && overviewURL) {
+      navigate(overviewURL, { replace: true });
     }
   });
 }
 
-export function useGoToBuildOverview() {
+/** The build overview, the filters kept for the way back to the list. */
+export function useBuildOverviewURL(): string | null {
   const params = useBuildParams();
+  const filterState = use(FilterStateContext);
+  invariant(filterState, "the build overview is linked from a build page");
+  return params
+    ? withFilters(getBuildOverviewURL(params), filterState.active)
+    : null;
+}
+
+export function useGoToBuildOverview() {
+  const overviewURL = useBuildOverviewURL();
   const navigate = useNavigate();
   return useEventCallback(() => {
-    if (params) {
-      navigate(getBuildOverviewURL(params), { replace: true });
+    if (overviewURL) {
+      navigate(overviewURL, { replace: true });
     }
   });
 }
@@ -689,14 +705,45 @@ function getTestGroupName(test: JourneyIdentity | null): string {
 }
 
 /**
- * Groups the diffs by the test they come from, in the order the test took
- * them. Tests are listed by the most pressing status among their diffs, then
- * by name, and the ones with a diff to look at start open.
+ * Groups the diffs by the test they come from, journey by journey in the
+ * order the test took them. Tests are listed by the most pressing status
+ * among their diffs, then by name, and the ones with a diff to look at start
+ * open, as does a test listed alone.
  *
  * Built from the statuses the build came with, not from the review: a test
  * does not move as its diffs are marked, and marking one does not regroup the
  * build. The header reads the review on its own.
  */
+/**
+ * A test's diffs journey by journey, each as the journey strip walks it: one
+ * run at a time, one variant of it at a time (a viewport, a color scheme),
+ * its steps in order. Sorted by capture alone, the runs and the variants of a
+ * test would alternate on every step.
+ */
+function sortTestDiffs(
+  steps: { key: string; captureIndex: number | null; diff: Diff }[],
+): Diff[] {
+  const inCaptureOrder = steps.toSorted(compareSteps).map((step) => step.diff);
+  const sorted: Diff[] = [];
+  for (const journey of groupJourneys(inCaptureOrder, resolveDiffMetadata)) {
+    const signatures = new Set(
+      journey.steps.flatMap((step) => step.diffs.map(getVariantSignature)),
+    );
+    for (const signature of signatures) {
+      for (const step of journey.steps) {
+        sorted.push(
+          ...step.diffs.filter(
+            (diff) => getVariantSignature(diff) === signature,
+          ),
+        );
+      }
+    }
+  }
+  // Diffs from no test have no journey: they keep the capture order.
+  const listed = new Set(sorted);
+  return [...sorted, ...inCaptureOrder.filter((diff) => !listed.has(diff))];
+}
+
 function groupDiffsByTest(
   diffs: Diff[],
   context: { isSubsetBuild: boolean; searchMode: boolean },
@@ -732,9 +779,12 @@ function groupDiffsByTest(
       type: "test" as const,
       name,
       test,
-      diffs: steps.toSorted(compareSteps).map((step) => step.diff),
+      diffs: sortTestDiffs(steps),
+      // A list filtered on one test, as a run of the overview opens it, shows
+      // its snapshots whatever their status.
       defaultExpanded:
         context.searchMode ||
+        tests.size === 1 ||
         ATTENTION_STATUSES.some((status) => statuses.has(status)),
     },
   }))
@@ -864,46 +914,43 @@ export type ActiveDiffJourney = {
  * the ones that did.
  */
 export function useActiveDiffJourney(): ActiveDiffJourney | null {
-  const { activeDiff, allDiffs } = useBuildDiffState();
+  const { activeDiff, journeyDiffsByKey } = useBuildDiffState();
   return useMemo(
-    () => (activeDiff ? getDiffJourney(activeDiff, allDiffs) : null),
-    [activeDiff, allDiffs],
+    () => (activeDiff ? getDiffJourney(activeDiff, journeyDiffsByKey) : null),
+    [activeDiff, journeyDiffsByKey],
   );
+}
+
+/** The loaded screenshots of each journey, by journey key. */
+function groupDiffsByJourneyKey(diffs: Diff[]): Map<string, Diff[]> {
+  const byKey = new Map<string, Diff[]>();
+  for (const diff of diffs) {
+    const key = resolveJourneyIdentity(resolveDiffMetadata(diff))?.key;
+    if (key) {
+      const journeyDiffs = byKey.get(key) ?? [];
+      byKey.set(key, journeyDiffs);
+      journeyDiffs.push(diff);
+    }
+  }
+  return byKey;
 }
 
 function getDiffJourney(
   activeDiff: Diff,
-  allDiffs: Diff[],
+  journeyDiffsByKey: ReadonlyMap<string, Diff[]>,
 ): ActiveDiffJourney | null {
   const identity = resolveJourneyIdentity(resolveDiffMetadata(activeDiff));
   if (!identity) {
     return null;
   }
-  const stepMap = new Map<
-    string,
-    { key: string; captureIndex: number | null; diffs: Diff[] }
-  >();
-  for (const diff of allDiffs) {
-    const metadata = resolveDiffMetadata(diff);
-    if (resolveJourneyIdentity(metadata)?.key !== identity.key) {
-      continue;
-    }
-    const key = diff.variantKey;
-    const step = stepMap.get(key) ?? { key, captureIndex: null, diffs: [] };
-    stepMap.set(key, step);
-    step.diffs.push(diff);
-    const captureIndex = getCaptureIndex(metadata);
-    if (captureIndex !== null) {
-      step.captureIndex = Math.min(
-        step.captureIndex ?? Number.MAX_SAFE_INTEGER,
-        captureIndex,
-      );
-    }
-  }
-  const steps = [...stepMap.values()].toSorted(compareSteps);
-  if (steps.length < 2) {
+  const [journey] = groupJourneys(
+    journeyDiffsByKey.get(identity.key) ?? [],
+    resolveDiffMetadata,
+  );
+  if (!journey || !checkIsMultiStepJourney(journey)) {
     return null;
   }
+  const { steps } = journey;
   return {
     identity,
     steps,
@@ -945,7 +992,8 @@ export function useGetNextDiffThroughJourney(
   getListNextDiff: () => Diff | null,
 ) {
   const { visible, listResumeRef } = useJourneyDrawerState();
-  const { activeDiff, allDiffs, diffs, isStackCollapsed } = useBuildDiffState();
+  const { activeDiff, journeyDiffsByKey, diffs, isStackCollapsed } =
+    useBuildDiffState();
   return useEventCallback((): Diff | null => {
     const listNextDiff = getListNextDiff();
     if (!activeDiff) {
@@ -960,7 +1008,9 @@ export function useGetNextDiffThroughJourney(
       (markedGroup === null || diff.group !== markedGroup) &&
       diffs.includes(diff) &&
       predicate(diff);
-    const journey = visible ? getDiffJourney(activeDiff, allDiffs) : null;
+    const journey = visible
+      ? getDiffJourney(activeDiff, journeyDiffsByKey)
+      : null;
     if (journey) {
       const { steps, stepIndex } = journey;
       const stepDiff = [
@@ -994,7 +1044,7 @@ export function BuildDiffProvider(props: {
   const deferredSearch = useDeferredValue(search);
   const [searchMode, setSearchMode] = useState(false);
   const navigate = useNavigate();
-  const [grouping, setGroupingPreference] = useSnapshotGrouping();
+  const [groupingPreference, setGroupingPreference] = useSnapshotGrouping();
   const [, setDisplayPreference] = useSnapshotDisplay();
   const listToggles = useGroupToggles();
   const searchToggles = useGroupToggles();
@@ -1061,7 +1111,17 @@ export function BuildDiffProvider(props: {
     [searchMode, searcher, deferredSearch],
   );
 
+  const journeyDiffsByKey = useMemo(
+    () => groupDiffsByJourneyKey(screenshotDiffs),
+    [screenshotDiffs],
+  );
   const filterState = useCreateFilterState(screenshotDiffs);
+  // A single test is listed in the order it took its screenshots, whatever
+  // the grouping picked: a run of the overview, or a link to one, opens
+  // the list on its journey.
+  const grouping: SnapshotGrouping = checkFiltersOneTest(filterState.active)
+    ? "test"
+    : groupingPreference;
 
   const filteredDiffs = useMemo(() => {
     let diffs = searchMode
@@ -1161,12 +1221,15 @@ export function BuildDiffProvider(props: {
 
   const setActiveDiff = useEventCallback((diff: Diff, scroll?: boolean) => {
     navigate(
-      getBuildURL({
-        accountSlug: params.accountSlug,
-        buildNumber: params.buildNumber,
-        projectName: params.projectName,
-        diffId: diff.id,
-      }),
+      withFilters(
+        getBuildURL({
+          accountSlug: params.accountSlug,
+          buildNumber: params.buildNumber,
+          projectName: params.projectName,
+          diffId: diff.id,
+        }),
+        filterState.active,
+      ),
       { replace: true },
     );
 
@@ -1264,6 +1327,7 @@ export function BuildDiffProvider(props: {
       groups,
       diffs: sortedDiffs,
       allDiffs: screenshotDiffs,
+      journeyDiffsByKey,
       expanded,
       toggleGroup,
       isStackCollapsed,
@@ -1288,6 +1352,7 @@ export function BuildDiffProvider(props: {
       groups,
       sortedDiffs,
       screenshotDiffs,
+      journeyDiffsByKey,
       expanded,
       toggleGroup,
       isStackCollapsed,
