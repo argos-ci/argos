@@ -42,7 +42,11 @@ const ACCEPT = "application/json, text/event-stream";
 
 type RpcResponse = {
   result?: {
-    tools?: { name: string }[];
+    tools?: {
+      name: string;
+      inputSchema: { properties?: Record<string, { type?: unknown }> };
+      annotations?: { title?: string };
+    }[];
     content?: { type: string; text: string }[];
     structuredContent?: Record<string, unknown>;
     isError?: boolean;
@@ -294,6 +298,24 @@ describe("MCP server", () => {
       expect.arrayContaining(["getMe", "listBuilds", "createReview"]),
     );
     expect(names).not.toContain("createBuild");
+  });
+
+  test("gives every tool an annotations title and every argument a type", async ({
+    patToken,
+  }) => {
+    // The Claude connectors directory flags a tool without either.
+    const res = await rpc(patToken, "tools/list");
+    const tools = (res.body as RpcResponse).result!.tools!;
+    expect(
+      tools.filter((tool) => !tool.annotations?.title).map((tool) => tool.name),
+    ).toEqual([]);
+    expect(
+      tools.flatMap((tool) =>
+        Object.entries(tool.inputSchema.properties ?? {})
+          .filter(([, property]) => property.type === undefined)
+          .map(([key]) => `${tool.name}.${key}`),
+      ),
+    ).toEqual([]);
   });
 
   test("calls getMe with a PAT", async ({ patToken, userAccount }) => {

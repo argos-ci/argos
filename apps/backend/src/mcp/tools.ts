@@ -36,6 +36,7 @@ export type McpToolDefinition = {
   inputSchema: z.ZodObject;
   outputSchema: z.ZodObject | undefined;
   annotations: {
+    title?: string;
     readOnlyHint: boolean;
     destructiveHint: boolean;
     idempotentHint: boolean;
@@ -218,6 +219,8 @@ function buildTool(
     inputSchema,
     outputSchema,
     annotations: {
+      // The Claude connectors directory reads the title from here.
+      ...(operation.summary ? { title: operation.summary } : {}),
       readOnlyHint: method === "get",
       destructiveHint: xMcp?.destructive ?? method === "delete",
       idempotentHint:

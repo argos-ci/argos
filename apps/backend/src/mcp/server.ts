@@ -21,6 +21,7 @@ import { getSkillFileUrl, getSkills } from "@/skills/registry";
 
 import { callTool } from "./dispatch";
 import { EVENTS_EXTENSION_ID, registerEventsExtension } from "./events";
+import { typeEveryArgument } from "./input-schema";
 import { mcpTools } from "./tools";
 
 const MCP_INSTRUCTIONS = `Argos is a visual testing platform: CI uploads screenshots as "builds", Argos diffs them against a baseline, and users review and approve or reject the detected changes.
@@ -88,6 +89,9 @@ export function createMcpServer(context: { authorization: string }): McpServer {
  * request that the API parses again, and a parsed value does not always
  * survive the trip: a `Date` stringifies to a format the API rejects, and a
  * comma-separated list split into an array becomes a repeated parameter.
+ *
+ * The JSON Schema it advertises gives every argument a `type`
+ * ({@link typeEveryArgument}).
  */
 function validateOnly(
   schema: z.ZodObject,
@@ -96,6 +100,11 @@ function validateOnly(
   return {
     "~standard": {
       ...standard,
+      jsonSchema: {
+        ...standard.jsonSchema,
+        input: (options) =>
+          typeEveryArgument(standard.jsonSchema.input(options)),
+      },
       validate: async (value) => {
         const result = await standard.validate(value);
         if (result.issues) {
